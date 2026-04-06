@@ -9,24 +9,28 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { text, title, location, date } = await req.json();
+    const { text, title, location, date, priority, photo_url } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const systemPrompt = `Tu es un assistant professionnel. Résume ce rapport terrain en bullet points structurés en français.
 Format obligatoire (texte simple, sans emoji, sans gras, sans astérisques) :
+- Priorité du rapport
 - Lieu
 - Date et heure
 - Objet / contexte
 - Points clés observés (2-4 bullets)
 - Problèmes ou alertes (si pertinent)
 - Recommandations (si pertinent)
+- Photo jointe (mentionner si une photo est jointe au rapport)
 Sois concis : une phrase max par bullet. Pas de mise en forme, juste du texte brut avec des tirets.`;
 
-    const userPrompt = `Rapport : "${title}"${location ? ` — Lieu : ${location}` : ""}${date ? ` — Date : ${date}` : ""}
-
-Contenu :
-${text}`;
+    let userPrompt = `Rapport : "${title}"`;
+    if (priority && priority !== "normale") userPrompt += ` — Priorité : ${priority}`;
+    if (location) userPrompt += ` — Lieu : ${location}`;
+    if (date) userPrompt += ` — Date : ${date}`;
+    if (photo_url) userPrompt += ` — Photo jointe : oui`;
+    userPrompt += `\n\nContenu :\n${text}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

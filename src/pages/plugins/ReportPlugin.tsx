@@ -192,7 +192,7 @@ const ReportPlugin = () => {
         day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
       });
       const { data, error } = await supabase.functions.invoke("summarize-report", {
-        body: { text: notes, title, location, date: formattedDate },
+        body: { text: notes, title, location, date: formattedDate, priority, photo_url: photoPreview },
       });
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
