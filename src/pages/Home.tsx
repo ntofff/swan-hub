@@ -158,6 +158,9 @@ const HomePage = () => {
         )}
       </div>
 
+      <div className="text-center mt-10 pb-2">
+        <p className="text-[9px] text-muted-foreground/50">SWAN v{APP_BUILD}</p>
+      </div>
       <FeedbackButton context="home" />
     </div>
   );
