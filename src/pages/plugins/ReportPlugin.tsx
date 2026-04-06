@@ -205,9 +205,9 @@ const ReportPlugin = () => {
             <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <FolderOpen size={13} /> Dossiers
             </span>
-            <button onClick={() => setShowFolderManager(true)}
+            <button onClick={() => setShowFolderManager((prev) => !prev)}
               className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium">
-              <FolderPlus size={12} /> Gérer
+              <FolderPlus size={12} /> {showFolderManager ? "Fermer" : "Gérer"}
             </button>
           </div>
           {folders.length === 0 ? (
@@ -229,6 +229,16 @@ const ReportPlugin = () => {
                   <span className="text-[9px] font-medium truncate max-w-[56px]">{f.name}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {showFolderManager && (
+            <div className="mt-3">
+              <ReportFolderManager
+                folders={folders}
+                colorOptions={colorOptions}
+                onClose={() => setShowFolderManager(false)}
+              />
             </div>
           )}
         </div>
