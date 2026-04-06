@@ -30,7 +30,7 @@ const colorOptions = [
   { value: "330 70% 55%", label: "Rose" },
 ];
 
-const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors";
+const inputCls = "w-full max-w-full box-border bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors [&::-webkit-calendar-picker-indicator]:opacity-60";
 
 const ReportPlugin = () => {
   const { user } = useAuth();
