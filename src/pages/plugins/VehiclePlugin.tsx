@@ -402,7 +402,7 @@ const VehiclePlugin = () => {
                       <div className="text-sm font-semibold">{t.distance ?? "–"} km</div>
                       {t.ik_amount && <div className="text-[10px] text-primary">{Number(t.ik_amount).toFixed(2)} €</div>}
                     </div>
-                    <button onClick={() => deleteTrip.mutate(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                    <button onClick={() => { if (window.confirm("Supprimer ce trajet ?")) deleteTrip.mutate(t.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
