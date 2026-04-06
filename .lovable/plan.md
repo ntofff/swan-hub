@@ -1,42 +1,43 @@
-## Plan de développement — Bloc 1
 
-### Étape 1 : Schéma de base de données
-Créer toutes les tables via migrations :
-- `profiles` (lié à auth.users, nom, plan, avatar)
-- `user_roles` (RBAC admin/user)
-- `user_activities` (activités métier avec couleur/tag)
-- `plugins`, `user_plugins` (activation de plugins par utilisateur)
-- `feedback` (type, message, contexte, plugin, user_id)
-- `reports` (titre, notes, timestamp)
-- `log_entries` (texte, date/heure)
-- `tasks` (texte, priorité, activité, statut)
-- `missions` (titre, client, statut, dates, notes)
-- `mission_checklist_items`, `mission_activity_logs`
-- `quotes`, `invoices`, `payments`
-- `vehicles`, `drivers`, `frequent_routes`, `trips`
-- `promotions`, `themes`, `audit_logs`
-- RLS sur toutes les tables (user_id = auth.uid())
-- Trigger auto-création profil à l'inscription
+# Bloc 2 — SWAN : Admin, RBAC & Plugins métiers
 
-### Étape 2 : Authentification
-- Pages : Login, Signup, Mot de passe oublié, Réinitialisation
-- Client Supabase configuré
-- Hook `useAuth` avec session persistante
-- Écrans en français, design premium SWAN
+## Étape 1 : RBAC & Admin Console
+- Le RBAC est déjà en place (user_roles + has_role + AdminGuard)
+- **Admin Console** : connecter aux vraies données DB
+  - Dashboard KPI (count users, signups récents, plugins actifs, feedback)
+  - Liste utilisateurs avec recherche, détail, gestion plugins
+  - Gestion promotions (CRUD)
+  - Feedback admin (filtres, notes, statut résolu/ouvert)
+  - Analytics plugins
+  - Theme manager (CRUD thèmes)
+  - Audit logs
 
-### Étape 3 : Protection des routes
-- `AuthGuard` : redirige vers /login si non connecté
-- `AdminGuard` : vérifie le rôle admin via `user_roles`
-- Page "Accès refusé" pour admin
-- About reste publique
+**Migration nécessaire** : ajouter colonnes `admin_note` et `status` à la table `feedback`
 
-### Étape 4 : Profil utilisateur
-- Afficher User ID, email, nom, plan
-- Gestion des activités (CRUD avec couleurs)
-- Plugins actifs liés à la DB
-- Bouton déconnexion
+## Étape 2 : Quotes & Invoices
+- Page détail devis avec édition
+- Page détail facture
+- Conversion devis → facture
+- Historique paiements
+- Filtres par statut/client
+- Badges statut colorés
 
-### Étape 5 : Connecter les plugins à la DB
-- Wiring CRUD sur Reports, LogEntries, Tasks, Missions, Quotes, Vehicles, Trips
-- États vides premium
-- Données de démo insérées au signup si besoin
+## Étape 3 : Vehicle Logbook / IK
+- CRUD complet véhicules, conducteurs, trajets, trajets fréquents
+- Calcul km auto (fin - début)
+- Calcul IK auto (barème fiscal FR)
+- Totaux par période/véhicule/conducteur
+- Filtres et presets trajets
+- Interface export Excel prête
+
+## Étape 4 : Feedback amélioré
+- Bouton déjà présent sur chaque écran ✓
+- Auto-attacher écran courant (pathname)
+- Types déjà implémentés ✓
+
+## Ordre d'exécution
+1. Migration DB (feedback status + admin_note)
+2. Admin Console complète
+3. Quotes/Invoices détail + conversion
+4. Vehicle Logbook complet
+5. Feedback screen tracking
