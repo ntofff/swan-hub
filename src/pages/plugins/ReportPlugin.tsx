@@ -192,7 +192,7 @@ const ReportPlugin = () => {
         day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
       });
       const { data, error } = await supabase.functions.invoke("summarize-report", {
-        body: { text: notes, title, location, date: formattedDate },
+        body: { text: notes, title, location, date: formattedDate, priority, photo_url: photoPreview },
       });
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
@@ -265,6 +265,25 @@ const ReportPlugin = () => {
           <input value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Titre du rapport *" className={inputCls} />
 
+          {/* Priority — prominent, above content */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Priorité</label>
+            <div className="flex gap-1.5">
+              {priorityOptions.map((p) => (
+                <button key={p.value} onClick={() => setPriority(p.value)}
+                  className={`flex-1 text-xs py-2 rounded-lg transition-colors font-medium ${
+                    priority === p.value
+                      ? p.value === "urgente" ? "bg-destructive/15 text-destructive" 
+                        : p.value === "haute" ? "bg-warning/15 text-warning"
+                        : "bg-primary/10 text-primary"
+                      : "text-muted-foreground bg-secondary hover:bg-secondary/80"
+                  }`}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Location */}
           <div className="relative">
             <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -332,28 +351,15 @@ const ReportPlugin = () => {
 
           {showOptions && (
             <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
-              {/* Color + Priority row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Couleur</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {colorOptions.map((c) => (
-                      <button key={c.value} onClick={() => setColor(c.value)} title={c.label}
-                        className={`w-6 h-6 rounded-lg border-2 transition-all ${color === c.value ? "border-foreground scale-110" : "border-transparent"}`}
-                        style={{ backgroundColor: `hsl(${c.value})` }} />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Priorité</label>
-                  <div className="flex gap-1">
-                    {priorityOptions.map((p) => (
-                      <button key={p.value} onClick={() => setPriority(p.value)}
-                        className={`text-[11px] px-2 py-1.5 rounded-lg transition-colors ${priority === p.value ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary"}`}>
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
+              {/* Color */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Couleur</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {colorOptions.map((c) => (
+                    <button key={c.value} onClick={() => setColor(c.value)} title={c.label}
+                      className={`w-6 h-6 rounded-lg border-2 transition-all ${color === c.value ? "border-foreground scale-110" : "border-transparent"}`}
+                      style={{ backgroundColor: `hsl(${c.value})` }} />
+                  ))}
                 </div>
               </div>
 
