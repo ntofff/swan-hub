@@ -102,6 +102,7 @@ const ReportPlugin = () => {
         user_id: user.id, title: title.trim(),
         notes: finalNotes.trim() || null, location: location.trim() || null,
         color, priority, folder_id: folderId,
+        report_date: new Date(reportDate).toISOString(),
         ...(photo_url ? { photo_url } : {}),
       };
       if (editingId) {
