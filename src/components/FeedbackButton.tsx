@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { MessageSquare, X, Bug, Lightbulb, AlertTriangle, ThumbsUp } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const types = [
   { value: "bug", label: "Bug", icon: Bug },
@@ -11,16 +13,26 @@ const types = [
 interface FeedbackButtonProps { context?: string; }
 
 export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("suggestion");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = () => {
-    console.log("Feedback:", { type, message, context, timestamp: new Date().toISOString() });
+  const handleSubmit = async () => {
+    if (!user || !message.trim()) return;
+    await supabase.from("feedback").insert({
+      user_id: user.id,
+      type,
+      message,
+      context,
+      plugin: context !== "global" ? context : null,
+    });
     setSent(true);
     setTimeout(() => { setOpen(false); setSent(false); setMessage(""); }, 1500);
   };
+
+  if (!user) return null;
 
   if (!open) {
     return (
