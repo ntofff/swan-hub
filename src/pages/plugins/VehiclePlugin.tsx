@@ -441,7 +441,7 @@ const VehiclePlugin = () => {
                   <div className="text-sm font-semibold">{d.name}</div>
                   <div className="text-[10px] text-muted-foreground">{d.role || "—"}{d.vehicles ? ` · ${d.vehicles.name}` : ""}</div>
                 </div>
-                <button onClick={() => deleteDriver.mutate(d.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer ce conducteur ?")) deleteDriver.mutate(d.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
