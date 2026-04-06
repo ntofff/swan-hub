@@ -600,11 +600,45 @@ export type Database = {
           },
         ]
       }
+      report_folders: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           activity_id: string | null
           color: string | null
           created_at: string
+          folder_id: string | null
           id: string
           location: string | null
           notes: string | null
@@ -618,6 +652,7 @@ export type Database = {
           activity_id?: string | null
           color?: string | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
@@ -631,6 +666,7 @@ export type Database = {
           activity_id?: string | null
           color?: string | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
@@ -646,6 +682,13 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "user_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "report_folders"
             referencedColumns: ["id"]
           },
         ]
