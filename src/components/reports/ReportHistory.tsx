@@ -148,7 +148,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                       <div className="flex items-center gap-0.5 shrink-0">
                         <button onClick={() => onEdit(r)} className="p-1.5 text-muted-foreground hover:text-primary"><Pencil size={13} /></button>
                         <button onClick={() => setShareOpenId(shareOpenId === r.id ? null : r.id)} className="p-1.5 text-muted-foreground hover:text-primary"><Share2 size={13} /></button>
-                        <button onClick={() => onDelete(r.id)} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 size={13} /></button>
+                        <button onClick={() => { if (window.confirm("Supprimer ce rapport ?")) onDelete(r.id); }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 size={13} /></button>
                       </div>
                     </div>
 

@@ -137,7 +137,7 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
                 <span className="text-sm font-medium truncate">{folder.name}</span>
               </div>
               <button
-                onClick={() => deleteFolder.mutate(folder.id)}
+                onClick={() => { if (window.confirm(`Supprimer le dossier "${folder.name}" ?`)) deleteFolder.mutate(folder.id); }}
                 className="p-1.5 text-muted-foreground hover:text-destructive shrink-0"
               >
                 <Trash2 size={14} />

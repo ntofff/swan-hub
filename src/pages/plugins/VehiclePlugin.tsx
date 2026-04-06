@@ -460,7 +460,7 @@ const VehiclePlugin = () => {
                   <div className="text-[10px] text-muted-foreground">{r.start_location} → {r.end_location}{r.default_distance ? ` · ${r.default_distance} km` : ""}</div>
                 </div>
                 <button onClick={() => useRoutePreset(r)} className="text-[10px] text-primary">Utiliser</button>
-                <button onClick={() => deleteRoute.mutate(r.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer cet itinéraire ?")) deleteRoute.mutate(r.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
