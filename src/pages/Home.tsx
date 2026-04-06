@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon } from "lucide-react";
 import { parseTheme, buildThemeId } from "@/hooks/useAuth";
+import { WelcomeScreen, APP_BUILD } from "@/components/WelcomeScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -90,8 +92,11 @@ const HomePage = () => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
+  const [showWelcome, setShowWelcome] = useState(true);
+
   return (
     <div className="fade-in">
+      {showWelcome && <WelcomeScreen onClose={() => setShowWelcome(false)} />}
       <div className="flex items-center justify-between px-4 pt-6 pb-2 md:px-0 md:pt-0">
         <div>
           <h1 className="text-2xl font-bold font-heading md:hidden"><span className="text-gradient-gold">SWAN</span></h1>
@@ -153,6 +158,9 @@ const HomePage = () => {
         )}
       </div>
 
+      <div className="text-center mt-10 pb-2">
+        <p className="text-[9px] text-muted-foreground/50">SWAN v{APP_BUILD}</p>
+      </div>
       <FeedbackButton context="home" />
     </div>
   );
