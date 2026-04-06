@@ -45,6 +45,11 @@ const ReportPlugin = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [reportDate, setReportDate] = useState(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  });
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const [aiSummary, setAiSummary] = useState("");
