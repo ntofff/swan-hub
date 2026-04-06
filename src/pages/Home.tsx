@@ -1,23 +1,29 @@
 import { useNavigate } from "react-router-dom";
-import { DesktopNav } from "@/components/layout/BottomNav";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, ChevronRight } from "lucide-react";
+import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 const quickActions = [
-  { label: "Nouveau rapport", icon: FileText, path: "/plugins/report", color: "38 50% 58%" },
-  { label: "Entrée journal", icon: BookOpen, path: "/plugins/logbook", color: "217 91% 60%" },
-  { label: "Ajouter tâche", icon: CheckSquare, path: "/plugins/tasks", color: "142 71% 45%" },
-  { label: "Nouvelle mission", icon: Target, path: "/plugins/missions", color: "0 72% 51%" },
-  { label: "Nouveau devis", icon: Receipt, path: "/plugins/quotes", color: "270 50% 60%" },
-  { label: "Nouveau trajet", icon: Car, path: "/plugins/vehicle", color: "38 92% 50%" },
+  { label: "Outil Rapport", icon: FileText, path: "/plugins/report", color: "38 50% 58%" },
+  { label: "Journal de bord", icon: BookOpen, path: "/plugins/logbook", color: "217 91% 60%" },
+  { label: "Tâches", icon: CheckSquare, path: "/plugins/tasks", color: "142 71% 45%" },
+  { label: "Gestionnaire de missions", icon: Target, path: "/plugins/missions", color: "0 72% 51%" },
+  { label: "Devis & Factures", icon: Receipt, path: "/plugins/quotes", color: "270 50% 60%" },
+  { label: "Carnet de véhicule", icon: Car, path: "/plugins/vehicle", color: "38 92% 50%" },
 ];
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
+
+  const isDark = !profile?.theme || profile.theme !== "light";
+
+  const toggleDarkLight = async () => {
+    const next = isDark ? "light" : "dark-night";
+    await updateProfile({ theme: next });
+  };
 
   const { data: recentTasks = [] } = useQuery({
     queryKey: ["recent_tasks"],
@@ -77,21 +83,23 @@ const HomePage = () => {
     ...recentTasks.map((t: any) => ({ text: `${t.done ? "✓" : "○"} ${t.text.slice(0, 35)}`, time: formatTime(t.updated_at), icon: CheckSquare, path: "/plugins/tasks" })),
     ...recentMissions.map((m: any) => ({ text: `Mission « ${m.title} » — ${m.status}`, time: formatTime(m.updated_at), icon: Target, path: "/plugins/missions" })),
     ...recentTrips.map((t: any) => ({ text: `${t.start_location || "?"} → ${t.end_location || "?"} · ${t.distance ?? "?"} km`, time: formatTime(t.date), icon: Car, path: "/plugins/vehicle" })),
-  ].sort((a, b) => 0).slice(0, 6);
+  ].slice(0, 6);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   return (
     <div className="fade-in">
-      <div className="flex items-center justify-between px-4 pt-6 pb-2 md:px-0">
+      <div className="flex items-center justify-between px-4 pt-6 pb-2 md:px-0 md:pt-0">
         <div>
-          <h1 className="text-2xl font-bold font-heading"><span className="text-gradient-gold">SWAN</span></h1>
+          <h1 className="text-2xl font-bold font-heading md:hidden"><span className="text-gradient-gold">SWAN</span></h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {profile?.full_name ? `${greeting}, ${profile.full_name}` : "Simple Work Activity Network"}
           </p>
         </div>
-        <DesktopNav />
+        <button onClick={toggleDarkLight} className="p-2.5 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors" title={isDark ? "Mode clair" : "Mode sombre"}>
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </div>
 
       {promo && (

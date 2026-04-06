@@ -235,6 +235,22 @@ const themes: Record<string, Record<string, string>> = {
     "--input": "240 10% 17%",
     "--ring": "160 100% 45%",
   },
+  light: {
+    "--background": "0 0% 98%",
+    "--foreground": "0 0% 12%",
+    "--card": "0 0% 100%",
+    "--card-foreground": "0 0% 12%",
+    "--primary": "38 50% 48%",
+    "--primary-foreground": "0 0% 100%",
+    "--secondary": "0 0% 94%",
+    "--secondary-foreground": "0 0% 25%",
+    "--muted": "0 0% 90%",
+    "--muted-foreground": "0 0% 45%",
+    "--accent": "38 50% 48%",
+    "--border": "0 0% 88%",
+    "--input": "0 0% 88%",
+    "--ring": "38 50% 48%",
+  },
 };
 
 function applyTheme(themeId: string) {
