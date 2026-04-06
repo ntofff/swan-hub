@@ -262,6 +262,7 @@ const QuotesPlugin = () => {
 
   const [payMethodPick, setPayMethodPick] = useState("");
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // ── Helpers ──
   const resetForm = () => { setFTitle(""); setFClientId(""); setFAmountHt(""); setFPayment(""); setFTva(""); setFColor(""); setFDiscountType(""); setFDiscountValue(""); setFShowRib(false); setFShowOptions(false); setShowForm(false); };
