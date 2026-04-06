@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 const themeOptions = [
   { id: "dark-night", label: "Dark Night", color: "38 50% 58%" },
+  { id: "light", label: "Light", color: "38 50% 48%" },
   { id: "corporate", label: "Corporate", color: "210 80% 55%" },
   { id: "professional", label: "Professional", color: "0 0% 75%" },
   { id: "artistic", label: "Artistic", color: "280 65% 60%" },
