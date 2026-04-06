@@ -138,6 +138,11 @@ const ReportPlugin = () => {
     setNotes(rawNotes); setLocation(r.location || "");
     setColor(r.color || "38 50% 58%"); setPriority(r.priority || "normale");
     setFolderId(r.folder_id || null);
+    if (r.report_date) {
+      const d = new Date(r.report_date);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      setReportDate(d.toISOString().slice(0, 16));
+    }
     setPhotoPreview(r.photo_url || null); setAiSummary("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
