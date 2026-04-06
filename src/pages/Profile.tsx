@@ -261,15 +261,27 @@ const ProfilePage = () => {
 
         {/* ── Apparence ── */}
         {section === "apparence" && (
-          <div className="space-y-3 slide-up">
-            <p className="text-xs text-muted-foreground">Choisissez un thème visuel pour SWAN</p>
+          <div className="space-y-4 slide-up">
+            {/* Mode toggle */}
+            <div className="glass-card p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Mode d'affichage</p>
+                <p className="text-xs text-muted-foreground">{currentMode === "dark" ? "Sombre" : "Clair"}</p>
+              </div>
+              <button onClick={handleModeToggle} className="p-2.5 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors">
+                {currentMode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            </div>
+
+            {/* Style selector */}
+            <p className="text-xs text-muted-foreground">Choisissez un style visuel pour SWAN</p>
             <div className="grid grid-cols-2 gap-2.5">
-              {themeOptions.map(t => (
-                <button key={t.id} onClick={() => handleThemeChange(t.id)}
-                  className={`glass-card p-4 flex flex-col items-center gap-3 transition-all ${profile?.theme === t.id ? 'border-primary ring-1 ring-primary/30' : 'hover:border-primary/20'}`}>
+              {styleOptions.map(t => (
+                <button key={t.id} onClick={() => handleStyleChange(t.id)}
+                  className={`glass-card p-4 flex flex-col items-center gap-3 transition-all ${currentStyle === t.id ? 'border-primary ring-1 ring-primary/30' : 'hover:border-primary/20'}`}>
                   <div className="w-10 h-10 rounded-xl" style={{ backgroundColor: `hsl(${t.color})` }} />
                   <span className="text-xs font-medium">{t.label}</span>
-                  {profile?.theme === t.id && <Check size={14} className="text-primary" />}
+                  {currentStyle === t.id && <Check size={14} className="text-primary" />}
                 </button>
               ))}
             </div>
