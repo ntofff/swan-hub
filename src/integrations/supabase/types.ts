@@ -97,32 +97,38 @@ export type Database = {
       }
       feedback: {
         Row: {
+          admin_note: string | null
           context: string | null
           created_at: string
           id: string
           message: string
           plugin: string | null
           screen: string | null
+          status: string
           type: string
           user_id: string
         }
         Insert: {
+          admin_note?: string | null
           context?: string | null
           created_at?: string
           id?: string
           message: string
           plugin?: string | null
           screen?: string | null
+          status?: string
           type: string
           user_id: string
         }
         Update: {
+          admin_note?: string | null
           context?: string | null
           created_at?: string
           id?: string
           message?: string
           plugin?: string | null
           screen?: string | null
+          status?: string
           type?: string
           user_id?: string
         }
