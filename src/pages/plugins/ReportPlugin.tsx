@@ -403,14 +403,6 @@ const ReportPlugin = () => {
         />
       </div>
 
-      {/* ── Folder Manager Modal ── */}
-      {showFolderManager && (
-        <ReportFolderManager
-          folders={folders}
-          colorOptions={colorOptions}
-          onClose={() => setShowFolderManager(false)}
-        />
-      )}
 
       <FeedbackButton context="report" />
     </div>
