@@ -395,8 +395,13 @@ const ReportPlugin = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock size={12} /> {new Date().toLocaleString("fr-FR")}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1">
+              <Clock size={12} /> Date et heure
+            </label>
+            <input type="datetime-local" value={reportDate}
+              onChange={(e) => setReportDate(e.target.value)}
+              className={inputCls} />
           </div>
         </div>
 
