@@ -333,6 +333,7 @@ export type Database = {
           status: string
           title: string
           tva_mention: string | null
+          tva_rate: number | null
           updated_at: string
           user_id: string
         }
@@ -359,6 +360,7 @@ export type Database = {
           status?: string
           title: string
           tva_mention?: string | null
+          tva_rate?: number | null
           updated_at?: string
           user_id: string
         }
@@ -385,6 +387,7 @@ export type Database = {
           status?: string
           title?: string
           tva_mention?: string | null
+          tva_rate?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -750,6 +753,7 @@ export type Database = {
           status: string
           title: string
           tva_mention: string | null
+          tva_rate: number | null
           updated_at: string
           user_id: string
         }
@@ -774,6 +778,7 @@ export type Database = {
           status?: string
           title: string
           tva_mention?: string | null
+          tva_rate?: number | null
           updated_at?: string
           user_id: string
         }
@@ -798,6 +803,7 @@ export type Database = {
           status?: string
           title?: string
           tva_mention?: string | null
+          tva_rate?: number | null
           updated_at?: string
           user_id?: string
         }
