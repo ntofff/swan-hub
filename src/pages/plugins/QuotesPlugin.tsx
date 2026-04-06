@@ -4,7 +4,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import {
   Plus, ChevronRight, ChevronLeft, FileText, Receipt, CreditCard,
   ArrowRightLeft, Users, BarChart3, Download, Share2, Copy, Mail,
-  MessageSquare, Phone, Search, Trash2, Edit2, X, Settings, Palette, Check, Eye, Save, Send
+  MessageSquare, Phone, Search, Trash2, Edit2, X, Settings, Palette, Check, Eye, Save, Send, Calendar
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,19 +28,39 @@ const colorPalette = [
   "173 80% 40%", "0 0% 50%"
 ];
 const paymentTermsOptions = [15, 20, 30, 45, 60];
+const tvaRateOptions = [{ label: "Sans TVA", value: 0 }, { label: "20%", value: 20 }, { label: "10%", value: 10 }, { label: "5.5%", value: 5.5 }];
 
 type Tab = "devis" | "factures" | "paiements" | "clients" | "dashboard" | "settings";
+type PeriodType = "week" | "month" | "year" | "custom";
 
 const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 const labelCls = "text-[11px] font-medium text-muted-foreground uppercase tracking-wider";
 
+// ── Helpers ──
+const fmtAmount = (n: number) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
+const formatDate = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+const calcTtc = (ht: number, discountType: string, discountValue: number, tvaRate: number) => {
+  let base = ht;
+  if (discountType === "percent") base = ht * (1 - discountValue / 100);
+  else if (discountType === "fixed") base = Math.max(0, ht - discountValue);
+  const tva = base * (tvaRate / 100);
+  return { htAfterDiscount: base, tvaAmount: tva, ttc: base + tva };
+};
+
 // ── Preview Component ──
-const DocumentPreview = ({ item, settings, isQuote, fmtAmount, onExportPdf, onShare }: any) => {
+const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any) => {
   const emitter = settings || {};
   const emitterName = [emitter.emitter_first_name, emitter.emitter_last_name].filter(Boolean).join(" ");
   const dueDate = item.payment_terms && item.issue_date
     ? new Date(new Date(item.issue_date).getTime() + item.payment_terms * 86400000).toLocaleDateString("fr-FR")
     : null;
+
+  const ht = Number(item.amount_ht) || 0;
+  const dType = item.discount_type || "";
+  const dVal = Number(item.discount_value) || 0;
+  const rate = Number(item.tva_rate) || 0;
+  const { htAfterDiscount, tvaAmount, ttc } = calcTtc(ht, dType, dVal, rate);
 
   return (
     <div className="space-y-3">
@@ -54,19 +74,15 @@ const DocumentPreview = ({ item, settings, isQuote, fmtAmount, onExportPdf, onSh
         </div>
 
         <div className="p-5 text-gray-900 text-xs relative z-20 flex flex-col">
-          {/* Header row: emitter + doc type */}
+          {/* Header */}
           <div className="flex justify-between items-start mb-5">
             <div className="space-y-0.5">
-              {(emitterName || emitter.emitter_company) && (
-                <>
-                  {emitter.emitter_company && <p className="font-bold text-sm text-gray-800">{emitter.emitter_company}</p>}
-                  {emitterName && <p className="text-gray-600">{emitterName}</p>}
-                  {emitter.emitter_siret && <p className="text-gray-500">SIRET : {emitter.emitter_siret}</p>}
-                  {emitter.emitter_address && <p className="text-gray-500">{emitter.emitter_address}</p>}
-                  {emitter.emitter_email && <p className="text-gray-500">{emitter.emitter_email}</p>}
-                  {emitter.emitter_phone && <p className="text-gray-500">{emitter.emitter_phone}</p>}
-                </>
-              )}
+              {emitter.emitter_company && <p className="font-bold text-sm text-gray-800">{emitter.emitter_company}</p>}
+              {emitterName && <p className="text-gray-600">{emitterName}</p>}
+              {emitter.emitter_siret && <p className="text-gray-500">SIRET : {emitter.emitter_siret}</p>}
+              {emitter.emitter_address && <p className="text-gray-500">{emitter.emitter_address}</p>}
+              {emitter.emitter_email && <p className="text-gray-500">{emitter.emitter_email}</p>}
+              {emitter.emitter_phone && <p className="text-gray-500">{emitter.emitter_phone}</p>}
             </div>
             <div className="text-right">
               <p className="text-lg font-bold text-gray-800">{isQuote ? "DEVIS" : "FACTURE"}</p>
@@ -99,39 +115,40 @@ const DocumentPreview = ({ item, settings, isQuote, fmtAmount, onExportPdf, onSh
           </div>
           <div className="flex justify-between items-start mb-1">
             <p className="font-medium text-sm text-gray-800 flex-1">{item.title}</p>
-            {item.amount_ht != null && <p className="text-gray-700 ml-4">{fmtAmount(item.amount_ht)} HT</p>}
+            {ht > 0 && <p className="text-gray-700 ml-4">{fmtAmount(ht)} HT</p>}
           </div>
 
-          {item.discount_type && (
+          {dType && (
             <div className="flex justify-between text-gray-500 mb-1">
-              <p>Remise ({item.discount_type === "percent" ? `${item.discount_value}%` : "fixe"})</p>
-              <p>-{item.discount_type === "percent"
-                ? fmtAmount((Number(item.amount_ht) || 0) * (Number(item.discount_value) || 0) / 100)
-                : fmtAmount(Number(item.discount_value) || 0)}</p>
+              <p>Remise ({dType === "percent" ? `${dVal}%` : "fixe"})</p>
+              <p>-{dType === "percent" ? fmtAmount(ht * dVal / 100) : fmtAmount(dVal)}</p>
             </div>
           )}
 
           {/* Totals */}
           <div className="border-t border-gray-200 mt-3 pt-2 space-y-1">
-            {item.amount_ht != null && (
+            <div className="flex justify-between text-gray-600">
+              <p>Total HT</p>
+              <p>{fmtAmount(htAfterDiscount)}</p>
+            </div>
+            {rate > 0 ? (
               <div className="flex justify-between text-gray-600">
-                <p>Total HT</p>
-                <p>{fmtAmount(item.amount_ht)}</p>
+                <p>TVA ({rate}%)</p>
+                <p>{fmtAmount(tvaAmount)}</p>
               </div>
-            )}
-            {item.tva_mention && (
+            ) : item.tva_mention ? (
               <div className="flex justify-between text-gray-500 italic">
                 <p className="text-[10px]">{item.tva_mention}</p>
                 <p>0,00 €</p>
               </div>
-            )}
+            ) : null}
             <div className="flex justify-between border-t border-gray-300 pt-2">
               <p className="font-bold text-sm text-gray-800">Total TTC</p>
-              <p className="font-bold text-sm text-gray-800">{item.amount != null ? fmtAmount(item.amount) : "—"}</p>
+              <p className="font-bold text-sm text-gray-800">{fmtAmount(ttc)}</p>
             </div>
           </div>
 
-          {/* Notes / annotations */}
+          {/* Notes */}
           {item.notes && (
             <div className="mt-3 p-2 bg-gray-50 rounded text-gray-600 text-[11px]">
               <p className="font-semibold text-gray-700 text-[10px] uppercase mb-0.5">Notes</p>
@@ -143,7 +160,6 @@ const DocumentPreview = ({ item, settings, isQuote, fmtAmount, onExportPdf, onSh
           <div className="mt-4 pt-3 border-t border-gray-100 space-y-1.5 text-[10px] text-gray-500">
             {item.payment_method && <p>Modalité de paiement : <span className="font-medium text-gray-700">{item.payment_method}</span></p>}
             {item.payment_terms && <p>Délai de paiement : <span className="font-medium text-gray-700">{item.payment_terms} jours</span>{dueDate && ` (échéance : ${dueDate})`}</p>}
-
             {item.rib_details && (
               <div className="bg-gray-50 p-2 rounded mt-1">
                 <p className="font-semibold text-gray-600 mb-0.5">Coordonnées bancaires</p>
@@ -153,8 +169,6 @@ const DocumentPreview = ({ item, settings, isQuote, fmtAmount, onExportPdf, onSh
                 {item.rib_details.bank && <p>Banque : {item.rib_details.bank}</p>}
               </div>
             )}
-
-            {/* Legal mentions */}
             {emitter.default_legal_mentions && (
               <p className="text-[9px] text-gray-400 mt-2 leading-relaxed">{emitter.default_legal_mentions}</p>
             )}
@@ -178,7 +192,7 @@ const DocumentPreview = ({ item, settings, isQuote, fmtAmount, onExportPdf, onSh
 };
 
 const QuotesPlugin = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("devis");
   const [showForm, setShowForm] = useState(false);
@@ -186,7 +200,9 @@ const QuotesPlugin = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [period, setPeriod] = useState<"week" | "month" | "year">("month");
+  const [period, setPeriod] = useState<PeriodType>("month");
+  const [customStart, setCustomStart] = useState(new Date().toISOString().slice(0, 10));
+  const [customEnd, setCustomEnd] = useState(new Date().toISOString().slice(0, 10));
 
   // Form fields
   const [fTitle, setFTitle] = useState("");
@@ -194,6 +210,8 @@ const QuotesPlugin = () => {
   const [fAmountHt, setFAmountHt] = useState("");
   const [fPayment, setFPayment] = useState("");
   const [fTva, setFTva] = useState("");
+  const [fTvaRate, setFTvaRate] = useState<number>(0);
+  const [fTvaCustom, setFTvaCustom] = useState("");
   const [fColor, setFColor] = useState("");
   const [fDiscountType, setFDiscountType] = useState<"" | "percent" | "fixed">("");
   const [fDiscountValue, setFDiscountValue] = useState("");
@@ -221,10 +239,12 @@ const QuotesPlugin = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [editingItem, setEditingItem] = useState(false);
 
-  // Edit fields for detail
+  // Edit fields
   const [eNotes, setENotes] = useState("");
   const [ePayment, setEPayment] = useState("");
   const [eTva, setETva] = useState("");
+  const [eTvaRate, setETvaRate] = useState<number>(0);
+  const [eTvaCustom, setETvaCustom] = useState("");
   const [ePaymentTerms, setEPaymentTerms] = useState("");
   const [ePeriod, setEPeriod] = useState("");
   const [eIssueDate, setEIssueDate] = useState("");
@@ -241,7 +261,6 @@ const QuotesPlugin = () => {
   const [sHolder, setSHolder] = useState("");
   const [sDefaultTva, setSDefaultTva] = useState("");
   const [sDefaultPayment, setSDefaultPayment] = useState("");
-  // Emitter
   const [sFirstName, setSFirstName] = useState("");
   const [sLastName, setSLastName] = useState("");
   const [sCompany, setSCompany] = useState("");
@@ -309,12 +328,13 @@ const QuotesPlugin = () => {
     }
   }, [settings]);
 
-  // Populate edit fields when selecting an item
   useEffect(() => {
     if (selectedItem) {
       setENotes(selectedItem.notes || "");
       setEPayment(selectedItem.payment_method || "");
       setETva(selectedItem.tva_mention || "");
+      setETvaRate(Number(selectedItem.tva_rate) || 0);
+      setETvaCustom("");
       setEPaymentTerms(String(selectedItem.payment_terms || ""));
       setEPeriod(selectedItem.period_description || "");
       setEIssueDate(selectedItem.issue_date || new Date().toISOString().slice(0, 10));
@@ -355,12 +375,29 @@ const QuotesPlugin = () => {
     return `${prefix}${year}-${String(counter).padStart(3, "0")}`;
   };
 
+  const getEffectiveTvaRate = (rateState: number, customState: string): number => {
+    if (rateState === -1) return parseFloat(customState) || 0;
+    return rateState;
+  };
+
   const calcFinal = () => {
     const ht = parseFloat(fAmountHt) || 0;
-    if (!fDiscountType || !fDiscountValue) return ht;
-    const dv = parseFloat(fDiscountValue) || 0;
-    if (fDiscountType === "percent") return ht * (1 - dv / 100);
-    return Math.max(0, ht - dv);
+    const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
+    const { ttc } = calcTtc(ht, fDiscountType, parseFloat(fDiscountValue) || 0, rate);
+    return ttc;
+  };
+
+  const calcFinalHtAfterDiscount = () => {
+    const ht = parseFloat(fAmountHt) || 0;
+    const { htAfterDiscount } = calcTtc(ht, fDiscountType, parseFloat(fDiscountValue) || 0, 0);
+    return htAfterDiscount;
+  };
+
+  const calcFinalTva = () => {
+    const ht = parseFloat(fAmountHt) || 0;
+    const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
+    const { tvaAmount } = calcTtc(ht, fDiscountType, parseFloat(fDiscountValue) || 0, rate);
+    return tvaAmount;
   };
 
   const addQuote = useMutation({
@@ -368,12 +405,14 @@ const QuotesPlugin = () => {
       if (!user || !fTitle.trim()) return;
       const num = generateNumber("quote");
       const cl = clients.find((c: any) => c.id === fClientId);
+      const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
       const finalAmount = calcFinal();
       await supabase.from("quotes").insert({
         user_id: user.id, quote_number: num, title: fTitle.trim(),
         client: cl?.name || null, client_id: fClientId || null,
         amount: finalAmount || null, amount_ht: parseFloat(fAmountHt) || null,
         payment_method: fPayment || null, tva_mention: fTva || null,
+        tva_rate: rate || null,
         color: fColor || null,
         discount_type: fDiscountType || null, discount_value: parseFloat(fDiscountValue) || null,
         notes: fNotes || null, issue_date: fIssueDate || null,
@@ -422,15 +461,28 @@ const QuotesPlugin = () => {
     mutationFn: async () => {
       if (!selectedItem) return;
       const type = selectedItem.quote_number ? "quotes" : "invoices";
+      const rate = getEffectiveTvaRate(eTvaRate, eTvaCustom);
+      // Recalc amount with new TVA rate
+      const ht = Number(selectedItem.amount_ht) || 0;
+      const dType = selectedItem.discount_type || "";
+      const dVal = Number(selectedItem.discount_value) || 0;
+      const { ttc } = calcTtc(ht, dType, dVal, rate);
       await supabase.from(type).update({
         notes: eNotes || null, payment_method: ePayment || null,
-        tva_mention: eTva || null, payment_terms: ePaymentTerms ? parseInt(ePaymentTerms) : null,
+        tva_mention: eTva || null, tva_rate: rate || null,
+        amount: ttc || null,
+        payment_terms: ePaymentTerms ? parseInt(ePaymentTerms) : null,
         period_description: ePeriod || null, issue_date: eIssueDate || null,
       }).eq("id", selectedItem.id);
     },
     onSuccess: () => {
+      const rate = getEffectiveTvaRate(eTvaRate, eTvaCustom);
+      const ht = Number(selectedItem.amount_ht) || 0;
+      const dType = selectedItem.discount_type || "";
+      const dVal = Number(selectedItem.discount_value) || 0;
+      const { ttc } = calcTtc(ht, dType, dVal, rate);
       qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoices"] });
-      setSelectedItem({ ...selectedItem, notes: eNotes, payment_method: ePayment, tva_mention: eTva, payment_terms: ePaymentTerms ? parseInt(ePaymentTerms) : null, period_description: ePeriod, issue_date: eIssueDate });
+      setSelectedItem({ ...selectedItem, notes: eNotes, payment_method: ePayment, tva_mention: eTva, tva_rate: rate, amount: ttc, payment_terms: ePaymentTerms ? parseInt(ePaymentTerms) : null, period_description: ePeriod, issue_date: eIssueDate });
       setEditingItem(false);
       toast.success("Modifié !");
     },
@@ -446,6 +498,7 @@ const QuotesPlugin = () => {
         client: quote.client, client_id: quote.client_id, amount: quote.amount,
         amount_ht: quote.amount_ht, quote_id: quote.id, color: quote.color,
         payment_method: quote.payment_method, tva_mention: quote.tva_mention,
+        tva_rate: quote.tva_rate,
         discount_type: quote.discount_type, discount_value: quote.discount_value,
         rib_details: ribDetails, notes: quote.notes, issue_date: new Date().toISOString().slice(0, 10),
         payment_terms: quote.payment_terms, period_description: quote.period_description,
@@ -475,51 +528,87 @@ const QuotesPlugin = () => {
   });
 
   // ── Helpers ──
-  const resetForm = () => { setFTitle(""); setFClientId(""); setFAmountHt(""); setFPayment(""); setFTva(""); setFColor(""); setFDiscountType(""); setFDiscountValue(""); setFShowRib(false); setFShowOptions(false); setFNotes(""); setFIssueDate(new Date().toISOString().slice(0, 10)); setFPaymentTerms(""); setFPeriod(""); setShowForm(false); };
+  const resetForm = () => { setFTitle(""); setFClientId(""); setFAmountHt(""); setFPayment(""); setFTva(""); setFTvaRate(0); setFTvaCustom(""); setFColor(""); setFDiscountType(""); setFDiscountValue(""); setFShowRib(false); setFShowOptions(false); setFNotes(""); setFIssueDate(new Date().toISOString().slice(0, 10)); setFPaymentTerms(""); setFPeriod(""); setShowForm(false); };
   const resetClientForm = () => { setCName(""); setCSiret(""); setCAddr(""); setCEmail(""); setCPhone(""); setEditingClient(null); setShowClientForm(false); };
   const editClientFn = (c: any) => { setCName(c.name); setCSiret(c.siret || ""); setCAddr(c.address || ""); setCEmail(c.email || ""); setCPhone(c.phone || ""); setEditingClient(c); setShowClientForm(true); };
-  const formatDate = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  const fmtAmount = (n: number) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
   const getClientName = (item: any) => item.clients?.name || item.client || "";
+  const profileName = profile?.full_name || [sFirstName, sLastName].filter(Boolean).join(" ") || "SWAN";
 
   // ── Single item export/share ──
+  const generatePdfBlob = async (item: any): Promise<Blob | null> => {
+    const isQ = !!item.quote_number;
+    try {
+      const { data, error } = await supabase.functions.invoke("export-quotes", {
+        body: { items: [{ ...item, client_name: getClientName(item), siret: item.clients?.siret, address: item.clients?.address }], title: isQ ? "Devis" : "Facture", format: "pdf" },
+      });
+      if (error) throw error;
+      return new Blob([Uint8Array.from(atob(data.pdf_base64), c => c.charCodeAt(0))], { type: "application/pdf" });
+    } catch { return null; }
+  };
+
   const handleSingleExportPdf = async () => {
     if (!selectedItem) return;
     const isQ = !!selectedItem.quote_number;
     toast.loading("Génération PDF...");
-    try {
-      const { data, error } = await supabase.functions.invoke("export-quotes", {
-        body: { items: [{ ...selectedItem, client_name: getClientName(selectedItem), siret: selectedItem.clients?.siret, address: selectedItem.clients?.address }], title: isQ ? "Devis" : "Facture", format: "pdf" },
-      });
-      if (error) throw error;
-      const blob = new Blob([Uint8Array.from(atob(data.pdf_base64), c => c.charCodeAt(0))], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = `${isQ ? "devis" : "facture"}-${selectedItem.quote_number || selectedItem.invoice_number}.pdf`; a.click();
-      URL.revokeObjectURL(url);
-      toast.dismiss(); toast.success("PDF téléchargé !");
-    } catch { toast.dismiss(); toast.error("Erreur export PDF"); }
+    const blob = await generatePdfBlob(selectedItem);
+    toast.dismiss();
+    if (!blob) { toast.error("Erreur export PDF"); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `${isQ ? "devis" : "facture"}-${selectedItem.quote_number || selectedItem.invoice_number}.pdf`; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("PDF téléchargé !");
   };
 
-  const handleSingleShare = (method: "copy" | "email" | "sms" | "whatsapp") => {
+  const buildShareText = (item: any) => {
+    const isQ = !!item.quote_number;
+    const docType = isQ ? "devis" : "facture";
+    const docNum = item.quote_number || item.invoice_number;
+    const clientName = getClientName(item);
+    const amount = item.amount != null ? fmtAmount(item.amount) : "";
+
+    return `Bonjour,\n\nVeuillez trouver ci-joint ${isQ ? "le devis" : "la facture"} n° ${docNum}${clientName ? ` concernant ${item.title}` : ""}.\n\n${amount ? `Montant TTC : ${amount}\n` : ""}${item.payment_terms ? `Délai de paiement : ${item.payment_terms} jours\n` : ""}\nJe reste à votre disposition pour toute question.\n\nCordialement,\n${profileName}`;
+  };
+
+  const handleSingleShare = async (method: "copy" | "email" | "sms" | "whatsapp") => {
     if (!selectedItem) return;
     const isQ = !!selectedItem.quote_number;
-    const lines = [
-      `${isQ ? "DEVIS" : "FACTURE"} ${selectedItem.quote_number || selectedItem.invoice_number}`,
-      `Titre : ${selectedItem.title}`,
-      getClientName(selectedItem) && `Client : ${getClientName(selectedItem)}`,
-      selectedItem.amount_ht != null && `Montant HT : ${fmtAmount(selectedItem.amount_ht)}`,
-      selectedItem.amount != null && `Total TTC : ${fmtAmount(selectedItem.amount)}`,
-      selectedItem.payment_method && `Paiement : ${selectedItem.payment_method}`,
-      selectedItem.payment_terms && `Délai : ${selectedItem.payment_terms} jours`,
-      selectedItem.tva_mention,
-      selectedItem.notes && `Notes : ${selectedItem.notes}`,
-    ].filter(Boolean).join("\n");
-    const text = "SWAN\n\n" + lines;
+    const docNum = selectedItem.quote_number || selectedItem.invoice_number;
+    const text = buildShareText(selectedItem);
 
-    if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié !"); }
-    else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`${isQ ? "Devis" : "Facture"} ${selectedItem.quote_number || selectedItem.invoice_number}`)}&body=${encodeURIComponent(text)}`);
-    else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
-    else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    if (method === "copy") {
+      // Try to share PDF via native share API if available
+      toast.loading("Préparation...");
+      const blob = await generatePdfBlob(selectedItem);
+      toast.dismiss();
+      if (blob && navigator.share && navigator.canShare) {
+        const file = new File([blob], `${isQ ? "devis" : "facture"}-${docNum}.pdf`, { type: "application/pdf" });
+        if (navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], text }); return; } catch { /* user cancelled */ }
+        }
+      }
+      navigator.clipboard.writeText(text);
+      toast.success("Texte copié !");
+      return;
+    }
+
+    // For email/sms/whatsapp: generate PDF first, try native share with file
+    toast.loading("Préparation du PDF...");
+    const blob = await generatePdfBlob(selectedItem);
+    toast.dismiss();
+
+    if (blob && navigator.share && navigator.canShare) {
+      const file = new File([blob], `${isQ ? "devis" : "facture"}-${docNum}.pdf`, { type: "application/pdf" });
+      if (navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ title: `${isQ ? "Devis" : "Facture"} ${docNum}`, text, files: [file] }); return; } catch { /* fallback */ }
+      }
+    }
+
+    // Fallback: open with text only
+    const subject = encodeURIComponent(`${isQ ? "Devis" : "Facture"} ${docNum}`);
+    const body = encodeURIComponent(text);
+    if (method === "email") window.open(`mailto:?subject=${subject}&body=${body}`);
+    else if (method === "sms") window.open(`sms:?body=${body}`);
+    else if (method === "whatsapp") window.open(`https://wa.me/?text=${body}`);
   };
 
   // ── Batch export/share ──
@@ -556,22 +645,51 @@ const QuotesPlugin = () => {
   };
 
   // ── Stats ──
-  const stats = useMemo(() => {
+  const getDateRange = (): Date => {
     const now = new Date();
-    let start: Date;
-    if (period === "week") { start = new Date(now); start.setDate(now.getDate() - 7); }
-    else if (period === "month") { start = new Date(now.getFullYear(), now.getMonth(), 1); }
-    else { start = new Date(now.getFullYear(), 0, 1); }
-    const pi = invoices.filter((i: any) => new Date(i.created_at) >= start);
+    if (period === "week") { const d = new Date(now); d.setDate(now.getDate() - 7); return d; }
+    if (period === "month") return new Date(now.getFullYear(), now.getMonth(), 1);
+    if (period === "year") return new Date(now.getFullYear(), 0, 1);
+    return new Date(customStart);
+  };
+
+  const stats = useMemo(() => {
+    const start = getDateRange();
+    const end = period === "custom" ? new Date(new Date(customEnd).getTime() + 86400000) : new Date();
+    const pi = invoices.filter((i: any) => { const d = new Date(i.created_at); return d >= start && d <= end; });
     const sent = pi.filter((i: any) => i.status === "Envoyé").length;
     const pending = pi.filter((i: any) => ["Envoyé", "En retard", "Accepté"].includes(i.status));
     const paid = pi.filter((i: any) => i.status === "Payé");
     const totalPaid = paid.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0);
     const totalPending = pending.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0);
+    
+    // TVA totals
+    const totalTva = pi.reduce((s: number, i: any) => {
+      const ht = Number(i.amount_ht) || 0;
+      const rate = Number(i.tva_rate) || 0;
+      const dType = i.discount_type || "";
+      const dVal = Number(i.discount_value) || 0;
+      const { tvaAmount } = calcTtc(ht, dType, dVal, rate);
+      return s + tvaAmount;
+    }, 0);
+
+    // TVA by month
+    const tvaByMonth: Record<string, number> = {};
+    pi.forEach((i: any) => {
+      const d = new Date(i.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const ht = Number(i.amount_ht) || 0;
+      const rate = Number(i.tva_rate) || 0;
+      const dType = i.discount_type || "";
+      const dVal = Number(i.discount_value) || 0;
+      const { tvaAmount } = calcTtc(ht, dType, dVal, rate);
+      tvaByMonth[key] = (tvaByMonth[key] || 0) + tvaAmount;
+    });
+
     const byClient: Record<string, number> = {};
     pi.forEach((i: any) => { const n = i.clients?.name || i.client || "Sans client"; byClient[n] = (byClient[n] || 0) + (Number(i.amount) || 0); });
-    return { sent, pending: pending.length, paid: paid.length, totalPaid, totalPending, byClient, total: pi.length };
-  }, [invoices, period]);
+    return { sent, pending: pending.length, paid: paid.length, totalPaid, totalPending, totalTva, tvaByMonth, byClient, total: pi.length };
+  }, [invoices, period, customStart, customEnd]);
 
   const items = tab === "devis" ? quotes : tab === "factures" ? invoices : [];
   const filtered = useMemo(() => {
@@ -580,9 +698,43 @@ const QuotesPlugin = () => {
     return list;
   }, [items, statusFilter, search]);
 
+  // ── TVA Rate Selector Component ──
+  const TvaRateSelector = ({ rate, setRate, custom, setCustom, mention, setMention }: any) => (
+    <div className="space-y-2">
+      <p className={labelCls}>TVA</p>
+      <div className="flex flex-wrap gap-1.5">
+        {tvaRateOptions.map(opt => (
+          <button key={opt.value} onClick={() => { setRate(opt.value); if (opt.value > 0) setMention(""); }}
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${rate === opt.value && rate !== -1 ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+            {opt.label}
+          </button>
+        ))}
+        <button onClick={() => setRate(-1)}
+          className={`text-xs px-3 py-1.5 rounded-full transition-colors ${rate === -1 ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+          Autre
+        </button>
+      </div>
+      {rate === -1 && (
+        <input value={custom} onChange={e => setCustom(e.target.value)} placeholder="Taux personnalisé (%)" type="number" className={`${inputCls} w-40`} />
+      )}
+      {rate === 0 && (
+        <select value={mention} onChange={e => setMention(e.target.value)} className={inputCls}>
+          <option value="">Mention d'exonération</option>
+          {tvaMentions.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      )}
+    </div>
+  );
+
   // ══════════════════════ DETAIL VIEW ══════════════════════
   if (selectedItem) {
     const isQuote = !!selectedItem.quote_number;
+    const itemRate = Number(selectedItem.tva_rate) || 0;
+    const itemHt = Number(selectedItem.amount_ht) || 0;
+    const itemDType = selectedItem.discount_type || "";
+    const itemDVal = Number(selectedItem.discount_value) || 0;
+    const { htAfterDiscount, tvaAmount: itemTva, ttc: itemTtc } = calcTtc(itemHt, itemDType, itemDVal, itemRate);
+
     return (
       <div className="fade-in">
         <PageHeader title={isQuote ? "Détail devis" : "Détail facture"} back
@@ -597,7 +749,7 @@ const QuotesPlugin = () => {
 
           {/* Preview */}
           {showPreview && (
-            <DocumentPreview item={selectedItem} settings={settings} isQuote={isQuote} fmtAmount={fmtAmount}
+            <DocumentPreview item={selectedItem} settings={settings} isQuote={isQuote}
               onExportPdf={handleSingleExportPdf} onShare={handleSingleShare} />
           )}
 
@@ -634,13 +786,7 @@ const QuotesPlugin = () => {
                   ))}
                 </div>
               </div>
-              <div>
-                <p className={labelCls}>Mention TVA</p>
-                <select value={eTva} onChange={e => setETva(e.target.value)} className={inputCls}>
-                  <option value="">Aucune</option>
-                  {tvaMentions.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
+              <TvaRateSelector rate={eTvaRate} setRate={setETvaRate} custom={eTvaCustom} setCustom={setETvaCustom} mention={eTva} setMention={setETva} />
               <div>
                 <p className={labelCls}>Annotations / notes</p>
                 <textarea value={eNotes} onChange={e => setENotes(e.target.value)} rows={3} placeholder="Notes libres..." className={inputCls} />
@@ -682,9 +828,11 @@ const QuotesPlugin = () => {
                 {selectedItem.period_description && <p>Période : {selectedItem.period_description}</p>}
                 {getClientName(selectedItem) && <p>Client : {getClientName(selectedItem)}</p>}
                 {selectedItem.clients?.siret && <p>SIRET : {selectedItem.clients.siret}</p>}
-                {selectedItem.amount_ht != null && <p>Montant HT : {fmtAmount(selectedItem.amount_ht)}</p>}
+                {itemHt > 0 && <p>Montant HT : {fmtAmount(itemHt)}</p>}
                 {selectedItem.discount_type && <p>Remise : {selectedItem.discount_type === "percent" ? `${selectedItem.discount_value}%` : fmtAmount(selectedItem.discount_value)}</p>}
-                {selectedItem.amount != null && <p className="font-semibold text-foreground">Total TTC : {fmtAmount(selectedItem.amount)}</p>}
+                {itemHt > 0 && htAfterDiscount !== itemHt && <p>HT après remise : {fmtAmount(htAfterDiscount)}</p>}
+                {itemRate > 0 && <p>TVA ({itemRate}%) : {fmtAmount(itemTva)}</p>}
+                <p className="font-semibold text-foreground">Total TTC : {fmtAmount(itemTtc)}</p>
                 {selectedItem.payment_method && <p>Encaissement : {selectedItem.payment_method}</p>}
                 {selectedItem.payment_terms && <p>Délai : {selectedItem.payment_terms} jours</p>}
                 {selectedItem.tva_mention && <p className="italic text-xs">{selectedItem.tva_mention}</p>}
@@ -817,7 +965,6 @@ const QuotesPlugin = () => {
         {/* ═══ SETTINGS ═══ */}
         {tab === "settings" && (
           <div className="space-y-4">
-            {/* Emitter */}
             <div className="glass-card p-4 space-y-3">
               <p className="text-sm font-semibold">👤 Émetteur</p>
               <div className="grid grid-cols-2 gap-2">
@@ -833,7 +980,6 @@ const QuotesPlugin = () => {
               </div>
             </div>
 
-            {/* Numbering */}
             <div className="glass-card p-4 space-y-3">
               <p className="text-sm font-semibold">🔢 Numérotation</p>
               <div className="grid grid-cols-2 gap-2">
@@ -845,7 +991,6 @@ const QuotesPlugin = () => {
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={sYearInNumber} onChange={e => setSYearInNumber(e.target.checked)} className="rounded" />Année dans le numéro</label>
             </div>
 
-            {/* RIB */}
             <div className="glass-card p-4 space-y-3">
               <p className="text-sm font-semibold">🏦 Coordonnées bancaires</p>
               <input value={sHolder} onChange={e => setSHolder(e.target.value)} placeholder="Titulaire" className={inputCls} />
@@ -854,10 +999,9 @@ const QuotesPlugin = () => {
               <input value={sBank} onChange={e => setSBank(e.target.value)} placeholder="Banque" className={inputCls} />
             </div>
 
-            {/* Defaults */}
             <div className="glass-card p-4 space-y-3">
               <p className="text-sm font-semibold">⚙️ Par défaut</p>
-              <div><p className={labelCls}>Mention TVA</p>
+              <div><p className={labelCls}>Mention TVA (exonération)</p>
                 <select value={sDefaultTva} onChange={e => setSDefaultTva(e.target.value)} className={inputCls}>
                   <option value="">Aucune</option>{tvaMentions.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -869,7 +1013,6 @@ const QuotesPlugin = () => {
               </div>
             </div>
 
-            {/* Legal */}
             <div className="glass-card p-4 space-y-3">
               <p className="text-sm font-semibold">⚖️ Mentions légales</p>
               <textarea value={sLegal} onChange={e => setSLegal(e.target.value)} rows={3} placeholder="Mentions légales affichées sur devis/factures..." className={inputCls} />
@@ -884,13 +1027,20 @@ const QuotesPlugin = () => {
         {/* ═══ DASHBOARD ═══ */}
         {tab === "dashboard" && (
           <div className="space-y-3">
-            <div className="flex gap-1.5">
-              {(["week", "month", "year"] as const).map(p => (
+            <div className="flex gap-1.5 flex-wrap">
+              {(["week", "month", "year", "custom"] as const).map(p => (
                 <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 rounded-full text-xs ${period === p ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
-                  {p === "week" ? "Semaine" : p === "month" ? "Mois" : "Année"}
+                  {p === "week" ? "Semaine" : p === "month" ? "Mois" : p === "year" ? "Année" : "Période"}
                 </button>
               ))}
             </div>
+            {period === "custom" && (
+              <div className="flex gap-2 items-center">
+                <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className={`${inputCls} flex-1`} />
+                <span className="text-xs text-muted-foreground">→</span>
+                <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className={`${inputCls} flex-1`} />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2.5">
               {[{ l: "Envoyées", v: stats.sent, c: "217 91% 60%" }, { l: "En attente", v: stats.pending, c: "38 92% 50%" }, { l: "Payées", v: stats.paid, c: "142 71% 45%" }, { l: "Total", v: stats.total, c: "0 0% 70%" }].map(s => (
                 <div key={s.l} className="glass-card p-3"><p className="text-[10px] text-muted-foreground uppercase">{s.l}</p><p className="text-xl font-bold font-heading" style={{ color: `hsl(${s.c})` }}>{s.v}</p></div>
@@ -900,6 +1050,23 @@ const QuotesPlugin = () => {
               <div className="glass-card p-3"><p className="text-[10px] text-muted-foreground uppercase">Encaissé</p><p className="text-lg font-bold text-primary">{fmtAmount(stats.totalPaid)}</p></div>
               <div className="glass-card p-3"><p className="text-[10px] text-muted-foreground uppercase">À encaisser</p><p className="text-lg font-bold" style={{ color: "hsl(38 92% 50%)" }}>{fmtAmount(stats.totalPending)}</p></div>
             </div>
+
+            {/* TVA stats */}
+            <div className="glass-card p-4 space-y-2">
+              <p className={labelCls}>TVA facturée</p>
+              <p className="text-lg font-bold text-primary">{fmtAmount(stats.totalTva)}</p>
+              {Object.keys(stats.tvaByMonth).length > 0 && (
+                <div className="space-y-1 pt-1">
+                  {Object.entries(stats.tvaByMonth).sort().map(([month, amount]) => (
+                    <div key={month} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{month}</span>
+                      <span className="font-semibold">{fmtAmount(amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {Object.keys(stats.byClient).length > 0 && (
               <div className="glass-card p-4 space-y-2">
                 <p className={labelCls}>Par client</p>
@@ -962,7 +1129,18 @@ const QuotesPlugin = () => {
                   {fDiscountType && <input value={fDiscountValue} onChange={e => setFDiscountValue(e.target.value)} placeholder={fDiscountType === "percent" ? "%" : "€"} type="number" className={`${inputCls} w-24`} />}
                 </div>
 
-                {fAmountHt && <p className="text-xs text-muted-foreground">Total TTC : <span className="font-semibold text-foreground">{fmtAmount(calcFinal())}</span></p>}
+                {/* TVA Rate Selection */}
+                <TvaRateSelector rate={fTvaRate} setRate={setFTvaRate} custom={fTvaCustom} setCustom={setFTvaCustom} mention={fTva} setMention={setFTva} />
+
+                {fAmountHt && (
+                  <div className="text-xs text-muted-foreground space-y-0.5 bg-secondary p-2 rounded-lg">
+                    <p>HT après remise : <span className="font-semibold text-foreground">{fmtAmount(calcFinalHtAfterDiscount())}</span></p>
+                    {getEffectiveTvaRate(fTvaRate, fTvaCustom) > 0 && (
+                      <p>TVA ({getEffectiveTvaRate(fTvaRate, fTvaCustom)}%) : <span className="font-semibold text-foreground">{fmtAmount(calcFinalTva())}</span></p>
+                    )}
+                    <p>Total TTC : <span className="font-semibold text-foreground">{fmtAmount(calcFinal())}</span></p>
+                  </div>
+                )}
 
                 <div><p className={`${labelCls} mb-1.5`}>Couleur</p>
                   <div className="flex gap-1.5 flex-wrap">
@@ -989,9 +1167,6 @@ const QuotesPlugin = () => {
                     <div><p className={labelCls}>Encaissement</p>
                       <div className="flex flex-wrap gap-1.5">{paymentMethods.map(m => (<button key={m} onClick={() => setFPayment(fPayment === m ? "" : m)} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${fPayment === m ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>{m}</button>))}</div>
                     </div>
-                    <div><p className={labelCls}>TVA</p>
-                      <select value={fTva} onChange={e => setFTva(e.target.value)} className={inputCls}><option value="">Aucune</option>{tvaMentions.map(t => <option key={t} value={t}>{t}</option>)}</select>
-                    </div>
                     <div><p className={labelCls}>Notes</p><textarea value={fNotes} onChange={e => setFNotes(e.target.value)} rows={2} placeholder="Annotations libres..." className={inputCls} /></div>
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={fShowRib} onChange={e => setFShowRib(e.target.checked)} className="rounded" />Inclure le RIB</label>
                     {fShowRib && sIban && <p className="text-xs text-muted-foreground bg-secondary p-2 rounded-lg">RIB : {sHolder} — {sIban}</p>}
@@ -1017,25 +1192,31 @@ const QuotesPlugin = () => {
               <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">{tab === "devis" ? "Aucun devis" : "Aucune facture"}</p></div>
             ) : (
               <div className="space-y-2.5">
-                {filtered.map((item: any) => (
-                  <button key={item.id} onClick={() => setSelectedItem(item)}
-                    className="w-full glass-card p-4 flex items-center gap-3 text-left hover:border-primary/20 transition-all"
-                    style={item.color ? { borderLeft: `3px solid hsl(${item.color})` } : {}}>
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm font-semibold">{item.title}</span>
-                        <span className="text-[10px] text-muted-foreground">{item.quote_number || item.invoice_number}</span>
+                {filtered.map((item: any) => {
+                  const iRate = Number(item.tva_rate) || 0;
+                  const iHt = Number(item.amount_ht) || 0;
+                  const { ttc } = calcTtc(iHt, item.discount_type || "", Number(item.discount_value) || 0, iRate);
+                  return (
+                    <button key={item.id} onClick={() => setSelectedItem(item)}
+                      className="w-full glass-card p-4 flex items-center gap-3 text-left hover:border-primary/20 transition-all"
+                      style={item.color ? { borderLeft: `3px solid hsl(${item.color})` } : {}}>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-semibold">{item.title}</span>
+                          <span className="text-[10px] text-muted-foreground">{item.quote_number || item.invoice_number}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {getClientName(item) && `${getClientName(item)} · `}{formatDate(item.issue_date || item.created_at)}
+                          {iHt > 0 && ` · HT ${fmtAmount(iHt)}`}
+                          {iRate > 0 && ` · TVA ${iRate}%`}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {getClientName(item) && `${getClientName(item)} · `}{formatDate(item.issue_date || item.created_at)}
-                        {item.amount_ht != null && ` · HT ${fmtAmount(item.amount_ht)}`}
-                      </div>
-                    </div>
-                    {item.amount != null && <span className="text-sm font-semibold">{fmtAmount(item.amount)}</span>}
-                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: `hsl(${statusColors[item.status] || "0 0% 50%"} / 0.12)`, color: `hsl(${statusColors[item.status] || "0 0% 50%"})` }}>{item.status}</span>
-                    <ChevronRight size={16} className="text-muted-foreground" />
-                  </button>
-                ))}
+                      <span className="text-sm font-semibold">{fmtAmount(ttc)}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: `hsl(${statusColors[item.status] || "0 0% 50%"} / 0.12)`, color: `hsl(${statusColors[item.status] || "0 0% 50%"})` }}>{item.status}</span>
+                      <ChevronRight size={16} className="text-muted-foreground" />
+                    </button>
+                  );
+                })}
               </div>
             )}
           </>
