@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { text, title, location } = await req.json();
+    const { text, title, location, date } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -23,7 +23,7 @@ Format obligatoire (texte simple, sans emoji, sans gras, sans astérisques) :
 - Recommandations (si pertinent)
 Sois concis : une phrase max par bullet. Pas de mise en forme, juste du texte brut avec des tirets.`;
 
-    const userPrompt = `Rapport : "${title}"${location ? ` — Lieu : ${location}` : ""}
+    const userPrompt = `Rapport : "${title}"${location ? ` — Lieu : ${location}` : ""}${date ? ` — Date : ${date}` : ""}
 
 Contenu :
 ${text}`;

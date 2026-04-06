@@ -188,8 +188,11 @@ const ReportPlugin = () => {
     if (!notes.trim()) { toast.error("Rédigez d'abord le contenu"); return; }
     setAiLoading(true);
     try {
+      const formattedDate = new Date(reportDate).toLocaleString("fr-FR", {
+        day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
+      });
       const { data, error } = await supabase.functions.invoke("summarize-report", {
-        body: { text: notes, title, location },
+        body: { text: notes, title, location, date: formattedDate },
       });
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
