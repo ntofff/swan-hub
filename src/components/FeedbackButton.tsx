@@ -1,22 +1,22 @@
 import { useState } from "react";
 import { MessageSquare, X, Bug, Lightbulb, AlertTriangle, ThumbsUp } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-const types = [
-  { value: "bug", label: "Bug", icon: Bug },
-  { value: "suggestion", label: "Suggestion", icon: Lightbulb },
-  { value: "ux", label: "UX Issue", icon: AlertTriangle },
-  { value: "useful", label: "Useful Feature", icon: ThumbsUp },
-] as const;
-
-interface FeedbackButtonProps {
-  context?: string;
-}
+interface FeedbackButtonProps { context?: string; }
 
 export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("suggestion");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+
+  const types = [
+    { value: "bug", label: t("feedback.bug"), icon: Bug },
+    { value: "suggestion", label: t("feedback.suggestion"), icon: Lightbulb },
+    { value: "ux", label: t("feedback.ux"), icon: AlertTriangle },
+    { value: "useful", label: t("feedback.useful"), icon: ThumbsUp },
+  ];
 
   const handleSubmit = () => {
     console.log("Feedback:", { type, message, context, timestamp: new Date().toISOString() });
@@ -35,25 +35,25 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
   return (
     <div className="fixed bottom-20 right-4 md:bottom-6 z-50 w-72 glass-card p-4 fade-in">
       <div className="flex justify-between items-center mb-3">
-        <span className="text-sm font-semibold font-heading">Feedback</span>
+        <span className="text-sm font-semibold font-heading">{t("feedback.title")}</span>
         <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
       </div>
       {sent ? (
-        <p className="text-sm text-center py-4 text-primary">Thank you! ✓</p>
+        <p className="text-sm text-center py-4 text-primary">{t("feedback.thanks")}</p>
       ) : (
         <>
           <div className="flex gap-1.5 mb-3">
-            {types.map(t => (
-              <button key={t.value} onClick={() => setType(t.value)}
-                className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-lg text-[10px] transition-colors ${type === t.value ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary text-muted-foreground'}`}>
-                <t.icon size={14} />
-                {t.label}
+            {types.map(tp => (
+              <button key={tp.value} onClick={() => setType(tp.value)}
+                className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-lg text-[10px] transition-colors ${type === tp.value ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary text-muted-foreground'}`}>
+                <tp.icon size={14} />
+                {tp.label}
               </button>
             ))}
           </div>
-          <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Describe..." rows={3}
+          <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={t("feedback.placeholder")} rows={3}
             className="w-full bg-secondary border border-border rounded-lg p-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary mb-2" />
-          <button onClick={handleSubmit} disabled={!message.trim()} className="w-full btn-primary-glow py-2 text-sm disabled:opacity-40">Send</button>
+          <button onClick={handleSubmit} disabled={!message.trim()} className="w-full btn-primary-glow py-2 text-sm disabled:opacity-40">{t("feedback.send")}</button>
         </>
       )}
     </div>
