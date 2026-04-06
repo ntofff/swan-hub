@@ -234,8 +234,16 @@ export type Database = {
       invoice_settings: {
         Row: {
           created_at: string
+          default_legal_mentions: string | null
           default_payment_method: string | null
           default_tva_mention: string | null
+          emitter_address: string | null
+          emitter_company: string | null
+          emitter_email: string | null
+          emitter_first_name: string | null
+          emitter_last_name: string | null
+          emitter_phone: string | null
+          emitter_siret: string | null
           id: string
           invoice_counter: number
           invoice_prefix: string
@@ -251,8 +259,16 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_legal_mentions?: string | null
           default_payment_method?: string | null
           default_tva_mention?: string | null
+          emitter_address?: string | null
+          emitter_company?: string | null
+          emitter_email?: string | null
+          emitter_first_name?: string | null
+          emitter_last_name?: string | null
+          emitter_phone?: string | null
+          emitter_siret?: string | null
           id?: string
           invoice_counter?: number
           invoice_prefix?: string
@@ -268,8 +284,16 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_legal_mentions?: string | null
           default_payment_method?: string | null
           default_tva_mention?: string | null
+          emitter_address?: string | null
+          emitter_company?: string | null
+          emitter_email?: string | null
+          emitter_first_name?: string | null
+          emitter_last_name?: string | null
+          emitter_phone?: string | null
+          emitter_siret?: string | null
           id?: string
           invoice_counter?: number
           invoice_prefix?: string
@@ -299,7 +323,11 @@ export type Database = {
           due_date: string | null
           id: string
           invoice_number: string
+          issue_date: string | null
+          notes: string | null
           payment_method: string | null
+          payment_terms: number | null
+          period_description: string | null
           quote_id: string | null
           rib_details: Json | null
           status: string
@@ -321,7 +349,11 @@ export type Database = {
           due_date?: string | null
           id?: string
           invoice_number: string
+          issue_date?: string | null
+          notes?: string | null
           payment_method?: string | null
+          payment_terms?: number | null
+          period_description?: string | null
           quote_id?: string | null
           rib_details?: Json | null
           status?: string
@@ -343,7 +375,11 @@ export type Database = {
           due_date?: string | null
           id?: string
           invoice_number?: string
+          issue_date?: string | null
+          notes?: string | null
           payment_method?: string | null
+          payment_terms?: number | null
+          period_description?: string | null
           quote_id?: string | null
           rib_details?: Json | null
           status?: string
@@ -705,7 +741,11 @@ export type Database = {
           discount_value: number | null
           due_date: string | null
           id: string
+          issue_date: string | null
+          notes: string | null
           payment_method: string | null
+          payment_terms: number | null
+          period_description: string | null
           quote_number: string
           status: string
           title: string
@@ -725,7 +765,11 @@ export type Database = {
           discount_value?: number | null
           due_date?: string | null
           id?: string
+          issue_date?: string | null
+          notes?: string | null
           payment_method?: string | null
+          payment_terms?: number | null
+          period_description?: string | null
           quote_number: string
           status?: string
           title: string
@@ -745,7 +789,11 @@ export type Database = {
           discount_value?: number | null
           due_date?: string | null
           id?: string
+          issue_date?: string | null
+          notes?: string | null
           payment_method?: string | null
+          payment_terms?: number | null
+          period_description?: string | null
           quote_number?: string
           status?: string
           title?: string
