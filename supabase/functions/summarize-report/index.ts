@@ -14,14 +14,14 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const systemPrompt = `Tu es un assistant professionnel. Résume ce rapport terrain en bullet points structurés en français.
-Format obligatoire :
-• 📅 Date et heure du rapport
-• 📍 Lieu (si fourni)
-• 🎯 Objet / contexte
-• 🔍 Points clés observés (2-4 bullets)
-• ⚠️ Problèmes ou alertes (si pertinent)
-• ✅ Recommandations (si pertinent)
-Sois concis : une phrase max par bullet. Utilise des emojis en début de ligne.`;
+Format obligatoire (texte simple, sans emoji, sans gras, sans astérisques) :
+- Lieu
+- Date et heure
+- Objet / contexte
+- Points clés observés (2-4 bullets)
+- Problèmes ou alertes (si pertinent)
+- Recommandations (si pertinent)
+Sois concis : une phrase max par bullet. Pas de mise en forme, juste du texte brut avec des tirets.`;
 
     const userPrompt = `Rapport : "${title}"${location ? ` — Lieu : ${location}` : ""}
 
