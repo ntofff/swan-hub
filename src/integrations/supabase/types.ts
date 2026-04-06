@@ -603,27 +603,39 @@ export type Database = {
       reports: {
         Row: {
           activity_id: string | null
+          color: string | null
           created_at: string
           id: string
+          location: string | null
           notes: string | null
+          photo_url: string | null
+          priority: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
           activity_id?: string | null
+          color?: string | null
           created_at?: string
           id?: string
+          location?: string | null
           notes?: string | null
+          photo_url?: string | null
+          priority?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
           activity_id?: string | null
+          color?: string | null
           created_at?: string
           id?: string
+          location?: string | null
           notes?: string | null
+          photo_url?: string | null
+          priority?: string | null
           title?: string
           updated_at?: string
           user_id?: string
