@@ -143,12 +143,13 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Section nav */}
-        <div className="flex gap-1 overflow-x-auto pb-1 mb-5 -mx-1 px-1">
+        {/* Section nav — grid on mobile, row on desktop */}
+        <div className="grid grid-cols-4 gap-1.5 mb-5 md:flex md:flex-wrap md:gap-1">
           {sections.map(s => (
             <button key={s.id} onClick={() => setSection(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${section === s.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-              {s.label}
+              className={`flex flex-col md:flex-row items-center gap-1 md:gap-1.5 px-2 py-2.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full text-[10px] md:text-xs font-medium transition-colors ${section === s.id ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary/50 text-muted-foreground border border-transparent'}`}>
+              <s.icon size={16} className="shrink-0 md:hidden" />
+              <span className="leading-tight text-center">{s.label}</span>
             </button>
           ))}
         </div>
