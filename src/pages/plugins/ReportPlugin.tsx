@@ -45,6 +45,11 @@ const ReportPlugin = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [reportDate, setReportDate] = useState(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  });
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const [aiSummary, setAiSummary] = useState("");
@@ -97,6 +102,7 @@ const ReportPlugin = () => {
         user_id: user.id, title: title.trim(),
         notes: finalNotes.trim() || null, location: location.trim() || null,
         color, priority, folder_id: folderId,
+        report_date: new Date(reportDate).toISOString(),
         ...(photo_url ? { photo_url } : {}),
       };
       if (editingId) {
@@ -121,6 +127,9 @@ const ReportPlugin = () => {
     setColor("38 50% 58%"); setPriority("normale"); setFolderId(null);
     setPhotoFile(null); setPhotoPreview(null);
     setAiSummary(""); setEditingId(null);
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    setReportDate(now.toISOString().slice(0, 16));
   };
 
   const startEdit = (r: any) => {
@@ -129,6 +138,11 @@ const ReportPlugin = () => {
     setNotes(rawNotes); setLocation(r.location || "");
     setColor(r.color || "38 50% 58%"); setPriority(r.priority || "normale");
     setFolderId(r.folder_id || null);
+    if (r.report_date) {
+      const d = new Date(r.report_date);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      setReportDate(d.toISOString().slice(0, 16));
+    }
     setPhotoPreview(r.photo_url || null); setAiSummary("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -381,8 +395,13 @@ const ReportPlugin = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock size={12} /> {new Date().toLocaleString("fr-FR")}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1">
+              <Clock size={12} /> Date et heure
+            </label>
+            <input type="datetime-local" value={reportDate}
+              onChange={(e) => setReportDate(e.target.value)}
+              className={inputCls} />
           </div>
         </div>
 

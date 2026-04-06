@@ -1,0 +1,1 @@
+ALTER TABLE public.reports ADD COLUMN report_date timestamp with time zone NOT NULL DEFAULT now();

@@ -644,6 +644,7 @@ export type Database = {
           notes: string | null
           photo_url: string | null
           priority: string | null
+          report_date: string
           title: string
           updated_at: string
           user_id: string
@@ -658,6 +659,7 @@ export type Database = {
           notes?: string | null
           photo_url?: string | null
           priority?: string | null
+          report_date?: string
           title: string
           updated_at?: string
           user_id: string
@@ -672,6 +674,7 @@ export type Database = {
           notes?: string | null
           photo_url?: string | null
           priority?: string | null
+          report_date?: string
           title?: string
           updated_at?: string
           user_id?: string
