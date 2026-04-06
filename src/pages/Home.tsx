@@ -19,10 +19,11 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
 
-  const isDark = !profile?.theme || profile.theme !== "light";
+  const { style, mode } = parseTheme(profile?.theme || "dark-night");
+  const isDark = mode === "dark";
 
   const toggleDarkLight = async () => {
-    const next = isDark ? "light" : "dark-night";
+    const next = buildThemeId(style, isDark ? "light" : "dark");
     await updateProfile({ theme: next });
   };
 

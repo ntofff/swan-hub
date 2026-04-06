@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight } from "lucide-react";
+import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const themeOptions = [
+const styleOptions = [
   { id: "dark-night", label: "Dark Night", color: "38 50% 58%" },
-  { id: "light", label: "Light", color: "38 50% 48%" },
   { id: "corporate", label: "Corporate", color: "210 80% 55%" },
   { id: "professional", label: "Professional", color: "0 0% 75%" },
   { id: "artistic", label: "Artistic", color: "280 65% 60%" },
   { id: "sunset", label: "Sunset", color: "20 85% 55%" },
   { id: "gaming", label: "Gaming", color: "160 100% 45%" },
+  { id: "fun", label: "Fun", color: "330 85% 60%" },
 ];
 
 const colorPresets = ["38 50% 58%", "217 91% 60%", "142 71% 45%", "0 72% 51%", "270 50% 60%", "38 92% 50%", "190 80% 50%", "330 70% 55%"];
