@@ -90,9 +90,19 @@ const ProfilePage = () => {
     toast.success("Mot de passe modifié");
   };
 
-  const handleThemeChange = async (themeId: string) => {
-    await updateProfile({ theme: themeId });
-    toast.success("Thème appliqué");
+  const { style: currentStyle, mode: currentMode } = parseTheme(profile?.theme || "dark-night");
+
+  const handleStyleChange = async (styleId: string) => {
+    const newTheme = buildThemeId(styleId, currentMode);
+    await updateProfile({ theme: newTheme });
+    toast.success("Style appliqué");
+  };
+
+  const handleModeToggle = async () => {
+    const newMode = currentMode === "dark" ? "light" : "dark";
+    const newTheme = buildThemeId(currentStyle, newMode);
+    await updateProfile({ theme: newTheme });
+    toast.success(newMode === "dark" ? "Mode sombre" : "Mode clair");
   };
 
   const handleExportData = () => {
