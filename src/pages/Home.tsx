@@ -2,6 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { DesktopNav } from "@/components/layout/BottomNav";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { FileText, BookOpen, CheckSquare, Target, Receipt, Car } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const quickActions = [
   { label: "Nouveau rapport", icon: FileText, path: "/plugins/report", color: "38 50% 58%" },
@@ -12,34 +15,72 @@ const quickActions = [
   { label: "Nouveau trajet", icon: Car, path: "/plugins/vehicle", color: "38 92% 50%" },
 ];
 
-const recentActivity = [
-  { text: "Rapport #042 créé", time: "Il y a 2 min", icon: FileText },
-  { text: "Tâche « Revue client » terminée", time: "Il y a 1h", icon: CheckSquare },
-  { text: "Trajet enregistré : Paris → Lyon", time: "Il y a 3h", icon: Car },
-  { text: "Devis Q-2024-018 envoyé", time: "Hier", icon: Receipt },
-];
-
 const HomePage = () => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+
+  const { data: recentTasks = [] } = useQuery({
+    queryKey: ["recent_tasks"],
+    queryFn: async () => {
+      const { data } = await supabase.from("tasks").select("text, done, updated_at").order("updated_at", { ascending: false }).limit(2);
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: recentReports = [] } = useQuery({
+    queryKey: ["recent_reports"],
+    queryFn: async () => {
+      const { data } = await supabase.from("reports").select("title, created_at").order("created_at", { ascending: false }).limit(2);
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: promo } = useQuery({
+    queryKey: ["active_promo"],
+    queryFn: async () => {
+      const { data } = await supabase.from("promotions").select("title, message").eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const formatTime = (date: string) => {
+    const d = new Date(date);
+    const diff = Date.now() - d.getTime();
+    if (diff < 3600000) return `Il y a ${Math.floor(diff / 60000)} min`;
+    if (diff < 86400000) return `Il y a ${Math.floor(diff / 3600000)}h`;
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  };
+
+  const recentActivity = [
+    ...recentReports.map((r: any) => ({ text: `Rapport « ${r.title} » créé`, time: formatTime(r.created_at), icon: FileText })),
+    ...recentTasks.map((t: any) => ({ text: `Tâche « ${t.text.slice(0, 30)} » ${t.done ? "terminée" : "mise à jour"}`, time: formatTime(t.updated_at), icon: CheckSquare })),
+  ].sort((a, b) => 0).slice(0, 4);
 
   return (
     <div className="fade-in">
       <div className="flex items-center justify-between px-4 pt-6 pb-2 md:px-0">
         <div>
           <h1 className="text-2xl font-bold font-heading"><span className="text-gradient-gold">SWAN</span></h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Simple Work Activity Network</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {profile?.full_name ? `Bonjour, ${profile.full_name}` : "Simple Work Activity Network"}
+          </p>
         </div>
         <DesktopNav />
       </div>
 
-      <div className="px-4 md:px-0 mt-4">
-        <div className="glass-card-glow p-4 flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <p className="text-sm text-secondary-foreground flex-1">
-            <span className="font-semibold text-primary">Nouveau :</span> Le plugin Carnet de véhicule est disponible avec export Excel
-          </p>
+      {promo && (
+        <div className="px-4 md:px-0 mt-4">
+          <div className="glass-card-glow p-4 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <p className="text-sm text-secondary-foreground flex-1">
+              <span className="font-semibold text-primary">{promo.title}</span> {promo.message}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="px-4 md:px-0 mt-6">
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Actions rapides</h2>
@@ -58,15 +99,22 @@ const HomePage = () => {
 
       <div className="px-4 md:px-0 mt-8">
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Activité récente</h2>
-        <div className="glass-card divide-y divide-border">
-          {recentActivity.map((item, i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3">
-              <item.icon size={16} className="text-muted-foreground shrink-0" />
-              <span className="text-sm flex-1">{item.text}</span>
-              <span className="text-xs text-muted-foreground">{item.time}</span>
-            </div>
-          ))}
-        </div>
+        {recentActivity.length === 0 ? (
+          <div className="glass-card p-8 text-center">
+            <p className="text-sm text-muted-foreground">Pas encore d'activité</p>
+            <p className="text-xs text-muted-foreground mt-1">Commencez par créer un rapport ou une tâche</p>
+          </div>
+        ) : (
+          <div className="glass-card divide-y divide-border">
+            {recentActivity.map((item, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <item.icon size={16} className="text-muted-foreground shrink-0" />
+                <span className="text-sm flex-1">{item.text}</span>
+                <span className="text-xs text-muted-foreground">{item.time}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <FeedbackButton context="home" />

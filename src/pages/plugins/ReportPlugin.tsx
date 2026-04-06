@@ -2,10 +2,31 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { Mic, Camera, Clock } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const ReportPlugin = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
+
+  const createReport = useMutation({
+    mutationFn: async () => {
+      if (!user || !title.trim()) return;
+      const { error } = await supabase.from("reports").insert({ user_id: user.id, title: title.trim(), notes: notes.trim() || null });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      setTitle("");
+      setNotes("");
+      toast.success("Rapport créé !");
+    },
+    onError: () => toast.error("Erreur lors de la création"),
+  });
 
   return (
     <div className="fade-in">
@@ -34,7 +55,10 @@ const ReportPlugin = () => {
             <Clock size={12} /> Horodatage auto : {new Date().toLocaleString("fr-FR")}
           </div>
         </div>
-        <button className="w-full btn-primary-glow py-3 text-sm">Générer le rapport</button>
+        <button onClick={() => createReport.mutate()} disabled={!title.trim() || createReport.isPending}
+          className="w-full btn-primary-glow py-3 text-sm disabled:opacity-50">
+          {createReport.isPending ? "Création..." : "Générer le rapport"}
+        </button>
       </div>
       <FeedbackButton context="report" />
     </div>
