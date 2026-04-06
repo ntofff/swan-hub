@@ -4,7 +4,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import {
   Plus, ChevronRight, ChevronLeft, FileText, Receipt, CreditCard,
   ArrowRightLeft, Users, BarChart3, Download, Share2, Copy, Mail,
-  MessageSquare, Phone, Search, Trash2, Edit2, X, Settings, Palette, Check
+  MessageSquare, Phone, Search, Trash2, Edit2, X, Settings, Palette, Check, Eye
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
