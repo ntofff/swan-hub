@@ -1,59 +1,124 @@
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { Puzzle, Zap, Shield, Layers, Play } from "lucide-react";
+import { Puzzle, Zap, Shield, Layers, Play, FileText, BookOpen, CheckSquare, Target, Receipt, Car, Users, Wallet, Calendar, ArrowRight, Star, Globe } from "lucide-react";
 
 const benefits = [
-  { icon: Puzzle, title: "Modulaire", desc: "Activez uniquement les outils nécessaires" },
-  { icon: Zap, title: "Rapide", desc: "3 taps max pour toute action principale" },
-  { icon: Shield, title: "Sécurisé", desc: "Privacy-first, conforme RGPD" },
-  { icon: Layers, title: "Multi-Activité", desc: "Gérez toutes vos activités en un seul endroit" },
+  { icon: Puzzle, title: "Modulaire", desc: "Activez uniquement les outils dont vous avez besoin" },
+  { icon: Zap, title: "Ultra rapide", desc: "3 taps max pour toute action principale" },
+  { icon: Shield, title: "Sécurisé", desc: "Privacy-first, conforme RGPD, données chiffrées" },
+  { icon: Layers, title: "Multi-Activité", desc: "Gérez toutes vos activités professionnelles en un seul endroit" },
+  { icon: Globe, title: "Accessible", desc: "Web, mobile, tablette — partout, tout le temps" },
+  { icon: Star, title: "Premium", desc: "Une expérience fintech soignée jusque dans les détails" },
 ];
 
-const AboutPage = () => (
-  <div className="fade-in">
-    <PageHeader title="À propos" />
-    <div className="px-4 md:px-0">
-      <div className="glass-card-glow p-6 text-center mb-6">
-        <h2 className="text-3xl font-bold font-heading text-gradient-gold mb-2">SWAN</h2>
-        <p className="text-sm text-muted-foreground mb-1">Simple Work Activity Network</p>
-        <p className="text-sm text-secondary-foreground mt-4 leading-relaxed">
-          Une plateforme de productivité modulaire premium conçue pour les professionnels indépendants et les utilisateurs multi-activités.
-          Activez uniquement les outils dont vous avez besoin, restez organisé et travaillez plus intelligemment.
-        </p>
-      </div>
+const plugins = [
+  { name: "Outil Rapport", desc: "Rapports professionnels en quelques secondes", icon: FileText, active: true },
+  { name: "Journal de bord", desc: "Notes chronologiques avec horodatage", icon: BookOpen, active: true },
+  { name: "Tâches", desc: "Gestionnaire de tâches avec priorités", icon: CheckSquare, active: true },
+  { name: "Missions", desc: "Suivi missions, clients et checklists", icon: Target, active: true },
+  { name: "Devis & Factures", desc: "Facturation, conversion et paiements", icon: Receipt, active: true },
+  { name: "Carnet véhicule", desc: "Kilométrage, IK et suivi conducteurs", icon: Car, active: true },
+  { name: "CRM Lite", desc: "Gestion relation clients", icon: Users, active: false },
+  { name: "Suivi budget", desc: "Vue financière complète", icon: Wallet, active: false },
+  { name: "Réservations", desc: "Prise de rendez-vous intelligente", icon: Calendar, active: false },
+];
 
-      <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Pourquoi SWAN</h2>
-      <div className="grid grid-cols-2 gap-2.5 mb-6">
-        {benefits.map(b => (
-          <div key={b.title} className="glass-card p-4 flex flex-col gap-2">
-            <b.icon size={20} className="text-primary" />
-            <div className="text-sm font-semibold">{b.title}</div>
-            <div className="text-xs text-muted-foreground">{b.desc}</div>
-          </div>
-        ))}
-      </div>
+const AboutPage = () => {
+  const navigate = useNavigate();
 
-      <div className="glass-card p-8 flex flex-col items-center gap-3 mb-6">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <Play size={28} className="text-primary ml-1" />
+  return (
+    <div className="fade-in">
+      <PageHeader title="À propos" />
+      <div className="px-4 md:px-0">
+        {/* Hero */}
+        <div className="glass-card-glow p-8 text-center mb-6 space-y-4">
+          <h2 className="text-4xl font-bold font-heading text-gradient-gold">SWAN</h2>
+          <p className="text-base text-secondary-foreground leading-relaxed max-w-md mx-auto">
+            La plateforme de productivité modulaire pensée pour les professionnels indépendants et multi-activités.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Simple. Puissant. Élégant.
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">Voir la présentation du produit</p>
-      </div>
 
-      <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Plugins disponibles</h2>
-      <div className="glass-card divide-y divide-border mb-6">
-        {["Outil Rapport", "Journal de bord", "Tâches", "Gestionnaire de missions", "Devis & Factures", "Carnet de véhicule", "CRM Lite (bientôt)", "Suivi budget (bientôt)", "Outil réservation (bientôt)"].map(p => (
-          <div key={p} className="px-4 py-3 text-sm">{p}</div>
-        ))}
-      </div>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-2.5 mb-6">
+          {[
+            { label: "Plugins", value: "9" },
+            { label: "Actions rapides", value: "3 taps" },
+            { label: "Conforme", value: "RGPD" },
+          ].map(s => (
+            <div key={s.label} className="glass-card p-4 text-center">
+              <div className="text-lg font-bold font-heading text-primary">{s.value}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">{s.label}</div>
+            </div>
+          ))}
+        </div>
 
-      <div className="flex gap-2.5 mb-8">
-        <button className="flex-1 btn-primary-glow py-3 text-sm text-center">Commencer gratuitement</button>
-        <button className="flex-1 py-3 text-sm text-center rounded-xl border border-border text-secondary-foreground hover:bg-secondary transition-colors">En savoir plus</button>
+        {/* Benefits */}
+        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Pourquoi SWAN</h2>
+        <div className="grid grid-cols-2 gap-2.5 mb-8">
+          {benefits.map(b => (
+            <div key={b.title} className="glass-card p-4 space-y-2">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <b.icon size={18} className="text-primary" />
+              </div>
+              <div className="text-sm font-semibold">{b.title}</div>
+              <div className="text-[10px] text-muted-foreground leading-relaxed">{b.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Video placeholder */}
+        <div className="glass-card p-10 flex flex-col items-center gap-4 mb-8">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Play size={28} className="text-primary ml-1" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold">Découvrir SWAN en vidéo</p>
+            <p className="text-xs text-muted-foreground mt-1">2 minutes pour tout comprendre</p>
+          </div>
+        </div>
+
+        {/* Plugins */}
+        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Écosystème de plugins</h2>
+        <div className="space-y-2 mb-8">
+          {plugins.map(p => (
+            <div key={p.name} className={`glass-card p-4 flex items-center gap-3 ${!p.active ? 'opacity-50' : ''}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${p.active ? 'bg-primary/10' : 'bg-secondary'}`}>
+                <p.icon size={18} className={p.active ? 'text-primary' : 'text-muted-foreground'} />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold">{p.name}</div>
+                <div className="text-[10px] text-muted-foreground">{p.desc}</div>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.active ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                {p.active ? "Disponible" : "Bientôt"}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="space-y-2.5 mb-8">
+          <button onClick={() => navigate("/signup")} className="w-full btn-primary-glow py-3.5 text-sm flex items-center justify-center gap-2">
+            Commencer gratuitement <ArrowRight size={16} />
+          </button>
+          <button onClick={() => navigate("/login")} className="w-full py-3.5 text-sm text-center rounded-xl border border-border text-secondary-foreground hover:bg-secondary transition-colors">
+            J'ai déjà un compte
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center pb-8">
+          <p className="text-[10px] text-muted-foreground">SWAN v1.0 · Simple Work Activity Network</p>
+          <p className="text-[10px] text-muted-foreground mt-1">© {new Date().getFullYear()} SWAN. Tous droits réservés.</p>
+        </div>
       </div>
+      <FeedbackButton context="about" />
     </div>
-    <FeedbackButton context="about" />
-  </div>
-);
+  );
+};
 
 export default AboutPage;

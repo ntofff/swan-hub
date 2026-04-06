@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { DesktopNav } from "@/components/layout/BottomNav";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { FileText, BookOpen, CheckSquare, Target, Receipt, Car } from "lucide-react";
+import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +22,7 @@ const HomePage = () => {
   const { data: recentTasks = [] } = useQuery({
     queryKey: ["recent_tasks"],
     queryFn: async () => {
-      const { data } = await supabase.from("tasks").select("text, done, updated_at").order("updated_at", { ascending: false }).limit(2);
+      const { data } = await supabase.from("tasks").select("text, done, priority, updated_at").order("updated_at", { ascending: false }).limit(3);
       return data ?? [];
     },
     enabled: !!user,
@@ -32,6 +32,24 @@ const HomePage = () => {
     queryKey: ["recent_reports"],
     queryFn: async () => {
       const { data } = await supabase.from("reports").select("title, created_at").order("created_at", { ascending: false }).limit(2);
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: recentMissions = [] } = useQuery({
+    queryKey: ["recent_missions_home"],
+    queryFn: async () => {
+      const { data } = await supabase.from("missions").select("title, status, updated_at").order("updated_at", { ascending: false }).limit(2);
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: recentTrips = [] } = useQuery({
+    queryKey: ["recent_trips_home"],
+    queryFn: async () => {
+      const { data } = await supabase.from("trips").select("start_location, end_location, distance, date").order("date", { ascending: false }).limit(2);
       return data ?? [];
     },
     enabled: !!user,
@@ -49,15 +67,20 @@ const HomePage = () => {
   const formatTime = (date: string) => {
     const d = new Date(date);
     const diff = Date.now() - d.getTime();
-    if (diff < 3600000) return `Il y a ${Math.floor(diff / 60000)} min`;
+    if (diff < 3600000) return `Il y a ${Math.max(1, Math.floor(diff / 60000))} min`;
     if (diff < 86400000) return `Il y a ${Math.floor(diff / 3600000)}h`;
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   };
 
   const recentActivity = [
-    ...recentReports.map((r: any) => ({ text: `Rapport « ${r.title} » créé`, time: formatTime(r.created_at), icon: FileText })),
-    ...recentTasks.map((t: any) => ({ text: `Tâche « ${t.text.slice(0, 30)} » ${t.done ? "terminée" : "mise à jour"}`, time: formatTime(t.updated_at), icon: CheckSquare })),
-  ].sort((a, b) => 0).slice(0, 4);
+    ...recentReports.map((r: any) => ({ text: `Rapport « ${r.title} »`, time: formatTime(r.created_at), icon: FileText, path: "/plugins/report" })),
+    ...recentTasks.map((t: any) => ({ text: `${t.done ? "✓" : "○"} ${t.text.slice(0, 35)}`, time: formatTime(t.updated_at), icon: CheckSquare, path: "/plugins/tasks" })),
+    ...recentMissions.map((m: any) => ({ text: `Mission « ${m.title} » — ${m.status}`, time: formatTime(m.updated_at), icon: Target, path: "/plugins/missions" })),
+    ...recentTrips.map((t: any) => ({ text: `${t.start_location || "?"} → ${t.end_location || "?"} · ${t.distance ?? "?"} km`, time: formatTime(t.date), icon: Car, path: "/plugins/vehicle" })),
+  ].sort((a, b) => 0).slice(0, 6);
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   return (
     <div className="fade-in">
@@ -65,7 +88,7 @@ const HomePage = () => {
         <div>
           <h1 className="text-2xl font-bold font-heading"><span className="text-gradient-gold">SWAN</span></h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {profile?.full_name ? `Bonjour, ${profile.full_name}` : "Simple Work Activity Network"}
+            {profile?.full_name ? `${greeting}, ${profile.full_name}` : "Simple Work Activity Network"}
           </p>
         </div>
         <DesktopNav />
@@ -83,7 +106,7 @@ const HomePage = () => {
       )}
 
       <div className="px-4 md:px-0 mt-6">
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Actions rapides</h2>
+        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Actions rapides</h2>
         <div className="grid grid-cols-3 gap-2.5">
           {quickActions.map(a => (
             <button key={a.label} onClick={() => navigate(a.path)}
@@ -91,27 +114,30 @@ const HomePage = () => {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `hsl(${a.color} / 0.12)` }}>
                 <a.icon size={20} style={{ color: `hsl(${a.color})` }} />
               </div>
-              <span className="text-xs font-medium text-secondary-foreground">{a.label}</span>
+              <span className="text-[10px] font-medium text-secondary-foreground text-center leading-tight">{a.label}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div className="px-4 md:px-0 mt-8">
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Activité récente</h2>
+        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Activité récente</h2>
         {recentActivity.length === 0 ? (
-          <div className="glass-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">Pas encore d'activité</p>
-            <p className="text-xs text-muted-foreground mt-1">Commencez par créer un rapport ou une tâche</p>
+          <div className="glass-card p-8 text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <FileText size={20} className="text-primary" />
+            </div>
+            <p className="text-sm font-medium">Pas encore d'activité</p>
+            <p className="text-xs text-muted-foreground">Commencez par créer un rapport ou une tâche</p>
           </div>
         ) : (
           <div className="glass-card divide-y divide-border">
             {recentActivity.map((item, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <button key={i} onClick={() => navigate(item.path)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50 transition-colors">
                 <item.icon size={16} className="text-muted-foreground shrink-0" />
-                <span className="text-sm flex-1">{item.text}</span>
-                <span className="text-xs text-muted-foreground">{item.time}</span>
-              </div>
+                <span className="text-sm flex-1 truncate">{item.text}</span>
+                <span className="text-[10px] text-muted-foreground shrink-0">{item.time}</span>
+              </button>
             ))}
           </div>
         )}
