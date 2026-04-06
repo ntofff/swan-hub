@@ -127,6 +127,9 @@ const ReportPlugin = () => {
     setColor("38 50% 58%"); setPriority("normale"); setFolderId(null);
     setPhotoFile(null); setPhotoPreview(null);
     setAiSummary(""); setEditingId(null);
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    setReportDate(now.toISOString().slice(0, 16));
   };
 
   const startEdit = (r: any) => {
