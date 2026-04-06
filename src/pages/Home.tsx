@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon } from "lucide-react";
+import { parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
