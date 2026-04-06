@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon } from "lucide-react";
+import { parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -18,10 +19,11 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
 
-  const isDark = !profile?.theme || profile.theme !== "light";
+  const { style, mode } = parseTheme(profile?.theme || "dark-night");
+  const isDark = mode === "dark";
 
   const toggleDarkLight = async () => {
-    const next = isDark ? "light" : "dark-night";
+    const next = buildThemeId(style, isDark ? "light" : "dark");
     await updateProfile({ theme: next });
   };
 

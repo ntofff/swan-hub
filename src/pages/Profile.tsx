@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight } from "lucide-react";
+import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const themeOptions = [
+const styleOptions = [
   { id: "dark-night", label: "Dark Night", color: "38 50% 58%" },
-  { id: "light", label: "Light", color: "38 50% 48%" },
   { id: "corporate", label: "Corporate", color: "210 80% 55%" },
   { id: "professional", label: "Professional", color: "0 0% 75%" },
   { id: "artistic", label: "Artistic", color: "280 65% 60%" },
   { id: "sunset", label: "Sunset", color: "20 85% 55%" },
   { id: "gaming", label: "Gaming", color: "160 100% 45%" },
+  { id: "fun", label: "Fun", color: "330 85% 60%" },
 ];
 
 const colorPresets = ["38 50% 58%", "217 91% 60%", "142 71% 45%", "0 72% 51%", "270 50% 60%", "38 92% 50%", "190 80% 50%", "330 70% 55%"];
@@ -90,9 +90,19 @@ const ProfilePage = () => {
     toast.success("Mot de passe modifié");
   };
 
-  const handleThemeChange = async (themeId: string) => {
-    await updateProfile({ theme: themeId });
-    toast.success("Thème appliqué");
+  const { style: currentStyle, mode: currentMode } = parseTheme(profile?.theme || "dark-night");
+
+  const handleStyleChange = async (styleId: string) => {
+    const newTheme = buildThemeId(styleId, currentMode);
+    await updateProfile({ theme: newTheme });
+    toast.success("Style appliqué");
+  };
+
+  const handleModeToggle = async () => {
+    const newMode = currentMode === "dark" ? "light" : "dark";
+    const newTheme = buildThemeId(currentStyle, newMode);
+    await updateProfile({ theme: newTheme });
+    toast.success(newMode === "dark" ? "Mode sombre" : "Mode clair");
   };
 
   const handleExportData = () => {
@@ -251,15 +261,27 @@ const ProfilePage = () => {
 
         {/* ── Apparence ── */}
         {section === "apparence" && (
-          <div className="space-y-3 slide-up">
-            <p className="text-xs text-muted-foreground">Choisissez un thème visuel pour SWAN</p>
+          <div className="space-y-4 slide-up">
+            {/* Mode toggle */}
+            <div className="glass-card p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Mode d'affichage</p>
+                <p className="text-xs text-muted-foreground">{currentMode === "dark" ? "Sombre" : "Clair"}</p>
+              </div>
+              <button onClick={handleModeToggle} className="p-2.5 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors">
+                {currentMode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            </div>
+
+            {/* Style selector */}
+            <p className="text-xs text-muted-foreground">Choisissez un style visuel pour SWAN</p>
             <div className="grid grid-cols-2 gap-2.5">
-              {themeOptions.map(t => (
-                <button key={t.id} onClick={() => handleThemeChange(t.id)}
-                  className={`glass-card p-4 flex flex-col items-center gap-3 transition-all ${profile?.theme === t.id ? 'border-primary ring-1 ring-primary/30' : 'hover:border-primary/20'}`}>
+              {styleOptions.map(t => (
+                <button key={t.id} onClick={() => handleStyleChange(t.id)}
+                  className={`glass-card p-4 flex flex-col items-center gap-3 transition-all ${currentStyle === t.id ? 'border-primary ring-1 ring-primary/30' : 'hover:border-primary/20'}`}>
                   <div className="w-10 h-10 rounded-xl" style={{ backgroundColor: `hsl(${t.color})` }} />
                   <span className="text-xs font-medium">{t.label}</span>
-                  {profile?.theme === t.id && <Check size={14} className="text-primary" />}
+                  {currentStyle === t.id && <Check size={14} className="text-primary" />}
                 </button>
               ))}
             </div>
