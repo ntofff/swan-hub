@@ -51,15 +51,18 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
   });
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-      <div className="bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full max-w-md max-h-[85vh] overflow-y-auto">
-        <div className="sticky top-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between rounded-t-2xl">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col justify-end sm:justify-center sm:items-center"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md flex flex-col"
+        style={{ maxHeight: "85dvh" }}>
+        {/* Fixed header */}
+        <div className="shrink-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-sm font-semibold">Gérer les dossiers</h3>
           <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground"><X size={18} /></button>
         </div>
 
-        <div className="p-4 space-y-4">
-          {/* Create new */}
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch p-4 space-y-4 pb-8">
           <div className="space-y-3">
             <h4 className="text-xs font-medium text-muted-foreground">Nouveau dossier</h4>
             <input value={name} onChange={(e) => setName(e.target.value)}
@@ -104,7 +107,6 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
             </button>
           </div>
 
-          {/* Existing folders */}
           {folders.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-muted-foreground">Dossiers existants</h4>
