@@ -4,35 +4,35 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { Plus, ChevronRight, FileText, Receipt } from "lucide-react";
 
 const statusColors: Record<string, string> = {
-  Draft: "0 0% 50%", Sent: "217 91% 60%", Accepted: "142 71% 45%", Paid: "38 50% 58%", Overdue: "0 72% 51%",
+  Brouillon: "0 0% 50%", Envoyé: "217 91% 60%", Accepté: "142 71% 45%", Payé: "38 50% 58%", "En retard": "0 72% 51%",
 };
 
 const quotes = [
-  { id: "Q-2024-018", title: "Website Redesign", client: "Acme Corp", amount: "€4,500", status: "Sent", date: "Apr 5" },
-  { id: "Q-2024-017", title: "Photography Pack", client: "TechStart", amount: "€1,200", status: "Accepted", date: "Apr 2" },
-  { id: "Q-2024-016", title: "Consulting 3 days", client: "InnoLab", amount: "€2,700", status: "Draft", date: "Mar 30" },
+  { id: "D-2024-018", title: "Refonte site web", client: "Acme Corp", amount: "4 500 €", status: "Envoyé", date: "5 avr." },
+  { id: "D-2024-017", title: "Pack Photographie", client: "TechStart", amount: "1 200 €", status: "Accepté", date: "2 avr." },
+  { id: "D-2024-016", title: "Consulting 3 jours", client: "InnoLab", amount: "2 700 €", status: "Brouillon", date: "30 mars" },
 ];
 
 const invoices = [
-  { id: "INV-2024-012", title: "Fleet Inspection", client: "LogiTrans", amount: "€3,200", status: "Paid", date: "Mar 28" },
-  { id: "INV-2024-011", title: "Brand Workshop", client: "InnoLab", amount: "€1,800", status: "Overdue", date: "Mar 15" },
+  { id: "F-2024-012", title: "Inspection de flotte", client: "LogiTrans", amount: "3 200 €", status: "Payé", date: "28 mars" },
+  { id: "F-2024-011", title: "Atelier marque", client: "InnoLab", amount: "1 800 €", status: "En retard", date: "15 mars" },
 ];
 
 const QuotesPlugin = () => {
-  const [tab, setTab] = useState<"quotes" | "invoices">("quotes");
-  const items = tab === "quotes" ? quotes : invoices;
+  const [tab, setTab] = useState<"devis" | "factures">("devis");
+  const items = tab === "devis" ? quotes : invoices;
 
   return (
     <div className="fade-in">
-      <PageHeader title="Quotes & Invoices" subtitle="Billing & payments" back
+      <PageHeader title="Devis & Factures" subtitle="Facturation & paiements" back
         action={<button className="p-2 rounded-xl bg-primary/10 text-primary"><Plus size={18} /></button>} />
       <div className="px-4 md:px-0">
         <div className="flex gap-1.5 mb-4">
-          <button onClick={() => setTab("quotes")} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${tab === "quotes" ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-            <FileText size={14} /> Quotes
+          <button onClick={() => setTab("devis")} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${tab === "devis" ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
+            <FileText size={14} /> Devis
           </button>
-          <button onClick={() => setTab("invoices")} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${tab === "invoices" ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-            <Receipt size={14} /> Invoices
+          <button onClick={() => setTab("factures")} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${tab === "factures" ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
+            <Receipt size={14} /> Factures
           </button>
         </div>
         <div className="space-y-2.5">
