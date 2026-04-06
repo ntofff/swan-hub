@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MessageSquare, X, Bug, Lightbulb, AlertTriangle, ThumbsUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "react-router-dom";
 
 const types = [
   { value: "bug", label: "Bug", icon: Bug },
@@ -14,6 +15,7 @@ interface FeedbackButtonProps { context?: string; }
 
 export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
   const { user } = useAuth();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("suggestion");
   const [message, setMessage] = useState("");
@@ -27,6 +29,7 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
       message,
       context,
       plugin: context !== "global" ? context : null,
+      screen: location.pathname,
     });
     setSent(true);
     setTimeout(() => { setOpen(false); setSent(false); setMessage(""); }, 1500);
@@ -63,6 +66,7 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
           </div>
           <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Décrivez..." rows={3}
             className="w-full bg-secondary border border-border rounded-lg p-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary mb-2" />
+          <div className="text-[10px] text-muted-foreground mb-2">Écran : {location.pathname}</div>
           <button onClick={handleSubmit} disabled={!message.trim()} className="w-full btn-primary-glow py-2 text-sm disabled:opacity-40">Envoyer</button>
         </>
       )}
