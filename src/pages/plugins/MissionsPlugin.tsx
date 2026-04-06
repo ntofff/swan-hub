@@ -8,27 +8,28 @@ interface Mission {
 }
 
 const statusColors: Record<string, string> = {
-  Active: "217 91% 60%", Completed: "142 71% 45%", Archived: "0 0% 50%",
+  Actif: "217 91% 60%", Terminé: "142 71% 45%", Archivé: "0 0% 50%",
 };
 
 const sampleMissions: Mission[] = [
-  { id: 1, title: "Website Redesign", client: "Acme Corp", status: "Active", date: "Apr 6, 2026", activity: "Consulting" },
-  { id: 2, title: "Annual Report Photography", client: "TechStart", status: "Active", date: "Apr 3, 2026", activity: "Photography" },
-  { id: 3, title: "Fleet Inspection", client: "LogiTrans", status: "Completed", date: "Mar 28, 2026", activity: "Transport" },
-  { id: 4, title: "Brand Strategy Workshop", client: "InnoLab", status: "Archived", date: "Feb 15, 2026" },
+  { id: 1, title: "Refonte site web", client: "Acme Corp", status: "Actif", date: "6 avr. 2026", activity: "Consulting" },
+  { id: 2, title: "Shooting photo rapport annuel", client: "TechStart", status: "Actif", date: "3 avr. 2026", activity: "Photographie" },
+  { id: 3, title: "Inspection de flotte", client: "LogiTrans", status: "Terminé", date: "28 mars 2026", activity: "Transport" },
+  { id: 4, title: "Atelier stratégie de marque", client: "InnoLab", status: "Archivé", date: "15 fév. 2026" },
 ];
 
 const MissionsPlugin = () => {
-  const [tab, setTab] = useState("all");
-  const filtered = tab === "all" ? sampleMissions : sampleMissions.filter(m => m.status.toLowerCase() === tab);
+  const [tab, setTab] = useState("tout");
+  const tabMap: Record<string, string> = { actif: "Actif", terminé: "Terminé", archivé: "Archivé" };
+  const filtered = tab === "tout" ? sampleMissions : sampleMissions.filter(m => m.status === tabMap[tab]);
 
   return (
     <div className="fade-in">
-      <PageHeader title="Missions" subtitle="Manage assignments" back
+      <PageHeader title="Missions" subtitle="Gérer les affectations" back
         action={<button className="p-2 rounded-xl bg-primary/10 text-primary"><Plus size={18} /></button>} />
       <div className="px-4 md:px-0">
         <div className="flex gap-1.5 mb-4 overflow-x-auto">
-          {["all", "active", "completed", "archived"].map(t => (
+          {["tout", "actif", "terminé", "archivé"].map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-medium capitalize transition-colors whitespace-nowrap ${tab === t ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{t}</button>
           ))}

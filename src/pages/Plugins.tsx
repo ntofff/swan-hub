@@ -2,30 +2,27 @@ import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Users, Wallet, Calendar, Lock } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+
+const activePlugins = [
+  { id: "report", name: "Outil Rapport", desc: "Rapports professionnels rapides", icon: FileText, path: "/plugins/report" },
+  { id: "logbook", name: "Journal de bord", desc: "Entrées chronologiques", icon: BookOpen, path: "/plugins/logbook" },
+  { id: "tasks", name: "Tâches", desc: "Gestionnaire de tâches simple", icon: CheckSquare, path: "/plugins/tasks" },
+  { id: "missions", name: "Gestionnaire de missions", desc: "Missions & affectations", icon: Target, path: "/plugins/missions" },
+  { id: "quotes", name: "Devis & Factures", desc: "Facturation & paiements", icon: Receipt, path: "/plugins/quotes" },
+  { id: "vehicle", name: "Carnet de véhicule", desc: "Kilométrage & suivi IK", icon: Car, path: "/plugins/vehicle" },
+];
+
+const lockedPlugins = [
+  { name: "CRM Lite", desc: "Gestion clients", icon: Users },
+  { name: "Suivi budget", desc: "Vue financière", icon: Wallet },
+  { name: "Outil réservation", desc: "Prise de rendez-vous", icon: Calendar },
+];
 
 const PluginsPage = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
-
-  const activePlugins = [
-    { id: "report", nameKey: "plugins.reportTool", descKey: "plugins.reportDesc", icon: FileText, path: "/plugins/report" },
-    { id: "logbook", nameKey: "plugins.logbook", descKey: "plugins.logbookDesc", icon: BookOpen, path: "/plugins/logbook" },
-    { id: "tasks", nameKey: "plugins.tasks", descKey: "plugins.tasksDesc", icon: CheckSquare, path: "/plugins/tasks" },
-    { id: "missions", nameKey: "plugins.missions", descKey: "plugins.missionsDesc", icon: Target, path: "/plugins/missions" },
-    { id: "quotes", nameKey: "plugins.quotes", descKey: "plugins.quotesDesc", icon: Receipt, path: "/plugins/quotes" },
-    { id: "vehicle", nameKey: "plugins.vehicle", descKey: "plugins.vehicleDesc", icon: Car, path: "/plugins/vehicle" },
-  ];
-
-  const lockedPlugins = [
-    { nameKey: "plugins.crmLite", descKey: "plugins.crmDesc", icon: Users },
-    { nameKey: "plugins.budgetTracker", descKey: "plugins.budgetDesc", icon: Wallet },
-    { nameKey: "plugins.bookingTool", descKey: "plugins.bookingDesc", icon: Calendar },
-  ];
-
   return (
     <div className="fade-in">
-      <PageHeader title={t("plugins.title")} subtitle={t("plugins.subtitle")} />
+      <PageHeader title="Plugins" subtitle="Activez les outils pour votre workflow" />
       <div className="px-4 md:px-0 space-y-2.5">
         {activePlugins.map(p => (
           <button key={p.id} onClick={() => navigate(p.path)}
@@ -34,24 +31,24 @@ const PluginsPage = () => {
               <p.icon size={20} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold">{t(p.nameKey)}</div>
-              <div className="text-xs text-muted-foreground">{t(p.descKey)}</div>
+              <div className="text-sm font-semibold">{p.name}</div>
+              <div className="text-xs text-muted-foreground">{p.desc}</div>
             </div>
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">{t("plugins.active")}</span>
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">Actif</span>
           </button>
         ))}
       </div>
       <div className="px-4 md:px-0 mt-8">
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">{t("plugins.comingSoon")}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Bientôt disponible</h2>
         <div className="space-y-2.5">
           {lockedPlugins.map(p => (
-            <div key={p.nameKey} className="glass-card p-4 flex items-center gap-4 opacity-50">
+            <div key={p.name} className="glass-card p-4 flex items-center gap-4 opacity-50">
               <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                 <p.icon size={20} className="text-muted-foreground" />
               </div>
               <div className="flex-1">
-                <div className="text-sm font-semibold">{t(p.nameKey)}</div>
-                <div className="text-xs text-muted-foreground">{t(p.descKey)}</div>
+                <div className="text-sm font-semibold">{p.name}</div>
+                <div className="text-xs text-muted-foreground">{p.desc}</div>
               </div>
               <Lock size={14} className="text-muted-foreground" />
             </div>
