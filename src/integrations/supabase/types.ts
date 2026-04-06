@@ -366,12 +366,16 @@ export type Database = {
       missions: {
         Row: {
           activity_id: string | null
+          archived: boolean
           client: string | null
+          collaborator: string | null
+          contact: string | null
           created_at: string
           end_date: string | null
           id: string
           location: string | null
           notes: string | null
+          quote_amount: number | null
           start_date: string | null
           status: string
           title: string
@@ -380,12 +384,16 @@ export type Database = {
         }
         Insert: {
           activity_id?: string | null
+          archived?: boolean
           client?: string | null
+          collaborator?: string | null
+          contact?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
           location?: string | null
           notes?: string | null
+          quote_amount?: number | null
           start_date?: string | null
           status?: string
           title: string
@@ -394,12 +402,16 @@ export type Database = {
         }
         Update: {
           activity_id?: string | null
+          archived?: boolean
           client?: string | null
+          collaborator?: string | null
+          contact?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
           location?: string | null
           notes?: string | null
+          quote_amount?: number | null
           start_date?: string | null
           status?: string
           title?: string
