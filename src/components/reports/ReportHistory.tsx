@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Clock, ChevronDown, ChevronUp, Trash2, AlertCircle, MapPin,
-  Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen
+  Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search
 } from "lucide-react";
 
 const buildReportText = (r: any) => {
-  let text = `📋 Rapport : ${r.title}\n`;
-  if (r.location) text += `📍 Lieu : ${r.location}\n`;
-  if (r.priority && r.priority !== "normale") text += `⚠️ Priorité : ${r.priority}\n`;
-  text += `📅 ${new Date(r.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}\n`;
+  let text = `Rapport : ${r.title}\n`;
+  if (r.location) text += `Lieu : ${r.location}\n`;
+  if (r.priority && r.priority !== "normale") text += `Priorité : ${r.priority}\n`;
+  const dateField = r.report_date || r.created_at;
+  text += `${new Date(dateField).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}\n`;
   if (r.notes) text += `\n${r.notes}`;
   return text;
 };
@@ -33,12 +34,20 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
   const [shareOpenId, setShareOpenId] = useState<string | null>(null);
   const [filterColor, setFilterColor] = useState<string | null>(null);
   const [filterFolderId, setFilterFolderId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const filtered = reports.filter((r: any) => {
-    if (filterColor && r.color !== filterColor) return false;
-    if (filterFolderId && r.folder_id !== filterFolderId) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return reports.filter((r: any) => {
+      if (filterColor && r.color !== filterColor) return false;
+      if (filterFolderId && r.folder_id !== filterFolderId) return false;
+      if (q) {
+        const haystack = `${r.title} ${r.location || ""} ${r.notes || ""}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [reports, filterColor, filterFolderId, searchQuery]);
 
   const handleShare = (r: any, method: string) => {
     const text = buildReportText(r);
@@ -51,8 +60,10 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
 
   const getFolderInfo = (folderId: string | null) => folders.find((f: any) => f.id === folderId);
 
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const formatDate = (r: any) => {
+    const d = r.report_date || r.created_at;
+    return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
 
   return (
     <div className="glass-card overflow-hidden">
@@ -60,16 +71,28 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
         className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-secondary/50 transition-colors">
         <span className="flex items-center gap-2">
           <Clock size={14} className="text-muted-foreground" />
-          Historique ({filtered.length})
+          Historique ({reports.length})
         </span>
         {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
 
       {showHistory && (
         <>
+          {/* Search bar */}
+          <div className="px-4 pt-2 pb-1">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Rechercher un rapport..."
+                className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+              />
+            </div>
+          </div>
+
           {/* Filters */}
           <div className="px-4 py-2 border-b border-border space-y-2">
-            {/* Color filter */}
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               <button onClick={() => setFilterColor(null)}
                 className={`text-[10px] px-2 py-1 rounded-md whitespace-nowrap shrink-0 ${!filterColor ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary"}`}>
@@ -81,7 +104,6 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                   style={{ backgroundColor: `hsl(${c.value})` }} title={c.label} />
               ))}
             </div>
-            {/* Folder filter */}
             {folders.length > 0 && (
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
                 <button onClick={() => setFilterFolderId(null)}
@@ -103,16 +125,18 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
             {filtered.length === 0 ? (
               <div className="p-6 text-center">
                 <AlertCircle size={20} className="mx-auto text-muted-foreground mb-2" />
-                <p className="text-xs text-muted-foreground">Aucun rapport</p>
+                <p className="text-xs text-muted-foreground">
+                  {searchQuery ? "Aucun résultat" : "Aucun rapport"}
+                </p>
               </div>
             ) : (
               filtered.map((r: any) => {
                 const folder = getFolderInfo(r.folder_id);
                 return (
-                  <div key={r.id} className="px-4 py-3 space-y-1.5">
+                  <div key={r.id} className="px-4 py-3 space-y-1">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-3 h-3 rounded-full shrink-0 border border-border/50"
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: `hsl(${r.color || "38 50% 58%"})` }} />
                         <span className="text-sm font-medium truncate">{r.title}</span>
                         {r.priority && r.priority !== "normale" && (
@@ -122,9 +146,9 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                         )}
                       </div>
                       <div className="flex items-center gap-0.5 shrink-0">
-                        <button onClick={() => onEdit(r)} className="p-1.5 text-muted-foreground hover:text-primary" title="Modifier"><Pencil size={13} /></button>
-                        <button onClick={() => setShareOpenId(shareOpenId === r.id ? null : r.id)} className="p-1.5 text-muted-foreground hover:text-primary" title="Partager"><Share2 size={13} /></button>
-                        <button onClick={() => onDelete(r.id)} className="p-1.5 text-muted-foreground hover:text-destructive" title="Supprimer"><Trash2 size={13} /></button>
+                        <button onClick={() => onEdit(r)} className="p-1.5 text-muted-foreground hover:text-primary"><Pencil size={13} /></button>
+                        <button onClick={() => setShareOpenId(shareOpenId === r.id ? null : r.id)} className="p-1.5 text-muted-foreground hover:text-primary"><Share2 size={13} /></button>
+                        <button onClick={() => onDelete(r.id)} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 size={13} /></button>
                       </div>
                     </div>
 
@@ -139,19 +163,20 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                       </div>
                     )}
 
-                    {folder && (
-                      <div className="flex items-center gap-1 text-[10px]"
-                        style={{ color: `hsl(${folder.color})` }}>
-                        <span className="text-xs">{folder.icon}</span> {folder.name}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      {r.location && (
+                        <span className="flex items-center gap-1"><MapPin size={10} /> {r.location}</span>
+                      )}
+                      <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(r)}</span>
+                      {folder && (
+                        <span className="flex items-center gap-1" style={{ color: `hsl(${folder.color})` }}>
+                          <span className="text-xs">{folder.icon}</span> {folder.name}
+                        </span>
+                      )}
+                    </div>
 
-                    {r.location && (
-                      <p className="text-[10px] text-muted-foreground flex items-center gap-1"><MapPin size={10} /> {r.location}</p>
-                    )}
                     {r.notes && <p className="text-xs text-muted-foreground line-clamp-2">{r.notes}</p>}
-                    {r.photo_url && <img src={r.photo_url} alt="Photo" className="w-16 h-12 object-cover rounded-md border border-border" />}
-                    <p className="text-[10px] text-muted-foreground">{formatDate(r.created_at)}</p>
+                    {r.photo_url && <img src={r.photo_url} alt="Photo" className="w-14 h-10 object-cover rounded-md border border-border" />}
                   </div>
                 );
               })
