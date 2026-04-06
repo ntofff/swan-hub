@@ -4,7 +4,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import {
   Plus, ChevronRight, ChevronLeft, FileText, Receipt, CreditCard,
   ArrowRightLeft, Users, BarChart3, Download, Share2, Copy, Mail,
-  MessageSquare, Phone, Search, Trash2, Edit2, X, Settings, Palette, Check
+  MessageSquare, Phone, Search, Trash2, Edit2, X, Settings, Palette, Check, Eye
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -262,6 +262,7 @@ const QuotesPlugin = () => {
 
   const [payMethodPick, setPayMethodPick] = useState("");
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // ── Helpers ──
   const resetForm = () => { setFTitle(""); setFClientId(""); setFAmountHt(""); setFPayment(""); setFTva(""); setFColor(""); setFDiscountType(""); setFDiscountValue(""); setFShowRib(false); setFShowOptions(false); setShowForm(false); };
@@ -347,8 +348,101 @@ const QuotesPlugin = () => {
     return (
       <div className="fade-in">
         <PageHeader title={isQuote ? "Détail devis" : "Détail facture"} back
-          action={<button onClick={() => setSelectedItem(null)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><ChevronLeft size={18} /></button>} />
+          action={
+            <div className="flex gap-1.5">
+              <button onClick={() => setShowPreview(!showPreview)} className={`p-2 rounded-xl transition-colors ${showPreview ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}><Eye size={18} /></button>
+              <button onClick={() => setSelectedItem(null)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><ChevronLeft size={18} /></button>
+            </div>
+          } />
         <div className="px-4 md:px-0 space-y-4">
+
+          {/* ── Document Preview ── */}
+          {showPreview && (
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden relative" style={{ aspectRatio: "210/297", maxHeight: "70vh" }}>
+              {/* Watermark / Filigrane */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+                style={{ transform: "rotate(-35deg)" }}>
+                <span className="text-[3.5rem] font-black tracking-widest uppercase opacity-[0.08] select-none"
+                  style={{ color: `hsl(${statusColors[selectedItem.status] || "0 0% 50%"})`, letterSpacing: "0.15em" }}>
+                  {selectedItem.status}
+                </span>
+              </div>
+
+              <div className="p-6 text-gray-900 text-xs relative z-20 h-full flex flex-col">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <p className="text-lg font-bold text-gray-800">{isQuote ? "DEVIS" : "FACTURE"}</p>
+                    <p className="text-gray-500 mt-0.5">{selectedItem.quote_number || selectedItem.invoice_number}</p>
+                    <p className="text-gray-400 text-[10px] mt-1">{new Date(selectedItem.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: `hsl(${statusColors[selectedItem.status] || "0 0% 50%"} / 0.12)`, color: `hsl(${statusColors[selectedItem.status] || "0 0% 50%"})` }}>
+                      {selectedItem.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Client info */}
+                {getClientName(selectedItem) && (
+                  <div className="mb-5 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider mb-1">Client</p>
+                    <p className="font-semibold text-sm text-gray-800">{getClientName(selectedItem)}</p>
+                    {selectedItem.clients?.siret && <p className="text-gray-500">SIRET : {selectedItem.clients.siret}</p>}
+                    {selectedItem.clients?.address && <p className="text-gray-500">{selectedItem.clients.address}</p>}
+                  </div>
+                )}
+
+                {/* Title & details */}
+                <div className="flex-1">
+                  <div className="border-b border-gray-200 pb-2 mb-3">
+                    <p className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Désignation</p>
+                  </div>
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-medium text-sm text-gray-800 flex-1">{selectedItem.title}</p>
+                    {selectedItem.amount_ht != null && <p className="text-gray-600 ml-4">{fmtAmount(selectedItem.amount_ht)}</p>}
+                  </div>
+
+                  {selectedItem.discount_type && (
+                    <div className="flex justify-between text-gray-500 mb-2">
+                      <p>Remise ({selectedItem.discount_type === "percent" ? `${selectedItem.discount_value}%` : "fixe"})</p>
+                      <p>-{selectedItem.discount_type === "percent"
+                        ? fmtAmount((Number(selectedItem.amount_ht) || 0) * (Number(selectedItem.discount_value) || 0) / 100)
+                        : fmtAmount(Number(selectedItem.discount_value) || 0)}</p>
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-300 mt-3 pt-3 flex justify-between">
+                    <p className="font-bold text-sm text-gray-800">TOTAL</p>
+                    <p className="font-bold text-sm text-gray-800">{selectedItem.amount != null ? fmtAmount(selectedItem.amount) : "—"}</p>
+                  </div>
+
+                  {selectedItem.tva_mention && (
+                    <p className="text-[10px] italic text-gray-400 mt-2">{selectedItem.tva_mention}</p>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="mt-auto pt-4 border-t border-gray-100 space-y-2">
+                  {selectedItem.payment_method && (
+                    <p className="text-gray-500">Modalité : <span className="font-medium text-gray-700">{selectedItem.payment_method}</span></p>
+                  )}
+                  {selectedItem.rib_details && (
+                    <div className="text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
+                      <p className="font-semibold text-gray-600 mb-0.5">Coordonnées bancaires</p>
+                      {selectedItem.rib_details.holder && <p>Titulaire : {selectedItem.rib_details.holder}</p>}
+                      {selectedItem.rib_details.iban && <p>IBAN : {selectedItem.rib_details.iban}</p>}
+                      {selectedItem.rib_details.bic && <p>BIC : {selectedItem.rib_details.bic}</p>}
+                      {selectedItem.rib_details.bank && <p>Banque : {selectedItem.rib_details.bank}</p>}
+                    </div>
+                  )}
+                  <p className="text-[9px] text-gray-300 text-center mt-2">Généré par SWAN</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Main card */}
           <div className="glass-card-glow p-5 space-y-3" style={selectedItem.color ? { borderLeft: `3px solid hsl(${selectedItem.color})` } : {}}>
             <div className="flex items-center justify-between">
