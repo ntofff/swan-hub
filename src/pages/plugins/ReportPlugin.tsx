@@ -265,6 +265,25 @@ const ReportPlugin = () => {
           <input value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Titre du rapport *" className={inputCls} />
 
+          {/* Priority — prominent, above content */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Priorité</label>
+            <div className="flex gap-1.5">
+              {priorityOptions.map((p) => (
+                <button key={p.value} onClick={() => setPriority(p.value)}
+                  className={`flex-1 text-xs py-2 rounded-lg transition-colors font-medium ${
+                    priority === p.value
+                      ? p.value === "urgente" ? "bg-destructive/15 text-destructive" 
+                        : p.value === "haute" ? "bg-warning/15 text-warning"
+                        : "bg-primary/10 text-primary"
+                      : "text-muted-foreground bg-secondary hover:bg-secondary/80"
+                  }`}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Location */}
           <div className="relative">
             <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
