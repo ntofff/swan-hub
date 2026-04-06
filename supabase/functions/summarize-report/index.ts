@@ -13,10 +13,10 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `Tu es un assistant professionnel. On te donne le contenu d'un rapport de terrain. 
-Tu dois produire un résumé concis, structuré et professionnel en français.
-Inclus : contexte, points clés, observations, recommandations si pertinent.
-Format : paragraphes courts, pas de bullet points sauf si nécessaire. Max 200 mots.`;
+    const systemPrompt = `Tu es un assistant professionnel. Résume ce rapport terrain en français.
+Sois très concis : 3 à 5 phrases maximum, ~80 mots.
+Structure : 1 phrase de contexte, les points essentiels, 1 recommandation si pertinent.
+Pas de bullet points, pas de titre, juste un paragraphe fluide.`;
 
     const userPrompt = `Rapport : "${title}"${location ? ` — Lieu : ${location}` : ""}
 
