@@ -258,22 +258,31 @@ export type Database = {
       log_entries: {
         Row: {
           activity_id: string | null
+          color: string | null
           created_at: string
+          entry_date: string | null
           id: string
+          priority: string | null
           text: string
           user_id: string
         }
         Insert: {
           activity_id?: string | null
+          color?: string | null
           created_at?: string
+          entry_date?: string | null
           id?: string
+          priority?: string | null
           text: string
           user_id: string
         }
         Update: {
           activity_id?: string | null
+          color?: string | null
           created_at?: string
+          entry_date?: string | null
           id?: string
+          priority?: string | null
           text?: string
           user_id?: string
         }
