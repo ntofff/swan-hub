@@ -231,49 +231,124 @@ export type Database = {
           },
         ]
       }
+      invoice_settings: {
+        Row: {
+          created_at: string
+          default_payment_method: string | null
+          default_tva_mention: string | null
+          id: string
+          invoice_counter: number
+          invoice_prefix: string
+          quote_counter: number
+          quote_prefix: string
+          rib_bank: string | null
+          rib_bic: string | null
+          rib_holder: string | null
+          rib_iban: string | null
+          updated_at: string
+          user_id: string
+          year_in_number: boolean
+        }
+        Insert: {
+          created_at?: string
+          default_payment_method?: string | null
+          default_tva_mention?: string | null
+          id?: string
+          invoice_counter?: number
+          invoice_prefix?: string
+          quote_counter?: number
+          quote_prefix?: string
+          rib_bank?: string | null
+          rib_bic?: string | null
+          rib_holder?: string | null
+          rib_iban?: string | null
+          updated_at?: string
+          user_id: string
+          year_in_number?: boolean
+        }
+        Update: {
+          created_at?: string
+          default_payment_method?: string | null
+          default_tva_mention?: string | null
+          id?: string
+          invoice_counter?: number
+          invoice_prefix?: string
+          quote_counter?: number
+          quote_prefix?: string
+          rib_bank?: string | null
+          rib_bic?: string | null
+          rib_holder?: string | null
+          rib_iban?: string | null
+          updated_at?: string
+          user_id?: string
+          year_in_number?: boolean
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           activity_id: string | null
           amount: number | null
+          amount_ht: number | null
           client: string | null
           client_id: string | null
+          color: string | null
           created_at: string
+          discount_type: string | null
+          discount_value: number | null
           due_date: string | null
           id: string
           invoice_number: string
+          payment_method: string | null
           quote_id: string | null
+          rib_details: Json | null
           status: string
           title: string
+          tva_mention: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           activity_id?: string | null
           amount?: number | null
+          amount_ht?: number | null
           client?: string | null
           client_id?: string | null
+          color?: string | null
           created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
           due_date?: string | null
           id?: string
           invoice_number: string
+          payment_method?: string | null
           quote_id?: string | null
+          rib_details?: Json | null
           status?: string
           title: string
+          tva_mention?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           activity_id?: string | null
           amount?: number | null
+          amount_ht?: number | null
           client?: string | null
           client_id?: string | null
+          color?: string | null
           created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
           due_date?: string | null
           id?: string
           invoice_number?: string
+          payment_method?: string | null
           quote_id?: string | null
+          rib_details?: Json | null
           status?: string
           title?: string
+          tva_mention?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -621,42 +696,60 @@ export type Database = {
         Row: {
           activity_id: string | null
           amount: number | null
+          amount_ht: number | null
           client: string | null
           client_id: string | null
+          color: string | null
           created_at: string
+          discount_type: string | null
+          discount_value: number | null
           due_date: string | null
           id: string
+          payment_method: string | null
           quote_number: string
           status: string
           title: string
+          tva_mention: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           activity_id?: string | null
           amount?: number | null
+          amount_ht?: number | null
           client?: string | null
           client_id?: string | null
+          color?: string | null
           created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
           due_date?: string | null
           id?: string
+          payment_method?: string | null
           quote_number: string
           status?: string
           title: string
+          tva_mention?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           activity_id?: string | null
           amount?: number | null
+          amount_ht?: number | null
           client?: string | null
           client_id?: string | null
+          color?: string | null
           created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
           due_date?: string | null
           id?: string
+          payment_method?: string | null
           quote_number?: string
           status?: string
           title?: string
+          tva_mention?: string | null
           updated_at?: string
           user_id?: string
         }
