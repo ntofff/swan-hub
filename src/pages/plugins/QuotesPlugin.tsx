@@ -348,7 +348,12 @@ const QuotesPlugin = () => {
     return (
       <div className="fade-in">
         <PageHeader title={isQuote ? "Détail devis" : "Détail facture"} back
-          action={<button onClick={() => setSelectedItem(null)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><ChevronLeft size={18} /></button>} />
+          action={
+            <div className="flex gap-1.5">
+              <button onClick={() => setShowPreview(!showPreview)} className={`p-2 rounded-xl transition-colors ${showPreview ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}><Eye size={18} /></button>
+              <button onClick={() => setSelectedItem(null)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><ChevronLeft size={18} /></button>
+            </div>
+          } />
         <div className="px-4 md:px-0 space-y-4">
           {/* Main card */}
           <div className="glass-card-glow p-5 space-y-3" style={selectedItem.color ? { borderLeft: `3px solid hsl(${selectedItem.color})` } : {}}>
