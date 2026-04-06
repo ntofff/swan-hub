@@ -423,7 +423,7 @@ const VehiclePlugin = () => {
                   <div className="text-[10px] text-muted-foreground">{v.brand_model}{v.license_plate ? ` · ${v.license_plate}` : ""}{v.fiscal_power ? ` · ${v.fiscal_power} CV` : ""}{v.current_mileage ? ` · ${v.current_mileage.toLocaleString("fr-FR")} km` : ""}</div>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success">{v.status}</span>
-                <button onClick={() => deleteVehicle.mutate(v.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer ce véhicule ?")) deleteVehicle.mutate(v.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
