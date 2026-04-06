@@ -344,7 +344,6 @@ const QuotesPlugin = () => {
   // ══════════════════════ DETAIL VIEW ══════════════════════
   if (selectedItem) {
     const isQuote = !!selectedItem.quote_number;
-    const [showColorPicker, setShowColorPicker] = useState(false);
     return (
       <div className="fade-in">
         <PageHeader title={isQuote ? "Détail devis" : "Détail facture"} back
