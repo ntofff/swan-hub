@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          siret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           activity_id: string | null
@@ -200,6 +236,7 @@ export type Database = {
           activity_id: string | null
           amount: number | null
           client: string | null
+          client_id: string | null
           created_at: string
           due_date: string | null
           id: string
@@ -214,6 +251,7 @@ export type Database = {
           activity_id?: string | null
           amount?: number | null
           client?: string | null
+          client_id?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
@@ -228,6 +266,7 @@ export type Database = {
           activity_id?: string | null
           amount?: number | null
           client?: string | null
+          client_id?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
@@ -244,6 +283,13 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "user_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
@@ -576,6 +622,7 @@ export type Database = {
           activity_id: string | null
           amount: number | null
           client: string | null
+          client_id: string | null
           created_at: string
           due_date: string | null
           id: string
@@ -589,6 +636,7 @@ export type Database = {
           activity_id?: string | null
           amount?: number | null
           client?: string | null
+          client_id?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
@@ -602,6 +650,7 @@ export type Database = {
           activity_id?: string | null
           amount?: number | null
           client?: string | null
+          client_id?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
@@ -617,6 +666,13 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "user_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
