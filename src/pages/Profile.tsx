@@ -242,7 +242,7 @@ const ProfilePage = () => {
                     <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: `hsl(${a.color})` }} />
                     <span className="text-sm flex-1">{a.name}</span>
                     <button onClick={() => { setEditId(a.id); setEditActivityName(a.name); setEditColor(a.color); }} className="text-muted-foreground hover:text-foreground"><Pencil size={14} /></button>
-                    <button onClick={() => deleteActivity.mutate(a.id)} className="text-muted-foreground hover:text-destructive"><X size={14} /></button>
+                    <button onClick={() => { if (window.confirm("Supprimer cette activité ?")) deleteActivity.mutate(a.id); }} className="text-muted-foreground hover:text-destructive"><X size={14} /></button>
                   </>
                 )}
               </div>

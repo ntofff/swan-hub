@@ -402,7 +402,7 @@ const VehiclePlugin = () => {
                       <div className="text-sm font-semibold">{t.distance ?? "–"} km</div>
                       {t.ik_amount && <div className="text-[10px] text-primary">{Number(t.ik_amount).toFixed(2)} €</div>}
                     </div>
-                    <button onClick={() => deleteTrip.mutate(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                    <button onClick={() => { if (window.confirm("Supprimer ce trajet ?")) deleteTrip.mutate(t.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -423,7 +423,7 @@ const VehiclePlugin = () => {
                   <div className="text-[10px] text-muted-foreground">{v.brand_model}{v.license_plate ? ` · ${v.license_plate}` : ""}{v.fiscal_power ? ` · ${v.fiscal_power} CV` : ""}{v.current_mileage ? ` · ${v.current_mileage.toLocaleString("fr-FR")} km` : ""}</div>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success">{v.status}</span>
-                <button onClick={() => deleteVehicle.mutate(v.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer ce véhicule ?")) deleteVehicle.mutate(v.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -441,7 +441,7 @@ const VehiclePlugin = () => {
                   <div className="text-sm font-semibold">{d.name}</div>
                   <div className="text-[10px] text-muted-foreground">{d.role || "—"}{d.vehicles ? ` · ${d.vehicles.name}` : ""}</div>
                 </div>
-                <button onClick={() => deleteDriver.mutate(d.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer ce conducteur ?")) deleteDriver.mutate(d.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -460,7 +460,7 @@ const VehiclePlugin = () => {
                   <div className="text-[10px] text-muted-foreground">{r.start_location} → {r.end_location}{r.default_distance ? ` · ${r.default_distance} km` : ""}</div>
                 </div>
                 <button onClick={() => useRoutePreset(r)} className="text-[10px] text-primary">Utiliser</button>
-                <button onClick={() => deleteRoute.mutate(r.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer cet itinéraire ?")) deleteRoute.mutate(r.id); }} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
