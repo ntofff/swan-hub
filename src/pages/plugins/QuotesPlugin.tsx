@@ -441,6 +441,35 @@ const QuotesPlugin = () => {
     onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de créer le devis. Reconnectez-vous.")); },
   });
 
+  const addInvoice = useMutation({
+    mutationFn: async () => {
+      if (!user || !fTitle.trim()) return;
+      const num = generateNumber("invoice");
+      const cl = clients.find((c: any) => c.id === fClientId);
+      const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
+      const finalAmount = calcFinal();
+      const ribDetails = (fShowRib && (sIban || sBic)) ? { iban: sIban, bic: sBic, bank: sBank, holder: sHolder } : null;
+      const { error } = await supabase.from("invoices").insert({
+        user_id: user.id, invoice_number: num, title: fTitle.trim(),
+        client: cl?.name || null, client_id: fClientId || null,
+        amount: finalAmount || null, amount_ht: parseFloat(fAmountHt) || null,
+        payment_method: fPayment || null, tva_mention: fTva || null,
+        tva_rate: rate || null, color: fColor || null,
+        discount_type: fDiscountType || null, discount_value: parseFloat(fDiscountValue) || null,
+        rib_details: ribDetails, notes: fNotes || null,
+        issue_date: fIssueDate || null,
+        payment_terms: fPaymentTerms ? parseInt(fPaymentTerms) : null,
+        period_description: fPeriod || null,
+      });
+      if (error) throw error;
+      if (settings?.id) {
+        await supabase.from("invoice_settings").update({ invoice_counter: (settings.invoice_counter || 1) + 1 }).eq("id", settings.id);
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["invoices"] }); qc.invalidateQueries({ queryKey: ["invoice_settings"] }); resetForm(); toast.success("Facture créée !"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de créer la facture.")); },
+  });
+
   const addClient = useMutation({
     mutationFn: async () => {
       if (!user || !cName.trim()) return;
