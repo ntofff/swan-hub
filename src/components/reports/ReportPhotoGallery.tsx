@@ -127,17 +127,12 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
 
   const saveToDevice = useCallback(async (photo: PhotoItem) => {
     try {
-      const canvas = await renderPhotoWithCaption(photo);
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
-          "image/jpeg",
-          0.92
-        );
-      });
+      const blob = await renderPhotoToBlob(photo);
+      const fileName = `rapport-photo-${Date.now()}.jpg`;
 
+      // iOS/mobile: use Web Share API to trigger native "Save Image"
       if (navigator.share && navigator.canShare) {
-        const file = new File([blob], `rapport-photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+        const file = new File([blob], fileName, { type: "image/jpeg" });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file] });
           toast.success("Photo partagée");
@@ -145,10 +140,11 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
         }
       }
 
+      // Desktop fallback: download link
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `rapport-photo-${Date.now()}.jpg`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
