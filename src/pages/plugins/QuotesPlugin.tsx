@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 const statusColors: Record<string, string> = {
   Brouillon: "0 0% 50%", Envoyé: "217 91% 60%", Accepté: "142 71% 45%",
@@ -64,7 +66,7 @@ const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any)
 
   return (
     <div className="space-y-3">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden relative" style={{ minHeight: 500 }}>
+      <div id="document-preview-capture" className="bg-white rounded-xl shadow-lg overflow-hidden relative" style={{ minHeight: 500 }}>
         {/* Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10" style={{ transform: "rotate(-35deg)" }}>
           <span className="text-[3rem] font-black tracking-widest uppercase select-none"
@@ -635,15 +637,37 @@ const QuotesPlugin = () => {
   const profileName = profile?.full_name || [sFirstName, sLastName].filter(Boolean).join(" ") || "SWAN";
 
   // ── Single item export/share ──
-  const generatePdfBlob = async (item: any): Promise<Blob | null> => {
-    const isQ = !!item.quote_number;
+  const generatePdfBlob = async (_item?: any): Promise<Blob | null> => {
+    const el = document.getElementById("document-preview-capture");
+    if (!el) return null;
     try {
-      const { data, error } = await supabase.functions.invoke("export-quotes", {
-        body: { items: [{ ...item, client_name: getClientName(item), siret: item.clients?.siret, address: item.clients?.address }], title: isQ ? "Devis" : "Facture", format: "pdf" },
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
       });
-      if (error) throw error;
-      return new Blob([Uint8Array.from(atob(data.pdf_base64), c => c.charCodeAt(0))], { type: "application/pdf" });
-    } catch { return null; }
+      const imgData = canvas.toDataURL("image/png");
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgW = pdfWidth;
+      const imgH = (canvas.height * pdfWidth) / canvas.width;
+      const pdf = new jsPDF("p", "mm", "a4");
+      let position = 0;
+      let heightLeft = imgH;
+      pdf.addImage(imgData, "PNG", 0, position, imgW, imgH);
+      heightLeft -= pdfHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgW, imgH);
+        heightLeft -= pdfHeight;
+      }
+      return pdf.output("blob");
+    } catch (e) {
+      console.error("PDF generation error:", e);
+      return null;
+    }
   };
 
   const handleSingleExportPdf = async () => {
