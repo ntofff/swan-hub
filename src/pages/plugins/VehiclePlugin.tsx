@@ -85,11 +85,12 @@ const VehiclePlugin = () => {
       const em = parseInt(tripData.end_mileage) || null;
       const dist = sm && em ? em - sm : null;
       const ik = dist ? calcIK(dist) : null;
-      await supabase.from("trips").insert({
+      const { error } = await supabase.from("trips").insert({
         user_id: user.id, start_location: tripData.start_location || null, end_location: tripData.end_location || null,
         start_mileage: sm, end_mileage: em, distance: dist, ik_amount: ik, purpose: tripData.purpose || null,
         vehicle_id: tripData.vehicle_id || null, driver_id: tripData.driver_id || null,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trips"] });
@@ -97,16 +98,18 @@ const VehiclePlugin = () => {
       setShowTripForm(false);
       toast.success("Trajet enregistré !");
     },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'enregistrer. Reconnectez-vous.")); },
   });
 
   const addVehicle = useMutation({
     mutationFn: async () => {
       if (!user || !vehicleData.name.trim()) return;
-      await supabase.from("vehicles").insert({
+      const { error } = await supabase.from("vehicles").insert({
         user_id: user.id, name: vehicleData.name.trim(), brand_model: vehicleData.brand_model || null,
         license_plate: vehicleData.license_plate || null, fiscal_power: vehicleData.fiscal_power || null,
         starting_mileage: parseInt(vehicleData.starting_mileage) || 0, current_mileage: parseInt(vehicleData.starting_mileage) || 0,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
@@ -114,17 +117,23 @@ const VehiclePlugin = () => {
       setShowVehicleForm(false);
       toast.success("Véhicule ajouté !");
     },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'ajouter")); },
   });
 
   const deleteVehicle = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("vehicles").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("vehicles").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vehicles"] }),
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de supprimer")); },
   });
 
   const addDriver = useMutation({
     mutationFn: async () => {
       if (!user || !driverData.name.trim()) return;
-      await supabase.from("drivers").insert({ user_id: user.id, name: driverData.name.trim(), role: driverData.role || null });
+      const { error } = await supabase.from("drivers").insert({ user_id: user.id, name: driverData.name.trim(), role: driverData.role || null });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
@@ -132,20 +141,26 @@ const VehiclePlugin = () => {
       setShowDriverForm(false);
       toast.success("Conducteur ajouté !");
     },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'ajouter")); },
   });
 
   const deleteDriver = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("drivers").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("drivers").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["drivers"] }),
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de supprimer")); },
   });
 
   const addRoute = useMutation({
     mutationFn: async () => {
       if (!user || !routeData.name.trim()) return;
-      await supabase.from("frequent_routes").insert({
+      const { error } = await supabase.from("frequent_routes").insert({
         user_id: user.id, name: routeData.name.trim(), start_location: routeData.start_location,
         end_location: routeData.end_location, default_distance: parseInt(routeData.default_distance) || null,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["frequent_routes"] });
@@ -153,16 +168,25 @@ const VehiclePlugin = () => {
       setShowRouteForm(false);
       toast.success("Itinéraire ajouté !");
     },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'ajouter")); },
   });
 
   const deleteRoute = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("frequent_routes").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("frequent_routes").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["frequent_routes"] }),
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de supprimer")); },
   });
 
   const deleteTrip = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("trips").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("trips").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["trips"] }),
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de supprimer")); },
   });
 
   // Preset trip from frequent route
