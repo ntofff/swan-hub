@@ -434,6 +434,21 @@ const CaptionEditor = ({
         </div>
       </div>
 
+      {/* Orientation / Rotation */}
+      <div>
+        <label className="text-[10px] text-muted-foreground block mb-1.5">Orientation ({photo.captionRotation ?? 0}°)</label>
+        <div className="flex gap-1 flex-wrap">
+          {rotationOptions.map((r) => (
+            <button key={r.value} onClick={() => onUpdate({ captionRotation: r.value })}
+              className={`text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
+                (photo.captionRotation ?? 0) === r.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+              }`}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Font */}
       <div>
         <label className="text-[10px] text-muted-foreground block mb-1.5">Police</label>
