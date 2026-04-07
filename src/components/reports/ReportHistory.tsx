@@ -6,19 +6,25 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const buildReportText = (r: any, photoUrls?: string[]) => {
+const buildReportText = (r: any) => {
   let text = `Rapport : ${r.title}\n`;
   if (r.location) text += `Lieu : ${r.location}\n`;
   if (r.priority && r.priority !== "normale") text += `Priorité : ${r.priority}\n`;
   const dateField = r.report_date || r.created_at;
   text += `${new Date(dateField).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}\n`;
   if (r.notes) text += `\n${r.notes}`;
-  if (photoUrls && photoUrls.length > 0) {
-    text += `\n\n📷 Photos (${photoUrls.length}) :\n`;
-    photoUrls.forEach((url, i) => { text += `${i + 1}. ${url}\n`; });
-  }
   return text;
 };
+
+async function fetchPhotoAsFile(url: string, index: number): Promise<File | null> {
+  try {
+    const resp = await fetch(url, { mode: "cors" });
+    const blob = await resp.blob();
+    return new File([blob], `photo-${index + 1}.jpg`, { type: blob.type || "image/jpeg" });
+  } catch {
+    return null;
+  }
+}
 
 const shareActions = [
   { id: "copy", icon: Copy, label: "Copier" },
@@ -70,27 +76,36 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
   const handleShare = async (r: any, method: string) => {
     setSharingId(r.id);
     try {
-      // For copy, we can afford to await photo URLs
-      if (method === "copy") {
-        const photoUrls = await getReportPhotoUrls(r.id, r.photo_url);
-        const text = buildReportText(r, photoUrls);
-        navigator.clipboard.writeText(text);
-        toast.success("Copié");
-        setShareOpenId(null);
-        setSharingId(null);
-        return;
+      const text = buildReportText(r);
+      const photoUrls = await getReportPhotoUrls(r.id, r.photo_url);
+
+      // Try native share with photo files (works on mobile iOS/Android)
+      if (navigator.share && navigator.canShare && photoUrls.length > 0) {
+        const filePromises = photoUrls.slice(0, 5).map((url, i) => fetchPhotoAsFile(url, i));
+        const results = await Promise.all(filePromises);
+        const files = results.filter((f): f is File => f !== null);
+
+        if (files.length > 0 && navigator.canShare({ files, text })) {
+          await navigator.share({ title: `Rapport : ${r.title}`, text, files });
+          setShareOpenId(null);
+          setSharingId(null);
+          return;
+        }
       }
 
-      // For email/sms/whatsapp: open immediately to preserve user gesture
-      // Include photo URL from legacy field synchronously, fetch full list after
-      const quickPhotoUrls = r.photo_url ? [r.photo_url] : [];
-      const text = buildReportText(r, quickPhotoUrls);
-
-      if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
+      // Fallback for desktop or if native share unavailable
+      if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
+      else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
       else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
       else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
-    } catch {
-      toast.error("Erreur de partage");
+    } catch (e: any) {
+      if (e?.name === "AbortError") { setSharingId(null); setShareOpenId(null); return; }
+      // If native share failed, fallback to URL-based
+      const text = buildReportText(r);
+      if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
+      else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
+      else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
+      else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
     }
     setShareOpenId(null);
     setSharingId(null);
