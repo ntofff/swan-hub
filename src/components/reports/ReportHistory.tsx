@@ -53,7 +53,53 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
     });
   }, [reports, filterColor, filterFolderId, searchQuery]);
 
+  const handleNativeShare = async (r: any) => {
+    setNativeSharing(true);
+    try {
+      const text = buildReportText(r);
+      const files: File[] = [];
+
+      // Fetch photos from report_photos table
+      const { data: photos } = await supabase
+        .from("report_photos")
+        .select("photo_url")
+        .eq("report_id", r.id)
+        .order("sort_order", { ascending: true });
+
+      const photoUrls = photos?.map((p: any) => p.photo_url) || [];
+      if (photoUrls.length === 0 && r.photo_url) photoUrls.push(r.photo_url);
+
+      // Fetch up to 5 photos as files
+      for (const url of photoUrls.slice(0, 5)) {
+        try {
+          const resp = await fetch(url, { mode: "cors" });
+          const blob = await resp.blob();
+          const ext = url.split(".").pop()?.split("?")[0] || "jpg";
+          files.push(new File([blob], `photo-${files.length + 1}.${ext}`, { type: blob.type || "image/jpeg" }));
+        } catch { /* skip failed photo */ }
+      }
+
+      const shareData: ShareData = { title: `Rapport : ${r.title}`, text };
+      if (files.length > 0 && navigator.canShare?.({ files })) {
+        shareData.files = files;
+      }
+
+      await navigator.share(shareData);
+      toast.success("Partagé !");
+    } catch (e: any) {
+      if (e?.name !== "AbortError") toast.error("Partage impossible sur ce navigateur");
+    } finally {
+      setNativeSharing(false);
+      setShareOpenId(null);
+    }
+  };
+
   const handleShare = (r: any, method: string) => {
+    if (method === "native") {
+      handleNativeShare(r);
+      return;
+    }
+
     const text = buildReportText(r);
 
     if (method === "copy") {
