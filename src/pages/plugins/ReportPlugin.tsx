@@ -4,7 +4,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import {
   Mic, MicOff, Camera, Clock, MapPin, Sparkles,
   Trash2, Loader2, X, Copy, Mail, MessageSquare, Phone,
-  FolderOpen, FolderPlus
+  FolderOpen, FolderPlus, ChevronUp, ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
