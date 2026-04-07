@@ -857,6 +857,62 @@ export type Database = {
         }
         Relationships: []
       }
+      report_photos: {
+        Row: {
+          caption: string | null
+          caption_color: string | null
+          caption_font: string | null
+          caption_opacity: number | null
+          caption_position: string | null
+          caption_size: number | null
+          created_at: string
+          id: string
+          photo_url: string
+          report_id: string | null
+          sort_order: number
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          caption_color?: string | null
+          caption_font?: string | null
+          caption_opacity?: number | null
+          caption_position?: string | null
+          caption_size?: number | null
+          created_at?: string
+          id?: string
+          photo_url: string
+          report_id?: string | null
+          sort_order?: number
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          caption_color?: string | null
+          caption_font?: string | null
+          caption_opacity?: number | null
+          caption_position?: string | null
+          caption_size?: number | null
+          created_at?: string
+          id?: string
+          photo_url?: string
+          report_id?: string | null
+          sort_order?: number
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_photos_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           activity_id: string | null

@@ -176,7 +176,11 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                     </div>
 
                     {r.notes && <p className="text-xs text-muted-foreground line-clamp-2">{r.notes}</p>}
-                    {r.photo_url && <img src={r.photo_url} alt="Photo" className="w-14 h-10 object-cover rounded-md border border-border" />}
+                    {r.photo_url && (
+                      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                        <img src={r.photo_url} alt="Photo" className="w-14 h-14 object-cover rounded-md border border-border shrink-0" />
+                      </div>
+                    )}
                   </div>
                 );
               })

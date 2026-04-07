@@ -12,6 +12,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import ReportFolderManager from "@/components/reports/ReportFolderManager";
 import ReportHistory from "@/components/reports/ReportHistory";
+import ReportPhotoGallery, { type PhotoItem } from "@/components/reports/ReportPhotoGallery";
 
 const priorityOptions = [
   { value: "normale", label: "Normale" },
@@ -42,8 +43,7 @@ const ReportPlugin = () => {
   const [color, setColor] = useState("38 50% 58%");
   const [priority, setPriority] = useState("normale");
   const [folderId, setFolderId] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [reportDate, setReportDate] = useState(() => {
     const now = new Date();
@@ -57,7 +57,6 @@ const ReportPlugin = () => {
   const [showFolderManager, setShowFolderManager] = useState(false);
   const [showFolderStrip, setShowFolderStrip] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: folders = [] } = useQuery({
     queryKey: ["report_folders"],
@@ -87,29 +86,65 @@ const ReportPlugin = () => {
   const saveReport = useMutation({
     mutationFn: async () => {
       if (!user || !title.trim()) return;
-      let photo_url: string | null = null;
-      if (photoFile) {
-        const ext = photoFile.name.split(".").pop();
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("report-photos").upload(path, photoFile);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from("report-photos").getPublicUrl(path);
-        photo_url = urlData.publicUrl;
-      }
+
       const finalNotes = aiSummary ? `${notes}\n\n── Résumé IA ──\n${aiSummary}` : notes;
+
+      // Keep first photo as legacy photo_url for backwards compat
+      let photo_url: string | null = null;
+      const uploadedPhotos: { url: string; photo: PhotoItem }[] = [];
+
+      for (const photo of photos) {
+        if (photo.file) {
+          const ext = photo.file.name.split(".").pop();
+          const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const { error: uploadError } = await supabase.storage.from("report-photos").upload(path, photo.file);
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage.from("report-photos").getPublicUrl(path);
+          uploadedPhotos.push({ url: urlData.publicUrl, photo });
+        } else {
+          uploadedPhotos.push({ url: photo.url, photo });
+        }
+      }
+
+      if (uploadedPhotos.length > 0) photo_url = uploadedPhotos[0].url;
+
       const payload: any = {
         user_id: user.id, title: title.trim(),
         notes: finalNotes.trim() || null, location: location.trim() || null,
         color, priority, folder_id: folderId,
         report_date: new Date(reportDate).toISOString(),
-        ...(photo_url ? { photo_url } : {}),
+        photo_url,
       };
+
+      let reportId = editingId;
       if (editingId) {
         const { error } = await supabase.from("reports").update(payload).eq("id", editingId);
         if (error) throw error;
+        // Delete old photos for this report
+        await supabase.from("report_photos").delete().eq("report_id", editingId);
       } else {
-        const { error } = await supabase.from("reports").insert(payload);
+        const { data: inserted, error } = await supabase.from("reports").insert(payload).select("id").single();
         if (error) throw error;
+        reportId = inserted.id;
+      }
+
+      // Insert all photos into report_photos
+      if (reportId && uploadedPhotos.length > 0) {
+        const photoRows = uploadedPhotos.map(({ url, photo }, idx) => ({
+          report_id: reportId!,
+          user_id: user.id,
+          photo_url: url,
+          caption: photo.caption || null,
+          caption_position: photo.captionPosition,
+          caption_font: photo.captionFont,
+          caption_size: photo.captionSize,
+          caption_color: photo.captionColor,
+          caption_opacity: photo.captionOpacity,
+          sort_order: idx,
+          taken_at: photo.takenAt.toISOString(),
+        }));
+        const { error: photosError } = await supabase.from("report_photos").insert(photoRows);
+        if (photosError) throw photosError;
       }
     },
     onSuccess: () => {
@@ -124,14 +159,14 @@ const ReportPlugin = () => {
   const resetForm = () => {
     setTitle(""); setNotes(""); setLocation("");
     setColor("38 50% 58%"); setPriority("normale"); setFolderId(null);
-    setPhotoFile(null); setPhotoPreview(null);
+    setPhotos([]);
     setAiSummary(""); setEditingId(null); setShowOptions(false);
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     setReportDate(now.toISOString().slice(0, 16));
   };
 
-  const startEdit = (r: any) => {
+  const startEdit = useCallback(async (r: any) => {
     setEditingId(r.id); setTitle(r.title);
     const rawNotes = (r.notes || "").replace(/\n\n── Résumé IA ──\n[\s\S]*$/, "");
     setNotes(rawNotes); setLocation(r.location || "");
@@ -142,9 +177,46 @@ const ReportPlugin = () => {
       d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
       setReportDate(d.toISOString().slice(0, 16));
     }
-    setPhotoPreview(r.photo_url || null); setAiSummary("");
+    setAiSummary("");
+
+    // Load photos from report_photos table
+    const { data: reportPhotos } = await supabase
+      .from("report_photos")
+      .select("*")
+      .eq("report_id", r.id)
+      .order("sort_order", { ascending: true });
+
+    if (reportPhotos && reportPhotos.length > 0) {
+      setPhotos(reportPhotos.map((p: any) => ({
+        id: p.id,
+        url: p.photo_url,
+        caption: p.caption || "",
+        captionPosition: p.caption_position || "bottom-center",
+        captionFont: p.caption_font || "sans-serif",
+        captionSize: p.caption_size || 24,
+        captionColor: p.caption_color || "#FFFFFF",
+        captionOpacity: Number(p.caption_opacity) || 0.8,
+        takenAt: new Date(p.taken_at || p.created_at),
+      })));
+    } else if (r.photo_url) {
+      // Legacy single photo
+      setPhotos([{
+        id: `legacy-${r.id}`,
+        url: r.photo_url,
+        caption: "",
+        captionPosition: "bottom-center",
+        captionFont: "sans-serif",
+        captionSize: 24,
+        captionColor: "#FFFFFF",
+        captionOpacity: 0.8,
+        takenAt: new Date(r.created_at),
+      }]);
+    } else {
+      setPhotos([]);
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
   const deleteReport = useMutation({
     mutationFn: async (id: string) => {
@@ -153,16 +225,6 @@ const ReportPlugin = () => {
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["reports"] }); toast.success("Rapport supprimé"); },
   });
-
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5 Mo"); return; }
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  };
 
   const toggleDictation = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -193,7 +255,7 @@ const ReportPlugin = () => {
         day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
       });
       const { data, error } = await supabase.functions.invoke("summarize-report", {
-        body: { text: notes, title, location, date: formattedDate, priority, photo_url: photoPreview },
+        body: { text: notes, title, location, date: formattedDate, priority, photo_url: photos[0]?.url },
       });
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
@@ -272,7 +334,7 @@ const ReportPlugin = () => {
           <input value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Titre du rapport *" className={inputCls} />
 
-          {/* Priority — prominent, above content */}
+          {/* Priority */}
           <div>
             <label className="text-xs text-muted-foreground mb-1.5 block">Priorité</label>
             <div className="flex gap-1.5">
@@ -280,7 +342,7 @@ const ReportPlugin = () => {
                 <button key={p.value} onClick={() => setPriority(p.value)}
                   className={`flex-1 text-xs py-2 rounded-lg transition-colors font-medium ${
                     priority === p.value
-                      ? p.value === "urgente" ? "bg-destructive/15 text-destructive" 
+                      ? p.value === "urgente" ? "bg-destructive/15 text-destructive"
                         : p.value === "haute" ? "bg-warning/15 text-warning"
                         : "bg-primary/10 text-primary"
                       : "text-muted-foreground bg-secondary hover:bg-secondary/80"
@@ -298,7 +360,7 @@ const ReportPlugin = () => {
               placeholder="Lieu" className={`${inputCls} pl-9`} />
           </div>
 
-          {/* Date & Time — right after location */}
+          {/* Date & Time */}
           <div className="relative">
             <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="datetime-local" value={reportDate}
@@ -350,7 +412,7 @@ const ReportPlugin = () => {
             </div>
           )}
 
-          {/* Collapsible options: color, priority, folder, photo */}
+          {/* Collapsible options */}
           <button onClick={() => setShowOptions(!showOptions)}
             className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground py-1 transition-colors">
             {showOptions ? "Masquer les options" : "Plus d'options"}
@@ -389,28 +451,11 @@ const ReportPlugin = () => {
                   </div>
                 </div>
               )}
-
-              {/* Photo */}
-              <div>
-                <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
-                  onChange={handlePhotoSelect} className="hidden" />
-                {photoPreview ? (
-                  <div className="relative">
-                    <img src={photoPreview} alt="Aperçu" className="w-full h-32 object-cover rounded-lg border border-border" />
-                    <button onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
-                      className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 text-destructive hover:bg-background">
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => fileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl border border-dashed border-border text-xs text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors">
-                    <Camera size={16} /> Ajouter une photo
-                  </button>
-                )}
-              </div>
             </div>
           )}
+
+          {/* Photos gallery */}
+          <ReportPhotoGallery photos={photos} onChange={setPhotos} />
         </div>
 
         {/* Submit */}
