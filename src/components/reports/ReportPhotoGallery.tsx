@@ -515,4 +515,5 @@ const CaptionEditor = ({
 };
 
 export default ReportPhotoGallery;
+export { renderPhotoToBlob, loadImageAsBlob };
 export type { PhotoItem };
