@@ -221,11 +221,16 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                     </div>
 
                     {shareOpenId === r.id && (
-                      <div className="flex gap-1.5 py-1 items-center">
+                      <div className="flex gap-1.5 py-1 items-center flex-wrap">
                         {shareActions.map((s) => (
                           <button key={s.id} onClick={() => handleShare(r, s.id)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors">
-                            <s.icon size={11} /> {s.label}
+                            disabled={s.id === "native" && nativeSharing}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] transition-colors ${
+                              s.id === "native"
+                                ? "bg-primary/10 text-primary hover:bg-primary/20 font-medium"
+                                : "bg-secondary text-muted-foreground hover:text-foreground"
+                            } disabled:opacity-50`}>
+                            {s.id === "native" && nativeSharing ? <Loader2 size={11} className="animate-spin" /> : <s.icon size={11} />} {s.label}
                           </button>
                         ))}
                       </div>
