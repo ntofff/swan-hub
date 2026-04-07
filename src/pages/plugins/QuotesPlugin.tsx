@@ -230,6 +230,16 @@ const QuotesPlugin = () => {
   const [cPhone, setCPhone] = useState("");
   const [editingClient, setEditingClient] = useState<any>(null);
 
+  // Standalone payment form
+  const [showPayForm, setShowPayForm] = useState(false);
+  const [pTitle, setPTitle] = useState("");
+  const [pClientId, setPClientId] = useState("");
+  const [pAmountHt, setPAmountHt] = useState("");
+  const [pMethod, setPMethod] = useState("");
+  const [pTvaRate, setPTvaRate] = useState<number>(0);
+  const [pTvaCustom, setPTvaCustom] = useState("");
+  const [pConfirmStep, setPConfirmStep] = useState(false);
+
   // UI states
   const [showExport, setShowExport] = useState(false);
   const [exportSections, setExportSections] = useState({ devis: true, factures: true, paiements: true, clients: false });
