@@ -287,7 +287,7 @@ const PhotoCanvas = ({ photo }: { photo: PhotoItem }) => {
 };
 
 function drawOverlay(ctx: CanvasRenderingContext2D, photo: PhotoItem, w: number, h: number) {
-  const { caption, captionPosition, captionFont, captionSize, captionColor, captionOpacity, showDate, takenAt } = photo;
+  const { caption, captionPosition, captionFont, captionSize, captionColor, captionOpacity, captionRotation = 0, showDate, takenAt } = photo;
 
   const dateStr = showDate
     ? takenAt.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
@@ -301,57 +301,65 @@ function drawOverlay(ctx: CanvasRenderingContext2D, photo: PhotoItem, w: number,
   const fillColor = hexToRgba(captionColor, captionOpacity);
 
   ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 4;
 
-  if (captionPosition === "center-diagonal") {
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate(-Math.PI / 6);
+  const margin = 8;
+  let anchorX: number;
+  let anchorY: number;
+
+  if (captionPosition === "center") {
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.5)";
-    ctx.shadowBlur = 4;
+    anchorX = w / 2;
+    anchorY = h / 2;
+  } else if (captionPosition === "bottom-left") {
+    ctx.textAlign = "left";
+    anchorX = margin;
+    anchorY = h - margin;
+  } else if (captionPosition === "bottom-right") {
+    ctx.textAlign = "right";
+    anchorX = w - margin;
+    anchorY = h - margin;
+  } else {
+    ctx.textAlign = "center";
+    anchorX = w / 2;
+    anchorY = h - margin;
+  }
 
+  // Apply rotation around the anchor point
+  if (captionRotation !== 0) {
+    ctx.translate(anchorX, anchorY);
+    ctx.rotate((captionRotation * Math.PI) / 180);
+    ctx.translate(-anchorX, -anchorY);
+  }
+
+  if (captionPosition === "center") {
+    ctx.textBaseline = "middle";
     if (hasCaption) {
       ctx.font = `bold ${scaledSize}px ${captionFont}`;
       ctx.fillStyle = fillColor;
-      ctx.fillText(caption!, 0, dateStr ? -dateScaledSize * 0.6 : 0);
+      ctx.fillText(caption!, anchorX, dateStr ? anchorY - dateScaledSize * 0.6 : anchorY);
     }
     if (dateStr) {
       ctx.font = `${dateScaledSize}px ${captionFont}`;
       ctx.fillStyle = fillColor;
-      ctx.fillText(dateStr, 0, hasCaption ? scaledSize * 0.6 : 0);
+      ctx.fillText(dateStr, anchorX, hasCaption ? anchorY + scaledSize * 0.6 : anchorY);
     }
   } else {
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 3;
-    const margin = 8;
-
-    let x: number;
-    if (captionPosition === "bottom-left") {
-      ctx.textAlign = "left";
-      x = margin;
-    } else if (captionPosition === "bottom-right") {
-      ctx.textAlign = "right";
-      x = w - margin;
-    } else {
-      ctx.textAlign = "center";
-      x = w / 2;
-    }
-
-    let y = h - margin;
+    ctx.textBaseline = "bottom";
+    let y = anchorY;
 
     if (dateStr) {
       ctx.font = `${dateScaledSize}px ${captionFont}`;
       ctx.fillStyle = fillColor;
-      ctx.textBaseline = "bottom";
-      ctx.fillText(dateStr, x, y);
+      ctx.fillText(dateStr, anchorX, y);
       y -= dateScaledSize + 4;
     }
 
     if (hasCaption) {
       ctx.font = `bold ${scaledSize}px ${captionFont}`;
       ctx.fillStyle = fillColor;
-      ctx.textBaseline = "bottom";
-      ctx.fillText(caption!, x, y);
+      ctx.fillText(caption!, anchorX, y);
     }
   }
 
