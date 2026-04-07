@@ -1,25 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon } from "lucide-react";
+import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon, GripVertical } from "lucide-react";
 import { parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { WelcomeScreen, APP_BUILD } from "@/components/WelcomeScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useDragReorder } from "@/hooks/useDragReorder";
 
-const quickActions = [
-  { label: "Outil Rapport", icon: FileText, path: "/plugins/report", color: "38 50% 58%" },
-  { label: "Journal de bord", icon: BookOpen, path: "/plugins/logbook", color: "217 91% 60%" },
-  { label: "Tâches", icon: CheckSquare, path: "/plugins/tasks", color: "142 71% 45%" },
-  { label: "Gestionnaire de missions", icon: Target, path: "/plugins/missions", color: "0 72% 51%" },
-  { label: "Devis & Factures", icon: Receipt, path: "/plugins/quotes", color: "270 50% 60%" },
-  { label: "Carnet de véhicule", icon: Car, path: "/plugins/vehicle", color: "38 92% 50%" },
+const defaultQuickActions = [
+  { id: "report", label: "Outil Rapport", icon: "FileText", path: "/plugins/report", color: "38 50% 58%" },
+  { id: "logbook", label: "Journal de bord", icon: "BookOpen", path: "/plugins/logbook", color: "217 91% 60%" },
+  { id: "tasks", label: "Tâches", icon: "CheckSquare", path: "/plugins/tasks", color: "142 71% 45%" },
+  { id: "missions", label: "Gestionnaire de missions", icon: "Target", path: "/plugins/missions", color: "0 72% 51%" },
+  { id: "quotes", label: "Devis & Factures", icon: "Receipt", path: "/plugins/quotes", color: "270 50% 60%" },
+  { id: "vehicle", label: "Carnet de véhicule", icon: "Car", path: "/plugins/vehicle", color: "38 92% 50%" },
 ];
+
+const iconMap: Record<string, React.ComponentType<any>> = {
+  FileText, BookOpen, CheckSquare, Target, Receipt, Car,
+};
+
+const STORAGE_KEY = "swan_hub_plugin_order";
+
+function getStoredOrder() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return defaultQuickActions;
+    const ids: string[] = JSON.parse(stored);
+    const ordered = ids.map(id => defaultQuickActions.find(a => a.id === id)).filter(Boolean) as typeof defaultQuickActions;
+    // Add any new plugins not in stored order
+    defaultQuickActions.forEach(a => { if (!ordered.find(o => o.id === a.id)) ordered.push(a); });
+    return ordered;
+  } catch { return defaultQuickActions; }
+}
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
+  const [quickActions, setQuickActions] = useState(getStoredOrder);
+  const [editMode, setEditMode] = useState(false);
 
   const { style, mode } = parseTheme(profile?.theme || "dark-night");
   const isDark = mode === "dark";
@@ -28,6 +49,16 @@ const HomePage = () => {
     const next = buildThemeId(style, isDark ? "light" : "dark");
     await updateProfile({ theme: next });
   };
+
+  const handleReorder = (reordered: typeof quickActions) => {
+    setQuickActions(reordered);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reordered.map(a => a.id)));
+  };
+
+  const { dragIndex, overIndex, getDragProps } = useDragReorder({
+    items: quickActions,
+    onReorder: handleReorder,
+  });
 
   const { data: recentTasks = [] } = useQuery({
     queryKey: ["recent_tasks"],
@@ -121,17 +152,46 @@ const HomePage = () => {
       )}
 
       <div className="px-4 md:px-0 mt-6">
-        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Actions rapides</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-muted-foreground font-heading uppercase tracking-wider">Actions rapides</h2>
+          <button
+            onClick={() => setEditMode(!editMode)}
+            className={`text-[10px] font-medium px-2 py-0.5 rounded-md transition-colors ${editMode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            {editMode ? "Terminé" : "Réorganiser"}
+          </button>
+        </div>
         <div className="grid grid-cols-3 gap-2.5">
-          {quickActions.map(a => (
-            <button key={a.label} onClick={() => navigate(a.path)}
-              className="glass-card p-4 flex flex-col items-center gap-2.5 hover:border-primary/30 transition-all active:scale-95">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `hsl(${a.color} / 0.12)` }}>
-                <a.icon size={20} style={{ color: `hsl(${a.color})` }} />
-              </div>
-              <span className="text-[10px] font-medium text-secondary-foreground text-center leading-tight">{a.label}</span>
-            </button>
-          ))}
+          {quickActions.map((a, idx) => {
+            const IconComp = iconMap[a.icon];
+            if (editMode) {
+              return (
+                <div
+                  key={a.id}
+                  {...getDragProps(idx)}
+                  className={`glass-card p-4 flex flex-col items-center gap-2.5 transition-all select-none cursor-grab active:cursor-grabbing ${
+                    dragIndex === idx ? "opacity-50 scale-90 border-primary/40" :
+                    overIndex === idx ? "border-primary/30 bg-primary/5" : ""
+                  }`}
+                >
+                  <GripVertical size={12} className="text-muted-foreground" />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `hsl(${a.color} / 0.12)` }}>
+                    {IconComp && <IconComp size={20} style={{ color: `hsl(${a.color})` }} />}
+                  </div>
+                  <span className="text-[10px] font-medium text-secondary-foreground text-center leading-tight">{a.label}</span>
+                </div>
+              );
+            }
+            return (
+              <button key={a.id} onClick={() => navigate(a.path)}
+                className="glass-card p-4 flex flex-col items-center gap-2.5 hover:border-primary/30 transition-all active:scale-95">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `hsl(${a.color} / 0.12)` }}>
+                  {IconComp && <IconComp size={20} style={{ color: `hsl(${a.color})` }} />}
+                </div>
+                <span className="text-[10px] font-medium text-secondary-foreground text-center leading-tight">{a.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
