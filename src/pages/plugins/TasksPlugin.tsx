@@ -77,10 +77,11 @@ const TasksPlugin = () => {
         : newDate ? new Date(`${newDate}T${new Date().toTimeString().slice(0, 5)}`).toISOString()
         : new Date().toISOString();
       const deadline = newDeadline ? (newDeadlineTime ? new Date(`${newDeadline}T${newDeadlineTime}`).toISOString() : new Date(`${newDeadline}T23:59`).toISOString()) : null;
-      await supabase.from("tasks").insert({
+      const { error } = await supabase.from("tasks").insert({
         user_id: user.id, text: input.trim(), priority: newPriority,
         entry_date: entryDate, deadline, location: newLocation.trim() || null, sort_order: 0,
       } as any);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -88,6 +89,7 @@ const TasksPlugin = () => {
       setShowForm(false); setShowOptions(false);
       toast.success("Tâche ajoutée");
     },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'ajouter. Reconnectez-vous.")); },
   });
 
   const toggleTask = useMutation({
