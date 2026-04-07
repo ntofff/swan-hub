@@ -3,7 +3,6 @@ import {
   Clock, ChevronDown, ChevronUp, Trash2, AlertCircle, MapPin,
   Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search, Loader2
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const buildReportText = (r: any) => {
@@ -15,16 +14,6 @@ const buildReportText = (r: any) => {
   if (r.notes) text += `\n${r.notes}`;
   return text;
 };
-
-async function fetchPhotoAsFile(url: string, index: number): Promise<File | null> {
-  try {
-    const resp = await fetch(url, { mode: "cors" });
-    const blob = await resp.blob();
-    return new File([blob], `photo-${index + 1}.jpg`, { type: blob.type || "image/jpeg" });
-  } catch {
-    return null;
-  }
-}
 
 const shareActions = [
   { id: "copy", icon: Copy, label: "Copier" },
@@ -44,7 +33,6 @@ interface Props {
 const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Props) => {
   const [showHistory, setShowHistory] = useState(false);
   const [shareOpenId, setShareOpenId] = useState<string | null>(null);
-  const [sharingId, setSharingId] = useState<string | null>(null);
   const [filterColor, setFilterColor] = useState<string | null>(null);
   const [filterFolderId, setFilterFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,53 +50,31 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
     });
   }, [reports, filterColor, filterFolderId, searchQuery]);
 
-  const getReportPhotoUrls = async (reportId: string, legacyPhotoUrl?: string): Promise<string[]> => {
-    const { data } = await supabase
-      .from("report_photos")
-      .select("photo_url")
-      .eq("report_id", reportId)
-      .order("sort_order", { ascending: true });
-    if (data && data.length > 0) return data.map((p: any) => p.photo_url);
-    if (legacyPhotoUrl) return [legacyPhotoUrl];
-    return [];
-  };
+  const handleShare = (r: any, method: string) => {
+    const text = buildReportText(r);
 
-  const handleShare = async (r: any, method: string) => {
-    setSharingId(r.id);
-    try {
-      const text = buildReportText(r);
-      const photoUrls = await getReportPhotoUrls(r.id, r.photo_url);
-
-      // Try native share with photo files (works on mobile iOS/Android)
-      if (navigator.share && navigator.canShare && photoUrls.length > 0) {
-        const filePromises = photoUrls.slice(0, 5).map((url, i) => fetchPhotoAsFile(url, i));
-        const results = await Promise.all(filePromises);
-        const files = results.filter((f): f is File => f !== null);
-
-        if (files.length > 0 && navigator.canShare({ files, text })) {
-          await navigator.share({ title: `Rapport : ${r.title}`, text, files });
-          setShareOpenId(null);
-          setSharingId(null);
-          return;
-        }
-      }
-
-      // Fallback for desktop or if native share unavailable
-      if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
-      else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
-      else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
-      else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
-    } catch (e: any) {
-      if (e?.name === "AbortError") { setSharingId(null); setShareOpenId(null); return; }
-      // If native share failed, fallback to URL-based
-      const text = buildReportText(r);
-      if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
-      else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
-      else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
-      else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    if (method === "copy") {
+      navigator.clipboard.writeText(text)
+        .then(() => toast.success("Copié"))
+        .catch(() => toast.error("Copie impossible"));
+      setShareOpenId(null);
+      return;
     }
+
+    const shareUrl = method === "email"
+      ? `mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`
+      : method === "sms"
+        ? `sms:?body=${encodeURIComponent(text)}`
+        : `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+    if (method === "email" || method === "sms") {
+      window.location.href = shareUrl;
+    } else {
+      const popup = window.open(shareUrl, "_blank", "noopener,noreferrer");
+      if (!popup) window.location.href = shareUrl;
+    }
+
     setShareOpenId(null);
-    setSharingId(null);
   };
 
   const getFolderInfo = (folderId: string | null) => folders.find((f: any) => f.id === folderId);
@@ -207,11 +173,9 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
 
                     {shareOpenId === r.id && (
                       <div className="flex gap-1.5 py-1 items-center">
-                        {sharingId === r.id && <Loader2 size={12} className="animate-spin text-primary shrink-0" />}
                         {shareActions.map((s) => (
                           <button key={s.id} onClick={() => handleShare(r, s.id)}
-                            disabled={sharingId === r.id}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors">
                             <s.icon size={11} /> {s.label}
                           </button>
                         ))}
