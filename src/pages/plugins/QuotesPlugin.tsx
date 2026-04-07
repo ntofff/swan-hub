@@ -1010,7 +1010,7 @@ const QuotesPlugin = () => {
           <div className="flex gap-1.5">
             <button onClick={() => setShowExport(!showExport)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><Download size={18} /></button>
             <button onClick={() => setShowShare(!showShare)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><Share2 size={18} /></button>
-            <button onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (!["dashboard", "settings"].includes(tab)) setShowForm(!showForm); }}
+            <button onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (tab === "paiements") setShowPayForm(!showPayForm); else if (!["dashboard", "settings"].includes(tab)) setShowForm(!showForm); }}
               className="p-2 rounded-xl bg-primary/10 text-primary"><Plus size={18} /></button>
           </div>
         } />
