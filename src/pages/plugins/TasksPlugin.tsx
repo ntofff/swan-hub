@@ -92,9 +92,11 @@ const TasksPlugin = () => {
 
   const toggleTask = useMutation({
     mutationFn: async (task: any) => {
-      await supabase.from("tasks").update({ done: !task.done } as any).eq("id", task.id);
+      const { error } = await supabase.from("tasks").update({ done: !task.done } as any).eq("id", task.id);
+      if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Action impossible")); },
   });
 
   const deleteTask = useMutation({
