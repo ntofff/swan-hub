@@ -685,12 +685,12 @@ const QuotesPlugin = () => {
 
   const buildShareText = (item: any) => {
     const isQ = !!item.quote_number;
-    const docType = isQ ? "devis" : "facture";
     const docNum = item.quote_number || item.invoice_number;
-    const clientName = getClientName(item);
-    const amount = item.amount != null ? fmtAmount(item.amount) : "";
+    const sigName = [sFirstName, sLastName].filter(Boolean).join(" ") || profile?.full_name || "";
+    const sigCompany = sCompany || "";
+    const signature = [sigName, sigCompany].filter(Boolean).join(" - ");
 
-    return `Bonjour,\n\nVeuillez trouver ci-joint ${isQ ? "le devis" : "la facture"} n° ${docNum}${clientName ? ` concernant ${item.title}` : ""}.\n\n${amount ? `Montant TTC : ${amount}\n` : ""}${item.payment_terms ? `Délai de paiement : ${item.payment_terms} jours\n` : ""}\nJe reste à votre disposition pour toute question.\n\nCordialement,\n${profileName}`;
+    return `Bonjour,\n\nVeuillez trouver ci-joint ${isQ ? "le devis" : "la facture"} n° ${docNum}.\n\nCordialement,\n${signature}`;
   };
 
   const handleSingleShare = async (method: "copy" | "email" | "sms" | "whatsapp") => {
