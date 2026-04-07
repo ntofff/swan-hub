@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon, GripVertical } from "lucide-react";
+import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon, ArrowUp, ArrowDown } from "lucide-react";
 import { parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { WelcomeScreen, APP_BUILD } from "@/components/WelcomeScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useDragReorder } from "@/hooks/useDragReorder";
 
 const defaultQuickActions = [
   { id: "report", label: "Outil Rapport", icon: "FileText", path: "/plugins/report", color: "38 50% 58%" },
@@ -50,15 +49,14 @@ const HomePage = () => {
     await updateProfile({ theme: next });
   };
 
-  const handleReorder = (reordered: typeof quickActions) => {
+  const movePlugin = (idx: number, dir: -1 | 1) => {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= quickActions.length) return;
+    const reordered = [...quickActions];
+    [reordered[idx], reordered[newIdx]] = [reordered[newIdx], reordered[idx]];
     setQuickActions(reordered);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reordered.map(a => a.id)));
   };
-
-  const { dragIndex, overIndex, getDragProps } = useDragReorder({
-    items: quickActions,
-    onReorder: handleReorder,
-  });
 
   const { data: recentTasks = [] } = useQuery({
     queryKey: ["recent_tasks"],
@@ -161,38 +159,44 @@ const HomePage = () => {
             {editMode ? "Terminé" : "Réorganiser"}
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-2.5">
-          {quickActions.map((a, idx) => {
-            const IconComp = iconMap[a.icon];
-            if (editMode) {
+        {editMode ? (
+          <div className="space-y-1.5">
+            {quickActions.map((a, idx) => {
+              const IconComp = iconMap[a.icon];
               return (
-                <div
-                  key={a.id}
-                  {...getDragProps(idx)}
-                  className={`glass-card p-4 flex flex-col items-center gap-2.5 transition-all select-none cursor-grab active:cursor-grabbing ${
-                    dragIndex === idx ? "opacity-50 scale-90 border-primary/40" :
-                    overIndex === idx ? "border-primary/30 bg-primary/5" : ""
-                  }`}
-                >
-                  <GripVertical size={12} className="text-muted-foreground" />
+                <div key={a.id} className="glass-card px-3 py-2.5 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `hsl(${a.color} / 0.12)` }}>
+                    {IconComp && <IconComp size={18} style={{ color: `hsl(${a.color})` }} />}
+                  </div>
+                  <span className="text-sm font-medium flex-1">{a.label}</span>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => movePlugin(idx, -1)} disabled={idx === 0} className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+                      <ArrowUp size={14} />
+                    </button>
+                    <button onClick={() => movePlugin(idx, 1)} disabled={idx === quickActions.length - 1} className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+                      <ArrowDown size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2.5">
+            {quickActions.map((a) => {
+              const IconComp = iconMap[a.icon];
+              return (
+                <button key={a.id} onClick={() => navigate(a.path)}
+                  className="glass-card p-4 flex flex-col items-center gap-2.5 hover:border-primary/30 transition-all active:scale-95">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `hsl(${a.color} / 0.12)` }}>
                     {IconComp && <IconComp size={20} style={{ color: `hsl(${a.color})` }} />}
                   </div>
                   <span className="text-[10px] font-medium text-secondary-foreground text-center leading-tight">{a.label}</span>
-                </div>
+                </button>
               );
-            }
-            return (
-              <button key={a.id} onClick={() => navigate(a.path)}
-                className="glass-card p-4 flex flex-col items-center gap-2.5 hover:border-primary/30 transition-all active:scale-95">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `hsl(${a.color} / 0.12)` }}>
-                  {IconComp && <IconComp size={20} style={{ color: `hsl(${a.color})` }} />}
-                </div>
-                <span className="text-[10px] font-medium text-secondary-foreground text-center leading-tight">{a.label}</span>
-              </button>
-            );
-          })}
-        </div>
+            })}
+          </div>
+        )}
       </div>
 
       <div className="px-4 md:px-0 mt-8">

@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { X, Plus, Trash2, GripVertical } from "lucide-react";
+import { X, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useDragReorder } from "@/hooks/useDragReorder";
 
 const emojiOptions = ["📁", "🏗️", "🔧", "🚗", "🏠", "📊", "⚡", "🔍", "📝", "🎯", "🛡️", "🌿", "💼", "🏭", "📦", "🔥", "💧", "🏢"];
 
@@ -56,17 +55,17 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
     },
   });
 
-  const saveOrder = async (reordered: any[]) => {
-    const updates = reordered.map((f, i) =>
-      supabase.from("report_folders").update({ sort_order: i }).eq("id", f.id)
-    );
-    await Promise.all(updates);
-    queryClient.invalidateQueries({ queryKey: ["report_folders"] });
-  };
-
-  const { dragIndex, overIndex, getDragProps } = useDragReorder({
-    items: folders,
-    onReorder: saveOrder,
+  const reorderFolder = useMutation({
+    mutationFn: async ({ idx, dir }: { idx: number; dir: -1 | 1 }) => {
+      const newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= folders.length) return;
+      const a = folders[idx], b = folders[newIdx];
+      await Promise.all([
+        supabase.from("report_folders").update({ sort_order: newIdx }).eq("id", a.id),
+        supabase.from("report_folders").update({ sort_order: idx }).eq("id", b.id),
+      ]);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["report_folders"] }),
   });
 
   return (
@@ -142,13 +141,8 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
           {folders.map((folder: any, idx: number) => (
             <div
               key={folder.id}
-              {...getDragProps(idx)}
-              className={`flex items-center justify-between p-3 rounded-xl border bg-background/70 gap-2 cursor-grab active:cursor-grabbing transition-all select-none ${
-                dragIndex === idx ? "opacity-50 scale-95 border-primary/40" :
-                overIndex === idx ? "border-primary/30 bg-primary/5" : "border-border"
-              }`}
+              className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/70 gap-2 transition-all"
             >
-              <GripVertical size={14} className="text-muted-foreground shrink-0" />
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
@@ -158,12 +152,20 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
                 </div>
                 <span className="text-sm font-medium truncate">{folder.name}</span>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); if (window.confirm(`Supprimer le dossier "${folder.name}" ?`)) deleteFolder.mutate(folder.id); }}
-                className="p-1.5 text-muted-foreground hover:text-destructive shrink-0"
-              >
-                <Trash2 size={14} />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => reorderFolder.mutate({ idx, dir: -1 })} disabled={idx === 0} className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+                  <ArrowUp size={14} />
+                </button>
+                <button onClick={() => reorderFolder.mutate({ idx, dir: 1 })} disabled={idx === folders.length - 1} className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+                  <ArrowDown size={14} />
+                </button>
+                <button
+                  onClick={() => { if (window.confirm(`Supprimer le dossier "${folder.name}" ?`)) deleteFolder.mutate(folder.id); }}
+                  className="p-1.5 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
