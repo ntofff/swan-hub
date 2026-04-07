@@ -1278,6 +1278,70 @@ const QuotesPlugin = () => {
               </div>
             )}
 
+            {showForm && tab === "factures" && (
+              <div className="glass-card p-4 mb-4 space-y-3 slide-up">
+                <input value={fTitle} onChange={e => setFTitle(e.target.value)} placeholder="Titre *" className={inputCls} />
+                <select value={fClientId} onChange={e => setFClientId(e.target.value)} className={inputCls}>
+                  <option value="">-- Client --</option>
+                  {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <input value={fAmountHt} onChange={e => setFAmountHt(e.target.value)} placeholder="Montant HT (€)" type="number" className={inputCls} />
+
+                <div className="flex gap-2 items-center">
+                  <select value={fDiscountType} onChange={e => setFDiscountType(e.target.value as any)} className={`${inputCls} flex-1`}>
+                    <option value="">Pas de remise</option><option value="percent">Remise %</option><option value="fixed">Remise fixe €</option>
+                  </select>
+                  {fDiscountType && <input value={fDiscountValue} onChange={e => setFDiscountValue(e.target.value)} placeholder={fDiscountType === "percent" ? "%" : "€"} type="number" className={`${inputCls} w-24`} />}
+                </div>
+
+                <TvaRateSelector rate={fTvaRate} setRate={setFTvaRate} custom={fTvaCustom} setCustom={setFTvaCustom} mention={fTva} setMention={setFTva} />
+
+                {fAmountHt && (
+                  <div className="text-xs text-muted-foreground space-y-0.5 bg-secondary p-2 rounded-lg">
+                    <p>HT après remise : <span className="font-semibold text-foreground">{fmtAmount(calcFinalHtAfterDiscount())}</span></p>
+                    {getEffectiveTvaRate(fTvaRate, fTvaCustom) > 0 && (
+                      <p>TVA ({getEffectiveTvaRate(fTvaRate, fTvaCustom)}%) : <span className="font-semibold text-foreground">{fmtAmount(calcFinalTva())}</span></p>
+                    )}
+                    <p>Total TTC : <span className="font-semibold text-foreground">{fmtAmount(calcFinal())}</span></p>
+                  </div>
+                )}
+
+                <div><p className={`${labelCls} mb-1.5`}>Couleur</p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {colorPalette.map(c => (<button key={c} onClick={() => setFColor(fColor === c ? "" : c)} className="w-6 h-6 rounded-full border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: fColor === c ? "hsl(var(--primary))" : "transparent" }} />))}
+                  </div>
+                </div>
+
+                <button onClick={() => setFShowOptions(!fShowOptions)} className="text-xs text-primary">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
+
+                {fShowOptions && (
+                  <div className="space-y-3 pt-1">
+                    <div><p className={labelCls}>Date d'émission</p><input type="date" value={fIssueDate} onChange={e => setFIssueDate(e.target.value)} className={inputCls} /></div>
+                    <div><p className={labelCls}>Période</p><input value={fPeriod} onChange={e => setFPeriod(e.target.value)} placeholder="Ex: Mars 2026" className={inputCls} /></div>
+                    <div>
+                      <p className={labelCls}>Délai de paiement</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {paymentTermsOptions.map(d => (
+                          <button key={d} onClick={() => setFPaymentTerms(fPaymentTerms === String(d) ? "" : String(d))}
+                            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${fPaymentTerms === String(d) ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>{d}j</button>
+                        ))}
+                        <input value={fPaymentTerms} onChange={e => setFPaymentTerms(e.target.value)} placeholder="Autre" type="number" className="w-16 bg-secondary border border-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                      </div>
+                    </div>
+                    <div><p className={labelCls}>Encaissement</p>
+                      <div className="flex flex-wrap gap-1.5">{paymentMethods.map(m => (<button key={m} onClick={() => setFPayment(fPayment === m ? "" : m)} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${fPayment === m ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>{m}</button>))}</div>
+                    </div>
+                    <div><p className={labelCls}>Notes</p><textarea value={fNotes} onChange={e => setFNotes(e.target.value)} rows={2} placeholder="Annotations libres..." className={inputCls} /></div>
+                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={fShowRib} onChange={e => setFShowRib(e.target.checked)} className="rounded" />Inclure le RIB</label>
+                    {fShowRib && sIban && <p className="text-xs text-muted-foreground bg-secondary p-2 rounded-lg">RIB : {sHolder} — {sIban}</p>}
+                    {fShowRib && !sIban && <p className="text-xs text-destructive">Configurez votre RIB dans Réglages</p>}
+                  </div>
+                )}
+
+                <button onClick={() => addInvoice.mutate()} disabled={!fTitle.trim()} className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40">Créer la facture</button>
+              </div>
+            )}
+
             <div className="relative mb-3">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
