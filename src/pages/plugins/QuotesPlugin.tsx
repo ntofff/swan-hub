@@ -64,7 +64,7 @@ const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any)
 
   return (
     <div className="space-y-3">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden relative" style={{ minHeight: 500 }}>
+      <div id="document-preview-capture" className="bg-white rounded-xl shadow-lg overflow-hidden relative" style={{ minHeight: 500 }}>
         {/* Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10" style={{ transform: "rotate(-35deg)" }}>
           <span className="text-[3rem] font-black tracking-widest uppercase select-none"
