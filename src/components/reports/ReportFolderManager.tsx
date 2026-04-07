@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -13,9 +13,10 @@ interface Props {
   onClose: () => void;
 }
 
-const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
+const inputCls = "w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary";
 
 const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
+  const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
