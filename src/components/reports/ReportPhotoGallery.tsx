@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
-  Camera, X, Download, Trash2, ChevronUp, ChevronDown,
+  Camera, X, Download, ChevronUp, ChevronDown,
   ArrowUp, ArrowDown, Type, Eye, EyeOff, Pencil
 } from "lucide-react";
 import { toast } from "sonner";
@@ -107,13 +107,38 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
   const saveToDevice = useCallback(async (photo: PhotoItem) => {
     try {
       const canvas = await renderPhotoWithCaption(photo);
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+          "image/jpeg",
+          0.92
+        );
+      });
+
+      // Try share API first (works on iOS Safari)
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], `rapport-photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] });
+          toast.success("Photo partagée");
+          return;
+        }
+      }
+
+      // Fallback: create object URL and open
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
+      link.href = url;
       link.download = `rapport-photo-${Date.now()}.jpg`;
-      link.href = canvas.toDataURL("image/jpeg", 0.92);
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
       toast.success("Photo enregistrée");
-    } catch {
-      toast.error("Erreur lors de l'enregistrement");
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        toast.error("Erreur lors de l'enregistrement");
+      }
     }
   }, []);
 
@@ -143,34 +168,33 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
               <Camera size={16} /> Ajouter des photos
             </button>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-3">
               {photos.map((photo, idx) => (
-                <div key={photo.id} className="space-y-1">
+                <div key={photo.id} className="space-y-1.5">
                   <div className="relative group rounded-lg overflow-hidden border border-border">
                     <PhotoCanvas photo={photo} />
 
                     {/* Actions overlay */}
-                    <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ opacity: 1 }}>
+                    <div className="absolute top-1.5 right-1.5 flex gap-1">
                       <button onClick={() => movePhoto(idx, -1)} disabled={idx === 0}
-                        className="p-1 rounded bg-background/80 text-foreground disabled:opacity-30">
-                        <ArrowUp size={10} />
+                        className="p-1.5 rounded-md bg-background/80 text-foreground disabled:opacity-30">
+                        <ArrowUp size={12} />
                       </button>
                       <button onClick={() => movePhoto(idx, 1)} disabled={idx === photos.length - 1}
-                        className="p-1 rounded bg-background/80 text-foreground disabled:opacity-30">
-                        <ArrowDown size={10} />
+                        className="p-1.5 rounded-md bg-background/80 text-foreground disabled:opacity-30">
+                        <ArrowDown size={12} />
                       </button>
                       <button onClick={() => setEditingIdx(editingIdx === idx ? null : idx)}
-                        className="p-1 rounded bg-background/80 text-foreground">
-                        <Type size={10} />
+                        className={`p-1.5 rounded-md bg-background/80 ${editingIdx === idx ? "text-primary" : "text-foreground"}`}>
+                        <Type size={12} />
                       </button>
                       <button onClick={() => saveToDevice(photo)}
-                        className="p-1 rounded bg-background/80 text-foreground">
-                        <Download size={10} />
+                        className="p-1.5 rounded-md bg-background/80 text-foreground">
+                        <Download size={12} />
                       </button>
                       <button onClick={() => removePhoto(idx)}
-                        className="p-1 rounded bg-background/80 text-destructive">
-                        <X size={10} />
+                        className="p-1.5 rounded-md bg-background/80 text-destructive">
+                        <X size={12} />
                       </button>
                     </div>
                   </div>
@@ -183,7 +207,7 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
                     })}
                   </p>
 
-                  {/* Caption editor */}
+                  {/* Caption editor - full width below the photo */}
                   {editingIdx === idx && (
                     <CaptionEditor
                       photo={photo}
@@ -229,6 +253,11 @@ const PhotoCanvas = ({ photo }: { photo: PhotoItem }) => {
     }
   }, [photo]);
 
+  // Redraw whenever photo properties change
+  useEffect(() => {
+    draw();
+  }, [draw]);
+
   return (
     <>
       <img
@@ -263,15 +292,12 @@ function drawCaption(ctx: CanvasRenderingContext2D, photo: PhotoItem, w: number,
     ctx.rotate(-Math.PI / 6);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-
-    // shadow for readability
     ctx.shadowColor = "rgba(0,0,0,0.5)";
     ctx.shadowBlur = 4;
     ctx.fillText(caption, 0, 0);
   } else {
     ctx.shadowColor = "rgba(0,0,0,0.6)";
     ctx.shadowBlur = 3;
-
     const margin = 8;
     if (captionPosition === "bottom-left") {
       ctx.textAlign = "left";
@@ -298,7 +324,6 @@ async function renderPhotoWithCaption(photo: PhotoItem): Promise<HTMLCanvasEleme
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
-
       if (photo.caption?.trim()) {
         drawCaption(ctx, photo, img.naturalWidth, img.naturalHeight);
       }
@@ -309,7 +334,7 @@ async function renderPhotoWithCaption(photo: PhotoItem): Promise<HTMLCanvasEleme
   });
 }
 
-/* ─── Caption editor panel ─── */
+/* ─── Caption editor panel — full width ─── */
 const CaptionEditor = ({
   photo,
   onUpdate,
@@ -320,26 +345,26 @@ const CaptionEditor = ({
   onClose: () => void;
 }) => {
   return (
-    <div className="glass-card p-2.5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="glass-card p-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium text-primary flex items-center gap-1"><Pencil size={10} /> Marquage</span>
-        <button onClick={onClose} className="p-0.5 text-muted-foreground hover:text-foreground"><X size={11} /></button>
+        <span className="text-xs font-medium text-primary flex items-center gap-1.5"><Pencil size={12} /> Marquage photo</span>
+        <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground"><X size={14} /></button>
       </div>
 
       <input
         value={photo.caption || ""}
         onChange={(e) => onUpdate({ caption: e.target.value })}
-        placeholder="Texte à afficher…"
-        className="w-full bg-secondary border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+        placeholder="Texte à afficher sur la photo…"
+        className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
       />
 
       {/* Position */}
       <div>
-        <label className="text-[9px] text-muted-foreground block mb-1">Position</label>
-        <div className="grid grid-cols-2 gap-1">
+        <label className="text-[10px] text-muted-foreground block mb-1.5">Position</label>
+        <div className="grid grid-cols-2 gap-1.5">
           {positionOptions.map((p) => (
             <button key={p.value} onClick={() => onUpdate({ captionPosition: p.value })}
-              className={`text-[9px] px-1.5 py-1 rounded transition-colors ${
+              className={`text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
                 photo.captionPosition === p.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               }`}>
               {p.label}
@@ -350,11 +375,11 @@ const CaptionEditor = ({
 
       {/* Font */}
       <div>
-        <label className="text-[9px] text-muted-foreground block mb-1">Police</label>
-        <div className="flex gap-1 flex-wrap">
+        <label className="text-[10px] text-muted-foreground block mb-1.5">Police</label>
+        <div className="flex gap-1.5 flex-wrap">
           {fontOptions.map((f) => (
             <button key={f.value} onClick={() => onUpdate({ captionFont: f.value })}
-              className={`text-[9px] px-1.5 py-1 rounded transition-colors ${
+              className={`text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
                 photo.captionFont === f.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               }`}
               style={{ fontFamily: f.value }}>
@@ -366,25 +391,25 @@ const CaptionEditor = ({
 
       {/* Size */}
       <div>
-        <label className="text-[9px] text-muted-foreground block mb-1">Taille ({photo.captionSize}px)</label>
+        <label className="text-[10px] text-muted-foreground block mb-1.5">Taille ({photo.captionSize}px)</label>
         <input type="range" min={10} max={72} value={photo.captionSize}
           onChange={(e) => onUpdate({ captionSize: Number(e.target.value) })}
-          className="w-full h-1.5 accent-primary" />
+          className="w-full h-2 accent-primary" />
       </div>
 
-      {/* Color */}
-      <div className="flex gap-3 items-center">
+      {/* Color + Opacity */}
+      <div className="flex gap-4 items-end">
         <div>
-          <label className="text-[9px] text-muted-foreground block mb-1">Couleur</label>
+          <label className="text-[10px] text-muted-foreground block mb-1.5">Couleur</label>
           <input type="color" value={photo.captionColor}
             onChange={(e) => onUpdate({ captionColor: e.target.value })}
-            className="w-7 h-7 rounded border border-border cursor-pointer" />
+            className="w-9 h-9 rounded-lg border border-border cursor-pointer" />
         </div>
         <div className="flex-1">
-          <label className="text-[9px] text-muted-foreground block mb-1">Opacité ({Math.round(photo.captionOpacity * 100)}%)</label>
+          <label className="text-[10px] text-muted-foreground block mb-1.5">Opacité ({Math.round(photo.captionOpacity * 100)}%)</label>
           <input type="range" min={10} max={100} value={photo.captionOpacity * 100}
             onChange={(e) => onUpdate({ captionOpacity: Number(e.target.value) / 100 })}
-            className="w-full h-1.5 accent-primary" />
+            className="w-full h-2 accent-primary" />
         </div>
       </div>
     </div>
