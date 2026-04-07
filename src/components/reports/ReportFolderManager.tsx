@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { X, Plus, Trash2, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { X, Plus, Trash2, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useDragReorder } from "@/hooks/useDragReorder";
 
 const emojiOptions = ["📁", "🏗️", "🔧", "🚗", "🏠", "📊", "⚡", "🔍", "📝", "🎯", "🛡️", "🌿", "💼", "🏭", "📦", "🔥", "💧", "🏢"];
 
@@ -55,25 +56,17 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
     },
   });
 
-  const reorderFolder = useMutation({
-    mutationFn: async ({ folderId, direction }: { folderId: string; direction: "up" | "down" }) => {
-      const idx = folders.findIndex((f: any) => f.id === folderId);
-      if (idx < 0) return;
-      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= folders.length) return;
+  const saveOrder = async (reordered: any[]) => {
+    const updates = reordered.map((f, i) =>
+      supabase.from("report_folders").update({ sort_order: i }).eq("id", f.id)
+    );
+    await Promise.all(updates);
+    queryClient.invalidateQueries({ queryKey: ["report_folders"] });
+  };
 
-      const current = folders[idx];
-      const swap = folders[swapIdx];
-
-      const { error: e1 } = await supabase.from("report_folders").update({ sort_order: swapIdx }).eq("id", current.id);
-      if (e1) throw e1;
-      const { error: e2 } = await supabase.from("report_folders").update({ sort_order: idx }).eq("id", swap.id);
-      if (e2) throw e2;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["report_folders"] });
-    },
-    onError: () => toast.error("Erreur de réorganisation"),
+  const { dragIndex, overIndex, getDragProps } = useDragReorder({
+    items: folders,
+    onReorder: saveOrder,
   });
 
   return (
@@ -145,27 +138,17 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
 
       {folders.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-medium text-muted-foreground">Dossiers existants</h4>
+          <h4 className="text-xs font-medium text-muted-foreground">Dossiers existants — glissez pour réordonner</h4>
           {folders.map((folder: any, idx: number) => (
-            <div key={folder.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/70 gap-2">
-              <div className="flex items-center gap-1 shrink-0">
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    onClick={() => reorderFolder.mutate({ folderId: folder.id, direction: "up" })}
-                    disabled={idx === 0 || reorderFolder.isPending}
-                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
-                  >
-                    <ArrowUp size={12} />
-                  </button>
-                  <button
-                    onClick={() => reorderFolder.mutate({ folderId: folder.id, direction: "down" })}
-                    disabled={idx === folders.length - 1 || reorderFolder.isPending}
-                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
-                  >
-                    <ArrowDown size={12} />
-                  </button>
-                </div>
-              </div>
+            <div
+              key={folder.id}
+              {...getDragProps(idx)}
+              className={`flex items-center justify-between p-3 rounded-xl border bg-background/70 gap-2 cursor-grab active:cursor-grabbing transition-all select-none ${
+                dragIndex === idx ? "opacity-50 scale-95 border-primary/40" :
+                overIndex === idx ? "border-primary/30 bg-primary/5" : "border-border"
+              }`}
+            >
+              <GripVertical size={14} className="text-muted-foreground shrink-0" />
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
@@ -176,7 +159,7 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
                 <span className="text-sm font-medium truncate">{folder.name}</span>
               </div>
               <button
-                onClick={() => { if (window.confirm(`Supprimer le dossier "${folder.name}" ?`)) deleteFolder.mutate(folder.id); }}
+                onClick={(e) => { e.stopPropagation(); if (window.confirm(`Supprimer le dossier "${folder.name}" ?`)) deleteFolder.mutate(folder.id); }}
                 className="p-1.5 text-muted-foreground hover:text-destructive shrink-0"
               >
                 <Trash2 size={14} />
