@@ -83,6 +83,7 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
           url: ev.target?.result as string,
           caption: "",
           captionPosition: "bottom-center",
+          captionRotation: 0,
           captionFont: "sans-serif",
           captionSize: 24,
           captionColor: "#FFFFFF",
