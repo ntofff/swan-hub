@@ -17,6 +17,7 @@ const buildReportText = (r: any) => {
 };
 
 const shareActions = [
+  { id: "native", icon: Smartphone, label: "Partager" },
   { id: "copy", icon: Copy, label: "Copier" },
   { id: "email", icon: Mail, label: "Email" },
   { id: "sms", icon: Phone, label: "SMS" },
