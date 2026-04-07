@@ -26,10 +26,20 @@ interface Props {
 }
 
 const positionOptions = [
-  { value: "center-diagonal", label: "Centre diagonale" },
+  { value: "center", label: "Centre" },
   { value: "bottom-left", label: "Bas gauche" },
   { value: "bottom-center", label: "Bas centre" },
   { value: "bottom-right", label: "Bas droite" },
+];
+
+const rotationOptions = [
+  { value: 0, label: "0°" },
+  { value: -15, label: "-15°" },
+  { value: -30, label: "-30°" },
+  { value: -45, label: "-45°" },
+  { value: 15, label: "15°" },
+  { value: 30, label: "30°" },
+  { value: 45, label: "45°" },
 ];
 
 const fontOptions = [
