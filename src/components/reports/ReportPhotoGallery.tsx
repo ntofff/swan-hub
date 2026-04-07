@@ -15,6 +15,7 @@ interface PhotoItem {
   captionSize: number;
   captionColor: string;
   captionOpacity: number;
+  showDate?: boolean;
   takenAt: Date;
 }
 
@@ -37,6 +38,13 @@ const fontOptions = [
   { value: "'Courier New', monospace", label: "Courier" },
   { value: "'Georgia', serif", label: "Georgia" },
 ];
+
+function hexToRgba(hex: string, opacity: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
 
 const ReportPhotoGallery = ({ photos, onChange }: Props) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -68,6 +76,7 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
           captionSize: 24,
           captionColor: "#FFFFFF",
           captionOpacity: 0.8,
+          showDate: false,
           takenAt: new Date(),
         });
         processed++;
@@ -115,7 +124,6 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
         );
       });
 
-      // Try share API first (works on iOS Safari)
       if (navigator.share && navigator.canShare) {
         const file = new File([blob], `rapport-photo-${Date.now()}.jpg`, { type: "image/jpeg" });
         if (navigator.canShare({ files: [file] })) {
@@ -125,7 +133,6 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
         }
       }
 
-      // Fallback: create object URL and open
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -174,7 +181,6 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
                   <div className="relative group rounded-lg overflow-hidden border border-border">
                     <PhotoCanvas photo={photo} />
 
-                    {/* Actions overlay */}
                     <div className="absolute top-1.5 right-1.5 flex gap-1">
                       <button onClick={() => movePhoto(idx, -1)} disabled={idx === 0}
                         className="p-1.5 rounded-md bg-background/80 text-foreground disabled:opacity-30">
@@ -199,7 +205,6 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
                     </div>
                   </div>
 
-                  {/* Date */}
                   <p className="text-[9px] text-muted-foreground text-center">
                     {photo.takenAt.toLocaleDateString("fr-FR", {
                       day: "numeric", month: "short", year: "numeric",
@@ -207,7 +212,6 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
                     })}
                   </p>
 
-                  {/* Caption editor - full width below the photo */}
                   {editingIdx === idx && (
                     <CaptionEditor
                       photo={photo}
@@ -225,7 +229,7 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
   );
 };
 
-/* ─── Canvas renderer for photo with caption overlay ─── */
+/* ─── Canvas renderer ─── */
 const PhotoCanvas = ({ photo }: { photo: PhotoItem }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -247,16 +251,10 @@ const PhotoCanvas = ({ photo }: { photo: PhotoItem }) => {
     ctx.scale(2, 2);
 
     ctx.drawImage(img, 0, 0, w, h);
-
-    if (photo.caption?.trim()) {
-      drawCaption(ctx, photo, w, h);
-    }
+    drawOverlay(ctx, photo, w, h);
   }, [photo]);
 
-  // Redraw whenever photo properties change
-  useEffect(() => {
-    draw();
-  }, [draw]);
+  useEffect(() => { draw(); }, [draw]);
 
   return (
     <>
@@ -276,16 +274,21 @@ const PhotoCanvas = ({ photo }: { photo: PhotoItem }) => {
   );
 };
 
-function drawCaption(ctx: CanvasRenderingContext2D, photo: PhotoItem, w: number, h: number) {
-  const { caption, captionPosition, captionFont, captionSize, captionColor, captionOpacity } = photo;
-  if (!caption) return;
+function drawOverlay(ctx: CanvasRenderingContext2D, photo: PhotoItem, w: number, h: number) {
+  const { caption, captionPosition, captionFont, captionSize, captionColor, captionOpacity, showDate, takenAt } = photo;
+
+  const dateStr = showDate
+    ? takenAt.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : null;
+
+  const hasCaption = !!caption?.trim();
+  if (!hasCaption && !dateStr) return;
 
   const scaledSize = Math.max(8, captionSize * (w / 300));
+  const dateScaledSize = Math.max(6, scaledSize * 0.55);
+  const fillColor = hexToRgba(captionColor, captionOpacity);
+
   ctx.save();
-  ctx.font = `bold ${scaledSize}px ${captionFont}`;
-  ctx.fillStyle = captionColor;
-  ctx.globalAlpha = captionOpacity;
-  ctx.textBaseline = "bottom";
 
   if (captionPosition === "center-diagonal") {
     ctx.translate(w / 2, h / 2);
@@ -294,20 +297,49 @@ function drawCaption(ctx: CanvasRenderingContext2D, photo: PhotoItem, w: number,
     ctx.textBaseline = "middle";
     ctx.shadowColor = "rgba(0,0,0,0.5)";
     ctx.shadowBlur = 4;
-    ctx.fillText(caption, 0, 0);
+
+    if (hasCaption) {
+      ctx.font = `bold ${scaledSize}px ${captionFont}`;
+      ctx.fillStyle = fillColor;
+      ctx.fillText(caption!, 0, dateStr ? -dateScaledSize * 0.6 : 0);
+    }
+    if (dateStr) {
+      ctx.font = `${dateScaledSize}px ${captionFont}`;
+      ctx.fillStyle = fillColor;
+      ctx.fillText(dateStr, 0, hasCaption ? scaledSize * 0.6 : 0);
+    }
   } else {
     ctx.shadowColor = "rgba(0,0,0,0.6)";
     ctx.shadowBlur = 3;
     const margin = 8;
+
+    let x: number;
     if (captionPosition === "bottom-left") {
       ctx.textAlign = "left";
-      ctx.fillText(caption, margin, h - margin);
+      x = margin;
     } else if (captionPosition === "bottom-right") {
       ctx.textAlign = "right";
-      ctx.fillText(caption, w - margin, h - margin);
+      x = w - margin;
     } else {
       ctx.textAlign = "center";
-      ctx.fillText(caption, w / 2, h - margin);
+      x = w / 2;
+    }
+
+    let y = h - margin;
+
+    if (dateStr) {
+      ctx.font = `${dateScaledSize}px ${captionFont}`;
+      ctx.fillStyle = fillColor;
+      ctx.textBaseline = "bottom";
+      ctx.fillText(dateStr, x, y);
+      y -= dateScaledSize + 4;
+    }
+
+    if (hasCaption) {
+      ctx.font = `bold ${scaledSize}px ${captionFont}`;
+      ctx.fillStyle = fillColor;
+      ctx.textBaseline = "bottom";
+      ctx.fillText(caption!, x, y);
     }
   }
 
@@ -324,9 +356,7 @@ async function renderPhotoWithCaption(photo: PhotoItem): Promise<HTMLCanvasEleme
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
-      if (photo.caption?.trim()) {
-        drawCaption(ctx, photo, img.naturalWidth, img.naturalHeight);
-      }
+      drawOverlay(ctx, photo, img.naturalWidth, img.naturalHeight);
       resolve(canvas);
     };
     img.onerror = reject;
@@ -334,7 +364,7 @@ async function renderPhotoWithCaption(photo: PhotoItem): Promise<HTMLCanvasEleme
   });
 }
 
-/* ─── Caption editor panel — full width ─── */
+/* ─── Caption editor ─── */
 const CaptionEditor = ({
   photo,
   onUpdate,
@@ -357,6 +387,17 @@ const CaptionEditor = ({
         placeholder="Texte à afficher sur la photo…"
         className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
       />
+
+      {/* Show date checkbox */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={photo.showDate ?? false}
+          onChange={(e) => onUpdate({ showDate: e.target.checked })}
+          className="w-4 h-4 rounded border-border accent-primary"
+        />
+        <span className="text-[11px] text-foreground">Afficher la date sur la photo</span>
+      </label>
 
       {/* Position */}
       <div>
