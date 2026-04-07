@@ -11,6 +11,7 @@ interface PhotoItem {
   url: string;
   caption?: string;
   captionPosition: string;
+  captionRotation?: number;
   captionFont: string;
   captionSize: number;
   captionColor: string;
