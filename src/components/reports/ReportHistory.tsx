@@ -71,46 +71,23 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
   const handleShare = async (r: any, method: string) => {
     setSharingId(r.id);
     try {
-      const photoUrls = await getReportPhotoUrls(r.id, r.photo_url);
-
-      // Try native share with files on mobile
-      if (navigator.share && navigator.canShare && photoUrls.length > 0 && method !== "copy") {
-        try {
-          const files: File[] = [];
-          for (let i = 0; i < Math.min(photoUrls.length, 5); i++) {
-            const img = await loadImageAsBlob(photoUrls[i]);
-            const canvas = document.createElement("canvas");
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            const ctx = canvas.getContext("2d")!;
-            ctx.drawImage(img, 0, 0);
-            const blob = await new Promise<Blob>((res, rej) =>
-              canvas.toBlob((b) => (b ? res(b) : rej()), "image/jpeg", 0.9)
-            );
-            files.push(new File([blob], `photo-${i + 1}.jpg`, { type: "image/jpeg" }));
-          }
-
-          const text = buildReportText(r);
-          if (navigator.canShare({ files, text })) {
-            await navigator.share({
-              title: `Rapport : ${r.title}`,
-              text,
-              files,
-            });
-            setShareOpenId(null);
-            setSharingId(null);
-            return;
-          }
-        } catch (e: any) {
-          if (e?.name === "AbortError") { setSharingId(null); return; }
-          // Fallback to URL-based sharing below
-        }
+      // For copy, we can afford to await photo URLs
+      if (method === "copy") {
+        const photoUrls = await getReportPhotoUrls(r.id, r.photo_url);
+        const text = buildReportText(r, photoUrls);
+        navigator.clipboard.writeText(text);
+        toast.success("Copié");
+        setShareOpenId(null);
+        setSharingId(null);
+        return;
       }
 
-      // Fallback: include photo URLs in text
-      const text = buildReportText(r, photoUrls);
-      if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
-      else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
+      // For email/sms/whatsapp: open immediately to preserve user gesture
+      // Include photo URL from legacy field synchronously, fetch full list after
+      const quickPhotoUrls = r.photo_url ? [r.photo_url] : [];
+      const text = buildReportText(r, quickPhotoUrls);
+
+      if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
       else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
       else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
     } catch {
