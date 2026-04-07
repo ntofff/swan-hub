@@ -55,6 +55,7 @@ const ReportPlugin = () => {
   const [aiSummary, setAiSummary] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [showFolderManager, setShowFolderManager] = useState(false);
+  const [showFolderStrip, setShowFolderStrip] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
