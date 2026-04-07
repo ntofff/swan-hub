@@ -90,9 +90,10 @@ const LogbookPlugin = () => {
         ? new Date(`${newDate}T${newTime}`).toISOString()
         : newDate ? new Date(`${newDate}T${new Date().toTimeString().slice(0, 5)}`).toISOString()
         : new Date().toISOString();
-      await supabase.from("log_entries").insert({
+      const { error } = await supabase.from("log_entries").insert({
         user_id: user.id, text: newEntry.trim(), color: newColor, priority: newPriority, entry_date: entryDate,
       } as any);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["log_entries"] });
@@ -100,6 +101,7 @@ const LogbookPlugin = () => {
       setShowForm(false);
       toast.success("Entrée ajoutée");
     },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'ajouter. Reconnectez-vous.")); },
   });
 
   const deleteEntry = useMutation({
