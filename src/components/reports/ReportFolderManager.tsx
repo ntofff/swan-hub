@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Plus, Trash2, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -16,7 +16,6 @@ interface Props {
 const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 
 const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
-  const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -54,6 +53,27 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
       queryClient.invalidateQueries({ queryKey: ["report_folders"] });
       toast.success("Dossier supprimé");
     },
+  });
+
+  const reorderFolder = useMutation({
+    mutationFn: async ({ folderId, direction }: { folderId: string; direction: "up" | "down" }) => {
+      const idx = folders.findIndex((f: any) => f.id === folderId);
+      if (idx < 0) return;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= folders.length) return;
+
+      const current = folders[idx];
+      const swap = folders[swapIdx];
+
+      const { error: e1 } = await supabase.from("report_folders").update({ sort_order: swapIdx }).eq("id", current.id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("report_folders").update({ sort_order: idx }).eq("id", swap.id);
+      if (e2) throw e2;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report_folders"] });
+    },
+    onError: () => toast.error("Erreur de réorganisation"),
   });
 
   return (
@@ -126,9 +146,27 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
       {folders.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-medium text-muted-foreground">Dossiers existants</h4>
-          {folders.map((folder: any) => (
-            <div key={folder.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/70 gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
+          {folders.map((folder: any, idx: number) => (
+            <div key={folder.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/70 gap-2">
+              <div className="flex items-center gap-1 shrink-0">
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    onClick={() => reorderFolder.mutate({ folderId: folder.id, direction: "up" })}
+                    disabled={idx === 0 || reorderFolder.isPending}
+                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
+                  >
+                    <ArrowUp size={12} />
+                  </button>
+                  <button
+                    onClick={() => reorderFolder.mutate({ folderId: folder.id, direction: "down" })}
+                    disabled={idx === folders.length - 1 || reorderFolder.isPending}
+                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
+                  >
+                    <ArrowDown size={12} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
                   style={{ backgroundColor: `hsl(${folder.color} / 0.15)` }}
