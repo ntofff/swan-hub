@@ -89,15 +89,17 @@ const MissionsPlugin = () => {
     mutationFn: async () => {
       if (!user || !title.trim()) return;
       const sd = startDate ? (startTime ? `${startDate}` : startDate) : null;
-      await supabase.from("missions").insert({
+      const { error } = await supabase.from("missions").insert({
         user_id: user.id, title: title.trim(), client: client.trim() || null,
         status, location: location.trim() || null, notes: notes.trim() || null,
         start_date: sd, end_date: endDate || null,
         collaborator: collaborator.trim() || null, contact: contact.trim() || null,
         quote_amount: quoteAmount ? parseFloat(quoteAmount) : null,
       } as any);
+      if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["missions"] }); resetForm(); toast.success("Mission créée"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de créer. Reconnectez-vous.")); },
   });
 
   const deleteMission = useMutation({
