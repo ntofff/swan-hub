@@ -580,6 +580,44 @@ const QuotesPlugin = () => {
     onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'enregistrer le paiement")); },
   });
 
+  const addStandalonePayment = useMutation({
+    mutationFn: async () => {
+      if (!user || !pTitle.trim() || !pAmountHt) return;
+      const num = generateNumber("invoice");
+      const cl = clients.find((c: any) => c.id === pClientId);
+      const rate = getEffectiveTvaRate(pTvaRate, pTvaCustom);
+      const ht = parseFloat(pAmountHt) || 0;
+      const { ttc } = calcTtc(ht, "", 0, rate);
+      // Create invoice
+      const { data: inv, error: invErr } = await supabase.from("invoices").insert({
+        user_id: user.id, invoice_number: num, title: pTitle.trim(),
+        client: cl?.name || null, client_id: pClientId || null,
+        amount: ttc || null, amount_ht: ht || null,
+        tva_rate: rate || null, status: "Payé",
+        payment_method: pMethod || null,
+        issue_date: new Date().toISOString().slice(0, 10),
+      }).select().single();
+      if (invErr) throw invErr;
+      // Create payment
+      const { error: payErr } = await supabase.from("payments").insert({
+        user_id: user.id, invoice_id: inv.id, amount: ttc,
+        status: "Payé", method: pMethod || null, paid_at: new Date().toISOString(),
+      });
+      if (payErr) throw payErr;
+      if (settings?.id) {
+        await supabase.from("invoice_settings").update({ invoice_counter: (settings.invoice_counter || 1) + 1 }).eq("id", settings.id);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      qc.invalidateQueries({ queryKey: ["invoice_settings"] });
+      setPTitle(""); setPClientId(""); setPAmountHt(""); setPMethod(""); setPTvaRate(0); setPTvaCustom(""); setPConfirmStep(false); setShowPayForm(false);
+      toast.success("Paiement et facture créés !");
+    },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'enregistrer")); },
+  });
+
   const deleteItem = useMutation({
     mutationFn: async ({ id, type }: { id: string; type: "quotes" | "invoices" }) => {
       const { error } = await supabase.from(type).delete().eq("id", id);
