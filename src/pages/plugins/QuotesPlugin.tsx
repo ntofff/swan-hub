@@ -635,15 +635,37 @@ const QuotesPlugin = () => {
   const profileName = profile?.full_name || [sFirstName, sLastName].filter(Boolean).join(" ") || "SWAN";
 
   // ── Single item export/share ──
-  const generatePdfBlob = async (item: any): Promise<Blob | null> => {
-    const isQ = !!item.quote_number;
+  const generatePdfBlob = async (_item?: any): Promise<Blob | null> => {
+    const el = document.getElementById("document-preview-capture");
+    if (!el) return null;
     try {
-      const { data, error } = await supabase.functions.invoke("export-quotes", {
-        body: { items: [{ ...item, client_name: getClientName(item), siret: item.clients?.siret, address: item.clients?.address }], title: isQ ? "Devis" : "Facture", format: "pdf" },
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
       });
-      if (error) throw error;
-      return new Blob([Uint8Array.from(atob(data.pdf_base64), c => c.charCodeAt(0))], { type: "application/pdf" });
-    } catch { return null; }
+      const imgData = canvas.toDataURL("image/png");
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgW = pdfWidth;
+      const imgH = (canvas.height * pdfWidth) / canvas.width;
+      const pdf = new jsPDF("p", "mm", "a4");
+      let position = 0;
+      let heightLeft = imgH;
+      pdf.addImage(imgData, "PNG", 0, position, imgW, imgH);
+      heightLeft -= pdfHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgW, imgH);
+        heightLeft -= pdfHeight;
+      }
+      return pdf.output("blob");
+    } catch (e) {
+      console.error("PDF generation error:", e);
+      return null;
+    }
   };
 
   const handleSingleExportPdf = async () => {
