@@ -1388,22 +1388,90 @@ const QuotesPlugin = () => {
 
         {/* ═══ PAYMENTS ═══ */}
         {tab === "paiements" && (
-          payments.length === 0 ? (
-            <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun paiement</p></div>
-          ) : (
-            <div className="glass-card divide-y divide-border">
-              {payments.map((p: any) => (
-                <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{p.invoices?.title || "—"}</div>
-                    <div className="text-[10px] text-muted-foreground">{p.invoices?.invoice_number} · {p.invoices?.clients?.name || p.invoices?.client || "—"} · {p.method || "—"} · {p.paid_at ? formatDate(p.paid_at) : "—"}</div>
+          <div className="space-y-3">
+            {showPayForm && (
+              <div className="glass-card p-4 mb-3 space-y-3 slide-up">
+                <p className="text-sm font-semibold">💳 Nouveau paiement</p>
+                <p className="text-[10px] text-muted-foreground">Une facture sera automatiquement créée et marquée comme payée.</p>
+                <input value={pTitle} onChange={e => setPTitle(e.target.value)} placeholder="Titre / objet *" className={inputCls} />
+                <select value={pClientId} onChange={e => setPClientId(e.target.value)} className={inputCls}>
+                  <option value="">-- Client --</option>
+                  {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <input value={pAmountHt} onChange={e => { setPAmountHt(e.target.value); setPConfirmStep(false); }} placeholder="Montant HT (€)" type="number" className={inputCls} />
+
+                <TvaRateSelector rate={pTvaRate} setRate={(r: number) => { setPTvaRate(r); setPConfirmStep(false); }} custom={pTvaCustom} setCustom={(v: string) => { setPTvaCustom(v); setPConfirmStep(false); }} mention="" setMention={() => {}} />
+
+                {pAmountHt && (
+                  <div className="text-xs text-muted-foreground space-y-0.5 bg-secondary p-2 rounded-lg">
+                    {(() => {
+                      const ht = parseFloat(pAmountHt) || 0;
+                      const rate = getEffectiveTvaRate(pTvaRate, pTvaCustom);
+                      const { tvaAmount, ttc } = calcTtc(ht, "", 0, rate);
+                      return (
+                        <>
+                          <p>HT : <span className="font-semibold text-foreground">{fmtAmount(ht)}</span></p>
+                          {rate > 0 && <p>TVA ({rate}%) : <span className="font-semibold text-foreground">{fmtAmount(tvaAmount)}</span></p>}
+                          <p>Total TTC : <span className="font-semibold text-foreground">{fmtAmount(ttc)}</span></p>
+                        </>
+                      );
+                    })()}
                   </div>
-                  <span className="text-sm font-semibold">{fmtAmount(p.amount)}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{p.status}</span>
+                )}
+
+                <div>
+                  <p className={labelCls}>Moyen de paiement</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {paymentMethods.map(m => (
+                      <button key={m} onClick={() => setPMethod(pMethod === m ? "" : m)}
+                        className={`text-xs px-3 py-1.5 rounded-full transition-colors ${pMethod === m ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>{m}</button>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
-          )
+
+                {!pConfirmStep ? (
+                  <button onClick={() => { if (!pTitle.trim() || !pAmountHt) { toast.error("Titre et montant requis"); return; } setPConfirmStep(true); }}
+                    className="w-full py-2.5 text-sm rounded-xl bg-secondary text-foreground flex items-center justify-center gap-2">
+                    <Eye size={16} /> Vérifier avant validation
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs space-y-1">
+                      <p className="font-semibold text-primary text-sm">Confirmer la création</p>
+                      <p>Titre : <span className="font-semibold">{pTitle}</span></p>
+                      {pClientId && <p>Client : <span className="font-semibold">{clients.find((c: any) => c.id === pClientId)?.name}</span></p>}
+                      <p>Montant TTC : <span className="font-semibold">{fmtAmount(calcTtc(parseFloat(pAmountHt) || 0, "", 0, getEffectiveTvaRate(pTvaRate, pTvaCustom)).ttc)}</span></p>
+                      {pMethod && <p>Moyen : <span className="font-semibold">{pMethod}</span></p>}
+                      <p className="text-muted-foreground mt-1">Une facture n° {generateNumber("invoice")} sera automatiquement créée.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => addStandalonePayment.mutate()} className="flex-1 btn-primary-glow py-2.5 text-sm flex items-center justify-center gap-2">
+                        <Check size={16} /> Valider
+                      </button>
+                      <button onClick={() => setPConfirmStep(false)} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground"><X size={16} /></button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {payments.length === 0 && !showPayForm ? (
+              <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun paiement</p></div>
+            ) : payments.length > 0 && (
+              <div className="glass-card divide-y divide-border">
+                {payments.map((p: any) => (
+                  <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{p.invoices?.title || "—"}</div>
+                      <div className="text-[10px] text-muted-foreground">{p.invoices?.invoice_number} · {p.invoices?.clients?.name || p.invoices?.client || "—"} · {p.method || "—"} · {p.paid_at ? formatDate(p.paid_at) : "—"}</div>
+                    </div>
+                    <span className="text-sm font-semibold">{fmtAmount(p.amount)}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{p.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
       <FeedbackButton context="quotes" />
