@@ -395,38 +395,32 @@ const CaptionEditor = ({
   onClose: () => void;
 }) => {
   return (
-    <div className="glass-card p-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="glass-card p-2.5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-primary flex items-center gap-1.5"><Pencil size={12} /> Marquage photo</span>
-        <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground"><X size={14} /></button>
+        <span className="text-[11px] font-medium text-primary flex items-center gap-1"><Pencil size={11} /> Marquage</span>
+        <button onClick={onClose} className="p-0.5 text-muted-foreground hover:text-foreground"><X size={13} /></button>
       </div>
 
       <input
         value={photo.caption || ""}
         onChange={(e) => onUpdate({ caption: e.target.value })}
-        placeholder="Texte à afficher sur la photo…"
-        className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+        placeholder="Texte sur la photo…"
+        className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
       />
 
-      {/* Show date checkbox */}
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={photo.showDate ?? false}
-          onChange={(e) => onUpdate({ showDate: e.target.checked })}
-          className="w-4 h-4 rounded border-border accent-primary"
-        />
-        <span className="text-[11px] text-foreground">Afficher la date sur la photo</span>
-      </label>
-
-      {/* Position */}
-      <div>
-        <label className="text-[10px] text-muted-foreground block mb-1.5">Position</label>
-        <div className="grid grid-cols-2 gap-1.5">
+      {/* Row: Date + Position */}
+      <div className="flex gap-2 items-start">
+        <label className="flex items-center gap-1.5 cursor-pointer shrink-0 pt-0.5">
+          <input type="checkbox" checked={photo.showDate ?? false}
+            onChange={(e) => onUpdate({ showDate: e.target.checked })}
+            className="w-3.5 h-3.5 rounded border-border accent-primary" />
+          <span className="text-[10px] text-foreground">Date</span>
+        </label>
+        <div className="flex gap-1 flex-wrap flex-1">
           {positionOptions.map((p) => (
             <button key={p.value} onClick={() => onUpdate({ captionPosition: p.value })}
-              className={`text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
-                photo.captionPosition === p.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+              className={`text-[9px] px-1.5 py-1 rounded-md transition-colors ${
+                photo.captionPosition === p.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground"
               }`}>
               {p.label}
             </button>
@@ -434,58 +428,48 @@ const CaptionEditor = ({
         </div>
       </div>
 
-      {/* Orientation / Rotation */}
-      <div>
-        <label className="text-[10px] text-muted-foreground block mb-1.5">Orientation ({photo.captionRotation ?? 0}°)</label>
-        <div className="flex gap-1 flex-wrap">
-          {rotationOptions.map((r) => (
-            <button key={r.value} onClick={() => onUpdate({ captionRotation: r.value })}
-              className={`text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
-                (photo.captionRotation ?? 0) === r.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-              }`}>
-              {r.label}
-            </button>
-          ))}
-        </div>
+      {/* Orientation */}
+      <div className="flex gap-1 items-center flex-wrap">
+        <span className="text-[9px] text-muted-foreground shrink-0">{photo.captionRotation ?? 0}°</span>
+        {rotationOptions.map((r) => (
+          <button key={r.value} onClick={() => onUpdate({ captionRotation: r.value })}
+            className={`text-[9px] px-1.5 py-0.5 rounded-md transition-colors ${
+              (photo.captionRotation ?? 0) === r.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground"
+            }`}>
+            {r.label}
+          </button>
+        ))}
       </div>
 
       {/* Font */}
-      <div>
-        <label className="text-[10px] text-muted-foreground block mb-1.5">Police</label>
-        <div className="flex gap-1.5 flex-wrap">
-          {fontOptions.map((f) => (
-            <button key={f.value} onClick={() => onUpdate({ captionFont: f.value })}
-              className={`text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
-                photo.captionFont === f.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-              }`}
-              style={{ fontFamily: f.value }}>
-              {f.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex gap-1 flex-wrap">
+        {fontOptions.map((f) => (
+          <button key={f.value} onClick={() => onUpdate({ captionFont: f.value })}
+            className={`text-[9px] px-1.5 py-0.5 rounded-md transition-colors ${
+              photo.captionFont === f.value ? "bg-primary/15 text-primary font-medium" : "bg-secondary text-muted-foreground"
+            }`}
+            style={{ fontFamily: f.value }}>
+            {f.label}
+          </button>
+        ))}
       </div>
 
-      {/* Size */}
-      <div>
-        <label className="text-[10px] text-muted-foreground block mb-1.5">Taille ({photo.captionSize}px)</label>
-        <input type="range" min={10} max={72} value={photo.captionSize}
-          onChange={(e) => onUpdate({ captionSize: Number(e.target.value) })}
-          className="w-full h-2 accent-primary" />
-      </div>
-
-      {/* Color + Opacity */}
-      <div className="flex gap-4 items-end">
-        <div>
-          <label className="text-[10px] text-muted-foreground block mb-1.5">Couleur</label>
-          <input type="color" value={photo.captionColor}
-            onChange={(e) => onUpdate({ captionColor: e.target.value })}
-            className="w-9 h-9 rounded-lg border border-border cursor-pointer" />
+      {/* Size + Color + Opacity in one row */}
+      <div className="flex gap-2 items-center">
+        <input type="color" value={photo.captionColor}
+          onChange={(e) => onUpdate({ captionColor: e.target.value })}
+          className="w-7 h-7 rounded-md border border-border cursor-pointer shrink-0" />
+        <div className="flex-1 space-y-0.5">
+          <input type="range" min={10} max={72} value={photo.captionSize}
+            onChange={(e) => onUpdate({ captionSize: Number(e.target.value) })}
+            className="w-full h-1.5 accent-primary" />
+          <span className="text-[8px] text-muted-foreground">{photo.captionSize}px</span>
         </div>
-        <div className="flex-1">
-          <label className="text-[10px] text-muted-foreground block mb-1.5">Opacité ({Math.round(photo.captionOpacity * 100)}%)</label>
+        <div className="flex-1 space-y-0.5">
           <input type="range" min={10} max={100} value={photo.captionOpacity * 100}
             onChange={(e) => onUpdate({ captionOpacity: Number(e.target.value) / 100 })}
-            className="w-full h-2 accent-primary" />
+            className="w-full h-1.5 accent-primary" />
+          <span className="text-[8px] text-muted-foreground">{Math.round(photo.captionOpacity * 100)}%</span>
         </div>
       </div>
     </div>
