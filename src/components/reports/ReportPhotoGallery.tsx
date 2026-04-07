@@ -193,26 +193,26 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
                   <div className="relative group rounded-lg overflow-hidden border border-border">
                     <PhotoCanvas photo={photo} />
 
-                    <div className="absolute top-1.5 right-1.5 flex gap-1">
+                    <div className="absolute top-2 right-2 flex flex-col gap-1.5">
                       <button onClick={() => movePhoto(idx, -1)} disabled={idx === 0}
-                        className="p-1.5 rounded-md bg-background/80 text-foreground disabled:opacity-30">
-                        <ArrowUp size={12} />
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white/90 disabled:opacity-30 active:scale-95 transition-all">
+                        <ArrowUp size={16} />
                       </button>
                       <button onClick={() => movePhoto(idx, 1)} disabled={idx === photos.length - 1}
-                        className="p-1.5 rounded-md bg-background/80 text-foreground disabled:opacity-30">
-                        <ArrowDown size={12} />
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white/90 disabled:opacity-30 active:scale-95 transition-all">
+                        <ArrowDown size={16} />
                       </button>
                       <button onClick={() => setEditingIdx(editingIdx === idx ? null : idx)}
-                        className={`p-1.5 rounded-md bg-background/80 ${editingIdx === idx ? "text-primary" : "text-foreground"}`}>
-                        <Type size={12} />
+                        className={`w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md active:scale-95 transition-all ${editingIdx === idx ? "bg-primary/40 text-white" : "bg-black/30 text-white/90"}`}>
+                        <Type size={16} />
                       </button>
                       <button onClick={() => saveToDevice(photo)}
-                        className="p-1.5 rounded-md bg-background/80 text-foreground">
-                        <Download size={12} />
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white/90 active:scale-95 transition-all">
+                        <Download size={16} />
                       </button>
                       <button onClick={() => removePhoto(idx)}
-                        className="p-1.5 rounded-md bg-background/80 text-destructive">
-                        <X size={12} />
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-red-400 active:scale-95 transition-all">
+                        <X size={16} />
                       </button>
                     </div>
                   </div>
