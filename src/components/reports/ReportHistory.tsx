@@ -1,16 +1,23 @@
 import { useState, useMemo } from "react";
 import {
   Clock, ChevronDown, ChevronUp, Trash2, AlertCircle, MapPin,
-  Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search
+  Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search, Loader2
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { loadImageAsBlob } from "@/components/reports/ReportPhotoGallery";
+import { toast } from "sonner";
 
-const buildReportText = (r: any) => {
+const buildReportText = (r: any, photoUrls?: string[]) => {
   let text = `Rapport : ${r.title}\n`;
   if (r.location) text += `Lieu : ${r.location}\n`;
   if (r.priority && r.priority !== "normale") text += `Priorité : ${r.priority}\n`;
   const dateField = r.report_date || r.created_at;
   text += `${new Date(dateField).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}\n`;
   if (r.notes) text += `\n${r.notes}`;
+  if (photoUrls && photoUrls.length > 0) {
+    text += `\n\n📷 Photos (${photoUrls.length}) :\n`;
+    photoUrls.forEach((url, i) => { text += `${i + 1}. ${url}\n`; });
+  }
   return text;
 };
 
@@ -32,6 +39,7 @@ interface Props {
 const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Props) => {
   const [showHistory, setShowHistory] = useState(false);
   const [shareOpenId, setShareOpenId] = useState<string | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
   const [filterColor, setFilterColor] = useState<string | null>(null);
   const [filterFolderId, setFilterFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,13 +57,67 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
     });
   }, [reports, filterColor, filterFolderId, searchQuery]);
 
-  const handleShare = (r: any, method: string) => {
-    const text = buildReportText(r);
-    if (method === "copy") { navigator.clipboard.writeText(text); }
-    else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
-    else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
-    else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+  const getReportPhotoUrls = async (reportId: string, legacyPhotoUrl?: string): Promise<string[]> => {
+    const { data } = await supabase
+      .from("report_photos")
+      .select("photo_url")
+      .eq("report_id", reportId)
+      .order("sort_order", { ascending: true });
+    if (data && data.length > 0) return data.map((p: any) => p.photo_url);
+    if (legacyPhotoUrl) return [legacyPhotoUrl];
+    return [];
+  };
+
+  const handleShare = async (r: any, method: string) => {
+    setSharingId(r.id);
+    try {
+      const photoUrls = await getReportPhotoUrls(r.id, r.photo_url);
+
+      // Try native share with files on mobile
+      if (navigator.share && navigator.canShare && photoUrls.length > 0 && method !== "copy") {
+        try {
+          const files: File[] = [];
+          for (let i = 0; i < Math.min(photoUrls.length, 5); i++) {
+            const img = await loadImageAsBlob(photoUrls[i]);
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext("2d")!;
+            ctx.drawImage(img, 0, 0);
+            const blob = await new Promise<Blob>((res, rej) =>
+              canvas.toBlob((b) => (b ? res(b) : rej()), "image/jpeg", 0.9)
+            );
+            files.push(new File([blob], `photo-${i + 1}.jpg`, { type: "image/jpeg" }));
+          }
+
+          const text = buildReportText(r);
+          if (navigator.canShare({ files, text })) {
+            await navigator.share({
+              title: `Rapport : ${r.title}`,
+              text,
+              files,
+            });
+            setShareOpenId(null);
+            setSharingId(null);
+            return;
+          }
+        } catch (e: any) {
+          if (e?.name === "AbortError") { setSharingId(null); return; }
+          // Fallback to URL-based sharing below
+        }
+      }
+
+      // Fallback: include photo URLs in text
+      const text = buildReportText(r, photoUrls);
+      if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
+      else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Rapport : ${r.title}`)}&body=${encodeURIComponent(text)}`);
+      else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
+      else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    } catch {
+      toast.error("Erreur de partage");
+    }
     setShareOpenId(null);
+    setSharingId(null);
   };
 
   const getFolderInfo = (folderId: string | null) => folders.find((f: any) => f.id === folderId);
