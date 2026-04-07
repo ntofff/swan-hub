@@ -4,7 +4,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import {
   Mic, MicOff, Camera, Clock, MapPin, Sparkles,
   Trash2, Loader2, X, Copy, Mail, MessageSquare, Phone,
-  FolderOpen, FolderPlus
+  FolderOpen, FolderPlus, ChevronUp, ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +55,7 @@ const ReportPlugin = () => {
   const [aiSummary, setAiSummary] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [showFolderManager, setShowFolderManager] = useState(false);
+  const [showFolderStrip, setShowFolderStrip] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -216,34 +217,40 @@ const ReportPlugin = () => {
 
         {/* Folders strip */}
         <div className="glass-card px-3 py-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+          <div className="flex items-center justify-between">
+            <button onClick={() => setShowFolderStrip(!showFolderStrip)}
+              className="text-[10px] font-medium text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors">
+              {showFolderStrip ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
               <FolderOpen size={11} /> Dossiers
-            </span>
+            </button>
             <button onClick={() => setShowFolderManager((prev) => !prev)}
               className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium">
               <FolderPlus size={10} /> {showFolderManager ? "Fermer" : "Gérer"}
             </button>
           </div>
-          {folders.length === 0 ? (
-            <p className="text-[10px] text-muted-foreground text-center py-1">
-              Aucun dossier — cliquez sur Gérer
-            </p>
-          ) : (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-              <button onClick={() => setFolderId(null)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 transition-all text-[10px] font-medium ${!folderId ? "bg-primary/10 border border-primary/20" : "bg-secondary/50 border border-transparent hover:bg-secondary"}`}>
-                Tous
-              </button>
-              {folders.map((f: any) => (
-                <button key={f.id} onClick={() => setFolderId(folderId === f.id ? null : f.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 transition-all text-[10px] font-medium ${folderId === f.id ? "border border-primary/20" : "border border-transparent hover:bg-secondary"}`}
-                  style={{ backgroundColor: folderId === f.id ? `hsl(${f.color} / 0.15)` : undefined }}>
-                  <span className="text-sm">{f.icon}</span>
-                  <span className="truncate max-w-[48px]">{f.name}</span>
-                </button>
-              ))}
-            </div>
+          {showFolderStrip && (
+            <>
+              {folders.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground text-center py-1 mt-1">
+                  Aucun dossier — cliquez sur Gérer
+                </p>
+              ) : (
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mt-1">
+                  <button onClick={() => setFolderId(null)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 transition-all text-[10px] font-medium ${!folderId ? "bg-primary/10 border border-primary/20" : "bg-secondary/50 border border-transparent hover:bg-secondary"}`}>
+                    Tous
+                  </button>
+                  {folders.map((f: any) => (
+                    <button key={f.id} onClick={() => setFolderId(folderId === f.id ? null : f.id)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 transition-all text-[10px] font-medium ${folderId === f.id ? "border border-primary/20" : "border border-transparent hover:bg-secondary"}`}
+                      style={{ backgroundColor: folderId === f.id ? `hsl(${f.color} / 0.15)` : undefined }}>
+                      <span className="text-sm">{f.icon}</span>
+                      <span className="truncate max-w-[48px]">{f.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
           {showFolderManager && (
             <div className="mt-3">
