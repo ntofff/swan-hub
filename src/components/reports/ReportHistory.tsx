@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import {
   Clock, ChevronDown, ChevronUp, Trash2, AlertCircle, MapPin,
-  Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search, Loader2
+  Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search, Loader2, Smartphone
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const buildReportText = (r: any) => {
