@@ -685,12 +685,12 @@ const QuotesPlugin = () => {
 
   const buildShareText = (item: any) => {
     const isQ = !!item.quote_number;
-    const docType = isQ ? "devis" : "facture";
     const docNum = item.quote_number || item.invoice_number;
-    const clientName = getClientName(item);
-    const amount = item.amount != null ? fmtAmount(item.amount) : "";
+    const sigName = [sFirstName, sLastName].filter(Boolean).join(" ") || profile?.full_name || "";
+    const sigCompany = sCompany || "";
+    const signature = [sigName, sigCompany].filter(Boolean).join(" - ");
 
-    return `Bonjour,\n\nVeuillez trouver ci-joint ${isQ ? "le devis" : "la facture"} n° ${docNum}${clientName ? ` concernant ${item.title}` : ""}.\n\n${amount ? `Montant TTC : ${amount}\n` : ""}${item.payment_terms ? `Délai de paiement : ${item.payment_terms} jours\n` : ""}\nJe reste à votre disposition pour toute question.\n\nCordialement,\n${profileName}`;
+    return `Bonjour,\n\nVeuillez trouver ci-joint ${isQ ? "le devis" : "la facture"} n° ${docNum}.\n\nCordialement,\n${signature}`;
   };
 
   const handleSingleShare = async (method: "copy" | "email" | "sms" | "whatsapp") => {
@@ -698,16 +698,18 @@ const QuotesPlugin = () => {
     const isQ = !!selectedItem.quote_number;
     const docNum = selectedItem.quote_number || selectedItem.invoice_number;
     const text = buildShareText(selectedItem);
+    const fileName = `${isQ ? "devis" : "facture"}-${docNum}.pdf`;
+
+    // Generate PDF
+    toast.loading("Préparation du PDF...");
+    const blob = await generatePdfBlob(selectedItem);
+    toast.dismiss();
 
     if (method === "copy") {
-      // Try to share PDF via native share API if available
-      toast.loading("Préparation...");
-      const blob = await generatePdfBlob(selectedItem);
-      toast.dismiss();
       if (blob && navigator.share && navigator.canShare) {
-        const file = new File([blob], `${isQ ? "devis" : "facture"}-${docNum}.pdf`, { type: "application/pdf" });
+        const file = new File([blob], fileName, { type: "application/pdf" });
         if (navigator.canShare({ files: [file] })) {
-          try { await navigator.share({ files: [file], text }); return; } catch { /* user cancelled */ }
+          try { await navigator.share({ files: [file], text }); return; } catch { /* cancelled */ }
         }
       }
       navigator.clipboard.writeText(text);
@@ -715,19 +717,26 @@ const QuotesPlugin = () => {
       return;
     }
 
-    // For email/sms/whatsapp: generate PDF first, try native share with file
-    toast.loading("Préparation du PDF...");
-    const blob = await generatePdfBlob(selectedItem);
-    toast.dismiss();
-
+    // Try native share with PDF file for all methods
     if (blob && navigator.share && navigator.canShare) {
-      const file = new File([blob], `${isQ ? "devis" : "facture"}-${docNum}.pdf`, { type: "application/pdf" });
+      const file = new File([blob], fileName, { type: "application/pdf" });
       if (navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ title: `${isQ ? "Devis" : "Facture"} ${docNum}`, text, files: [file] }); return; } catch { /* fallback */ }
+        try {
+          await navigator.share({ title: `${isQ ? "Devis" : "Facture"} ${docNum}`, text, files: [file] });
+          return;
+        } catch { /* fallback below */ }
       }
     }
 
-    // Fallback: open with text only
+    // Fallback: download PDF + open messaging with text
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = fileName; a.click();
+      URL.revokeObjectURL(url);
+      toast.info("PDF téléchargé — joignez-le manuellement au message");
+    }
+
     const subject = encodeURIComponent(`${isQ ? "Devis" : "Facture"} ${docNum}`);
     const body = encodeURIComponent(text);
     if (method === "email") window.open(`mailto:?subject=${subject}&body=${body}`);
