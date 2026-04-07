@@ -360,12 +360,15 @@ const QuotesPlugin = () => {
         emitter_phone: sPhone || null, default_legal_mentions: sLegal || null,
       };
       if (settings?.id) {
-        await supabase.from("invoice_settings").update(payload).eq("id", settings.id);
+        const { error } = await supabase.from("invoice_settings").update(payload).eq("id", settings.id);
+        if (error) throw error;
       } else {
-        await supabase.from("invoice_settings").insert(payload);
+        const { error } = await supabase.from("invoice_settings").insert(payload);
+        if (error) throw error;
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["invoice_settings"] }); toast.success("Paramètres sauvegardés !"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de sauvegarder")); },
   });
 
   const generateNumber = (type: "quote" | "invoice") => {
@@ -407,7 +410,7 @@ const QuotesPlugin = () => {
       const cl = clients.find((c: any) => c.id === fClientId);
       const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
       const finalAmount = calcFinal();
-      await supabase.from("quotes").insert({
+      const { error } = await supabase.from("quotes").insert({
         user_id: user.id, quote_number: num, title: fTitle.trim(),
         client: cl?.name || null, client_id: fClientId || null,
         amount: finalAmount || null, amount_ht: parseFloat(fAmountHt) || null,
@@ -419,42 +422,55 @@ const QuotesPlugin = () => {
         payment_terms: fPaymentTerms ? parseInt(fPaymentTerms) : null,
         period_description: fPeriod || null,
       });
+      if (error) throw error;
       if (settings?.id) {
         await supabase.from("invoice_settings").update({ quote_counter: (settings.quote_counter || 1) + 1 }).eq("id", settings.id);
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoice_settings"] }); resetForm(); toast.success("Devis créé !"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de créer le devis. Reconnectez-vous.")); },
   });
 
   const addClient = useMutation({
     mutationFn: async () => {
       if (!user || !cName.trim()) return;
       if (editingClient) {
-        await supabase.from("clients").update({ name: cName.trim(), siret: cSiret || null, address: cAddr || null, email: cEmail || null, phone: cPhone || null }).eq("id", editingClient.id);
+        const { error } = await supabase.from("clients").update({ name: cName.trim(), siret: cSiret || null, address: cAddr || null, email: cEmail || null, phone: cPhone || null }).eq("id", editingClient.id);
+        if (error) throw error;
       } else {
-        await supabase.from("clients").insert({ user_id: user.id, name: cName.trim(), siret: cSiret || null, address: cAddr || null, email: cEmail || null, phone: cPhone || null });
+        const { error } = await supabase.from("clients").insert({ user_id: user.id, name: cName.trim(), siret: cSiret || null, address: cAddr || null, email: cEmail || null, phone: cPhone || null });
+        if (error) throw error;
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); resetClientForm(); toast.success(editingClient ? "Client modifié !" : "Client ajouté !"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'enregistrer le client. Reconnectez-vous.")); },
   });
 
   const deleteClient = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("clients").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); toast.success("Client supprimé"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de supprimer")); },
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, type }: { id: string; status: string; type: "quotes" | "invoices" }) => {
-      await supabase.from(type).update({ status }).eq("id", id);
+      const { error } = await supabase.from(type).update({ status }).eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoices"] }); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de modifier le statut")); },
   });
 
   const updateColor = useMutation({
     mutationFn: async ({ id, color, type }: { id: string; color: string; type: "quotes" | "invoices" }) => {
-      await supabase.from(type).update({ color }).eq("id", id);
+      const { error } = await supabase.from(type).update({ color }).eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoices"] }); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de modifier la couleur")); },
   });
 
   const updateItem = useMutation({
@@ -462,18 +478,18 @@ const QuotesPlugin = () => {
       if (!selectedItem) return;
       const type = selectedItem.quote_number ? "quotes" : "invoices";
       const rate = getEffectiveTvaRate(eTvaRate, eTvaCustom);
-      // Recalc amount with new TVA rate
       const ht = Number(selectedItem.amount_ht) || 0;
       const dType = selectedItem.discount_type || "";
       const dVal = Number(selectedItem.discount_value) || 0;
       const { ttc } = calcTtc(ht, dType, dVal, rate);
-      await supabase.from(type).update({
+      const { error } = await supabase.from(type).update({
         notes: eNotes || null, payment_method: ePayment || null,
         tva_mention: eTva || null, tva_rate: rate || null,
         amount: ttc || null,
         payment_terms: ePaymentTerms ? parseInt(ePaymentTerms) : null,
         period_description: ePeriod || null, issue_date: eIssueDate || null,
       }).eq("id", selectedItem.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       const rate = getEffectiveTvaRate(eTvaRate, eTvaCustom);
@@ -486,6 +502,7 @@ const QuotesPlugin = () => {
       setEditingItem(false);
       toast.success("Modifié !");
     },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de modifier")); },
   });
 
   const convertToInvoice = useMutation({
@@ -493,7 +510,7 @@ const QuotesPlugin = () => {
       if (!user) return;
       const num = generateNumber("invoice");
       const ribDetails = (sIban || sBic) ? { iban: sIban, bic: sBic, bank: sBank, holder: sHolder } : null;
-      await supabase.from("invoices").insert({
+      const { error } = await supabase.from("invoices").insert({
         user_id: user.id, invoice_number: num, title: quote.title,
         client: quote.client, client_id: quote.client_id, amount: quote.amount,
         amount_ht: quote.amount_ht, quote_id: quote.id, color: quote.color,
@@ -503,28 +520,34 @@ const QuotesPlugin = () => {
         rib_details: ribDetails, notes: quote.notes, issue_date: new Date().toISOString().slice(0, 10),
         payment_terms: quote.payment_terms, period_description: quote.period_description,
       });
+      if (error) throw error;
       await supabase.from("quotes").update({ status: "Accepté" }).eq("id", quote.id);
       if (settings?.id) {
         await supabase.from("invoice_settings").update({ invoice_counter: (settings.invoice_counter || 1) + 1 }).eq("id", settings.id);
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoices"] }); qc.invalidateQueries({ queryKey: ["invoice_settings"] }); setSelectedItem(null); toast.success("Converti en facture !"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de convertir")); },
   });
 
   const addPayment = useMutation({
     mutationFn: async ({ invoice, method }: { invoice: any; method: string }) => {
       if (!user || !invoice.amount) return;
-      await supabase.from("payments").insert({ user_id: user.id, invoice_id: invoice.id, amount: invoice.amount, status: "Payé", method, paid_at: new Date().toISOString() });
+      const { error } = await supabase.from("payments").insert({ user_id: user.id, invoice_id: invoice.id, amount: invoice.amount, status: "Payé", method, paid_at: new Date().toISOString() });
+      if (error) throw error;
       await supabase.from("invoices").update({ status: "Payé" }).eq("id", invoice.id);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["invoices"] }); qc.invalidateQueries({ queryKey: ["payments"] }); setSelectedItem(null); setPayMethodPick(""); toast.success("Paiement enregistré !"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible d'enregistrer le paiement")); },
   });
 
   const deleteItem = useMutation({
     mutationFn: async ({ id, type }: { id: string; type: "quotes" | "invoices" }) => {
-      await supabase.from(type).delete().eq("id", id);
+      const { error } = await supabase.from(type).delete().eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoices"] }); setSelectedItem(null); toast.success("Supprimé"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de supprimer")); },
   });
 
   // ── Helpers ──
