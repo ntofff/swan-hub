@@ -112,16 +112,20 @@ const MissionsPlugin = () => {
 
   const archiveMission = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("missions").update({ archived: true, status: "Terminé" } as any).eq("id", id);
+      const { error } = await supabase.from("missions").update({ archived: true, status: "Terminé" } as any).eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["missions"] }); toast.success("Mission archivée"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Action impossible")); },
   });
 
   const unarchiveMission = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("missions").update({ archived: false, status: "Actif" } as any).eq("id", id);
+      const { error } = await supabase.from("missions").update({ archived: false, status: "Actif" } as any).eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["missions"] }); toast.success("Mission restaurée"); },
+    onError: (err: any) => { toast.error("Erreur : " + (err.message || "Action impossible")); },
   });
 
   const updateMission = useMutation({
