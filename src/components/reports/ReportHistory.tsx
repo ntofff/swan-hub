@@ -4,7 +4,6 @@ import {
   Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search, Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { loadImageAsBlob } from "@/components/reports/ReportPhotoGallery";
 import { toast } from "sonner";
 
 const buildReportText = (r: any, photoUrls?: string[]) => {
