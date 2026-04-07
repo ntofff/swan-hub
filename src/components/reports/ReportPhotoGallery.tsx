@@ -127,17 +127,12 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
 
   const saveToDevice = useCallback(async (photo: PhotoItem) => {
     try {
-      const canvas = await renderPhotoWithCaption(photo);
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
-          "image/jpeg",
-          0.92
-        );
-      });
+      const blob = await renderPhotoToBlob(photo);
+      const fileName = `rapport-photo-${Date.now()}.jpg`;
 
+      // iOS/mobile: use Web Share API to trigger native "Save Image"
       if (navigator.share && navigator.canShare) {
-        const file = new File([blob], `rapport-photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+        const file = new File([blob], fileName, { type: "image/jpeg" });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file] });
           toast.success("Photo partagée");
@@ -145,10 +140,11 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
         }
       }
 
+      // Desktop fallback: download link
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `rapport-photo-${Date.now()}.jpg`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -366,22 +362,64 @@ function drawOverlay(ctx: CanvasRenderingContext2D, photo: PhotoItem, w: number,
   ctx.restore();
 }
 
-async function renderPhotoWithCaption(photo: PhotoItem): Promise<HTMLCanvasElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0);
-      drawOverlay(ctx, photo, img.naturalWidth, img.naturalHeight);
-      resolve(canvas);
-    };
-    img.onerror = reject;
-    img.src = photo.url;
+// Load image via fetch to avoid CORS canvas tainting (fixes iOS save)
+async function loadImageAsBlob(url: string): Promise<HTMLImageElement> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const resp = await fetch(url, { mode: "cors" });
+      const blob = await resp.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        // Fallback: try direct load
+        const img2 = new Image();
+        img2.crossOrigin = "anonymous";
+        img2.onload = () => resolve(img2);
+        img2.onerror = reject;
+        img2.src = url;
+      };
+      img.src = objectUrl;
+    } catch {
+      // Fallback for data URLs or local files
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    }
   });
+}
+
+async function renderPhotoToBlob(photo: PhotoItem): Promise<Blob> {
+  const img = await loadImageAsBlob(photo.url);
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+  drawOverlay(ctx, photo, img.naturalWidth, img.naturalHeight);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+      "image/jpeg",
+      0.92
+    );
+  });
+}
+
+async function renderPhotoWithCaption(photo: PhotoItem): Promise<HTMLCanvasElement> {
+  const img = await loadImageAsBlob(photo.url);
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+  drawOverlay(ctx, photo, img.naturalWidth, img.naturalHeight);
+  return canvas;
 }
 
 /* ─── Caption editor ─── */
@@ -477,4 +515,5 @@ const CaptionEditor = ({
 };
 
 export default ReportPhotoGallery;
+export { renderPhotoToBlob, loadImageAsBlob };
 export type { PhotoItem };

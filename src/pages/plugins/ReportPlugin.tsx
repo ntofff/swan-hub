@@ -263,9 +263,14 @@ const ReportPlugin = () => {
     } catch (e: any) { toast.error("Erreur IA"); } finally { setAiLoading(false); }
   };
 
-  const exportAiSummary = (method: string) => {
+  const exportAiSummary = async (method: string) => {
     if (!aiSummary) return;
-    const text = `Résumé — ${title}\n\n${aiSummary}`;
+    const photoUrls = photos.filter(p => p.url && !p.url.startsWith("data:")).map(p => p.url);
+    let text = `Résumé — ${title}\n\n${aiSummary}`;
+    if (photoUrls.length > 0) {
+      text += `\n\n📷 Photos (${photoUrls.length}) :\n`;
+      photoUrls.forEach((url, i) => { text += `${i + 1}. ${url}\n`; });
+    }
     if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
     else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Résumé : ${title}`)}&body=${encodeURIComponent(text)}`);
     else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
