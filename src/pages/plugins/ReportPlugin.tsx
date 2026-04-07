@@ -215,32 +215,32 @@ const ReportPlugin = () => {
       <div className="px-4 md:px-0 space-y-3">
 
         {/* Folders strip */}
-        <div className="glass-card p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-              <FolderOpen size={13} /> Dossiers
+        <div className="glass-card px-3 py-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+              <FolderOpen size={11} /> Dossiers
             </span>
             <button onClick={() => setShowFolderManager((prev) => !prev)}
               className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium">
-              <FolderPlus size={12} /> {showFolderManager ? "Fermer" : "Gérer"}
+              <FolderPlus size={10} /> {showFolderManager ? "Fermer" : "Gérer"}
             </button>
           </div>
           {folders.length === 0 ? (
-            <p className="text-[10px] text-muted-foreground text-center py-2">
-              Aucun dossier — cliquez sur Gérer pour en créer
+            <p className="text-[10px] text-muted-foreground text-center py-1">
+              Aucun dossier — cliquez sur Gérer
             </p>
           ) : (
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
               <button onClick={() => setFolderId(null)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl min-w-[56px] shrink-0 transition-all text-[9px] font-medium ${!folderId ? "bg-primary/10 border border-primary/20" : "bg-secondary/50 border border-transparent hover:bg-secondary"}`}>
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 transition-all text-[10px] font-medium ${!folderId ? "bg-primary/10 border border-primary/20" : "bg-secondary/50 border border-transparent hover:bg-secondary"}`}>
                 Tous
               </button>
               {folders.map((f: any) => (
                 <button key={f.id} onClick={() => setFolderId(folderId === f.id ? null : f.id)}
-                  className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl min-w-[56px] shrink-0 transition-all ${folderId === f.id ? "border border-primary/20 scale-105" : "border border-transparent hover:bg-secondary"}`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 transition-all text-[10px] font-medium ${folderId === f.id ? "border border-primary/20" : "border border-transparent hover:bg-secondary"}`}
                   style={{ backgroundColor: folderId === f.id ? `hsl(${f.color} / 0.15)` : undefined }}>
-                  <span className="text-base">{f.icon}</span>
-                  <span className="text-[9px] font-medium truncate max-w-[56px]">{f.name}</span>
+                  <span className="text-sm">{f.icon}</span>
+                  <span className="truncate max-w-[48px]">{f.name}</span>
                 </button>
               ))}
             </div>
