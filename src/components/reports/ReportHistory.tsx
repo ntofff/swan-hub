@@ -35,6 +35,7 @@ interface Props {
 const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Props) => {
   const [showHistory, setShowHistory] = useState(false);
   const [shareOpenId, setShareOpenId] = useState<string | null>(null);
+  const [nativeSharing, setNativeSharing] = useState(false);
   const [filterColor, setFilterColor] = useState<string | null>(null);
   const [filterFolderId, setFilterFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
