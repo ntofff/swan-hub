@@ -60,6 +60,13 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
     });
   }, [reports, filterColor, filterFolderId, searchQuery]);
 
+  const getSignedUrl = async (path: string): Promise<string> => {
+    // If it's already a full URL (legacy data), return as-is
+    if (path.startsWith("http")) return path;
+    const { data } = await supabase.storage.from("report-photos").createSignedUrl(path, 3600);
+    return data?.signedUrl ?? path;
+  };
+
   const loadSharePhotos = async (r: any) => {
     if (sharePhotoUrls[r.id]) return sharePhotoUrls[r.id];
 
@@ -71,11 +78,12 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
         .eq("report_id", r.id)
         .order("sort_order", { ascending: true });
 
-      const urls = Array.from(new Set([
+      const rawUrls = Array.from(new Set([
         ...(photos?.map((p: any) => p.photo_url).filter(Boolean) ?? []),
         ...(r.photo_url ? [r.photo_url] : []),
       ]));
 
+      const urls = await Promise.all(rawUrls.map(getSignedUrl));
       setSharePhotoUrls((prev) => ({ ...prev, [r.id]: urls }));
       return urls;
     } catch {
