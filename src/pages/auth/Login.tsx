@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Eye, EyeOff } from "lucide-react";
+import { usePasskey } from "@/hooks/usePasskey";
+import { Eye, EyeOff, Fingerprint, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { isAvailable: passkeyAvailable, login: passkeyLogin, loading: passkeyLoading } = usePasskey();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handlePasskeyLogin = async () => {
+    const success = await passkeyLogin();
+    if (success) navigate("/");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +75,21 @@ const LoginPage = () => {
             <Link to="/forgot-password" className="text-primary hover:underline">Mot de passe oublié ?</Link>
             <Link to="/signup" className="text-primary hover:underline">Créer un compte</Link>
           </div>
+
+          {passkeyAvailable && (
+            <div className="pt-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                <div className="flex-1 h-px bg-border" />
+                <span>ou</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <button onClick={handlePasskeyLogin} disabled={passkeyLoading}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors disabled:opacity-50">
+                {passkeyLoading ? <Loader2 size={18} className="animate-spin" /> : <Fingerprint size={18} />}
+                Connexion biométrique
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
