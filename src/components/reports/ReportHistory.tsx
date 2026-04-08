@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Clock, ChevronDown, ChevronUp, Trash2, AlertCircle, MapPin,
   Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search, Loader2
@@ -60,6 +60,19 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
       return true;
     });
   }, [reports, filterColor, filterFolderId, searchQuery]);
+
+  // Resolve signed URLs for thumbnails
+  useEffect(() => {
+    const resolve = async () => {
+      for (const r of filtered) {
+        if (r.photo_url && !thumbUrls[r.id]) {
+          const url = await getSignedUrl(r.photo_url);
+          setThumbUrls((prev) => ({ ...prev, [r.id]: url }));
+        }
+      }
+    };
+    if (showHistory) resolve();
+  }, [filtered, showHistory]);
 
   const getSignedUrl = async (path: string): Promise<string> => {
     // If it's already a full URL (legacy data), return as-is
