@@ -347,22 +347,17 @@ const ProfilePage = () => {
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Plan actuel</div>
               <div className="text-2xl font-bold font-heading capitalize">{profile?.plan || "free"}</div>
             </div>
-            <div className="glass-card divide-y divide-border">
-              {[
-                { plan: "Free", price: "0 €", features: "6 plugins, 1 activité" },
-                { plan: "Pro", price: "9.99 €/mois", features: "Tous les plugins, activités illimitées, export" },
-                { plan: "Business", price: "24.99 €/mois", features: "Pro + multi-utilisateur, API, support prioritaire" },
-              ].map(p => (
-                <div key={p.plan} className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold">{p.plan}</div>
-                    <div className="text-[10px] text-muted-foreground">{p.features}</div>
-                  </div>
-                  <span className="text-sm font-semibold text-primary">{p.price}</span>
-                </div>
-              ))}
+            <div className="glass-card p-5 space-y-3 text-center">
+              <Coffee size={28} className="text-primary mx-auto" />
+              <p className="text-sm font-semibold">1€/mois par plugin</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Moins cher qu'un café — mais ça vous permettra d'en prendre le temps d'en boire plus.
+              </p>
+              <p className="text-[10px] text-muted-foreground italic">
+                1 mois gratuit · 3 plugins au choix · Sans engagement
+              </p>
             </div>
-            <button className="w-full btn-primary-glow py-3 text-sm">Passer à Pro</button>
+            <button onClick={() => navigate("/pricing")} className="w-full btn-primary-glow py-3 text-sm">Voir les tarifs</button>
           </div>
         )}
 
