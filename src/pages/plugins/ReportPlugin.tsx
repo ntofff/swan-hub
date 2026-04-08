@@ -99,8 +99,9 @@ const ReportPlugin = () => {
           const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
           const { error: uploadError } = await supabase.storage.from("report-photos").upload(path, photo.file);
           if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage.from("report-photos").getPublicUrl(path);
-          uploadedPhotos.push({ url: urlData.publicUrl, photo });
+          // Store the storage path (not a public URL) — we'll generate signed URLs when displaying
+          const storagePath = path;
+          uploadedPhotos.push({ url: storagePath, photo });
         } else {
           uploadedPhotos.push({ url: photo.url, photo });
         }
@@ -179,6 +180,13 @@ const ReportPlugin = () => {
     }
     setAiSummary("");
 
+    // Helper to resolve signed URLs for private bucket
+    const resolveUrl = async (path: string) => {
+      if (path.startsWith("http")) return path;
+      const { data } = await supabase.storage.from("report-photos").createSignedUrl(path, 3600);
+      return data?.signedUrl ?? path;
+    };
+
     // Load photos from report_photos table
     const { data: reportPhotos } = await supabase
       .from("report_photos")
@@ -187,9 +195,9 @@ const ReportPlugin = () => {
       .order("sort_order", { ascending: true });
 
     if (reportPhotos && reportPhotos.length > 0) {
-      setPhotos(reportPhotos.map((p: any) => ({
+      const resolved = await Promise.all(reportPhotos.map(async (p: any) => ({
         id: p.id,
-        url: p.photo_url,
+        url: await resolveUrl(p.photo_url),
         caption: p.caption || "",
         captionPosition: p.caption_position || "bottom-center",
         captionFont: p.caption_font || "sans-serif",
@@ -198,11 +206,12 @@ const ReportPlugin = () => {
         captionOpacity: Number(p.caption_opacity) || 0.8,
         takenAt: new Date(p.taken_at || p.created_at),
       })));
+      setPhotos(resolved);
     } else if (r.photo_url) {
-      // Legacy single photo
+      const resolvedUrl = await resolveUrl(r.photo_url);
       setPhotos([{
         id: `legacy-${r.id}`,
-        url: r.photo_url,
+        url: resolvedUrl,
         caption: "",
         captionPosition: "bottom-center",
         captionFont: "sans-serif",

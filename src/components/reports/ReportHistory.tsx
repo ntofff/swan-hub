@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Clock, ChevronDown, ChevronUp, Trash2, AlertCircle, MapPin,
   Pencil, Share2, Copy, Mail, MessageSquare, Phone, FolderOpen, Search, Loader2
@@ -43,6 +43,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
   const [shareOpenId, setShareOpenId] = useState<string | null>(null);
   const [sharePhotoUrls, setSharePhotoUrls] = useState<Record<string, string[]>>({});
   const [loadingShareId, setLoadingShareId] = useState<string | null>(null);
+  const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
   const [filterColor, setFilterColor] = useState<string | null>(null);
   const [filterFolderId, setFilterFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,6 +61,26 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
     });
   }, [reports, filterColor, filterFolderId, searchQuery]);
 
+  // Resolve signed URLs for thumbnails
+  useEffect(() => {
+    const resolve = async () => {
+      for (const r of filtered) {
+        if (r.photo_url && !thumbUrls[r.id]) {
+          const url = await getSignedUrl(r.photo_url);
+          setThumbUrls((prev) => ({ ...prev, [r.id]: url }));
+        }
+      }
+    };
+    if (showHistory) resolve();
+  }, [filtered, showHistory]);
+
+  const getSignedUrl = async (path: string): Promise<string> => {
+    // If it's already a full URL (legacy data), return as-is
+    if (path.startsWith("http")) return path;
+    const { data } = await supabase.storage.from("report-photos").createSignedUrl(path, 3600);
+    return data?.signedUrl ?? path;
+  };
+
   const loadSharePhotos = async (r: any) => {
     if (sharePhotoUrls[r.id]) return sharePhotoUrls[r.id];
 
@@ -71,11 +92,12 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
         .eq("report_id", r.id)
         .order("sort_order", { ascending: true });
 
-      const urls = Array.from(new Set([
+      const rawUrls = Array.from(new Set([
         ...(photos?.map((p: any) => p.photo_url).filter(Boolean) ?? []),
         ...(r.photo_url ? [r.photo_url] : []),
       ]));
 
+      const urls = await Promise.all(rawUrls.map(getSignedUrl));
       setSharePhotoUrls((prev) => ({ ...prev, [r.id]: urls }));
       return urls;
     } catch {
@@ -239,9 +261,9 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                     </div>
 
                     {r.notes && <p className="text-xs text-muted-foreground line-clamp-2">{r.notes}</p>}
-                    {r.photo_url && (
+                    {r.photo_url && thumbUrls[r.id] && (
                       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                        <img src={r.photo_url} alt="Photo" className="w-14 h-14 object-cover rounded-md border border-border shrink-0" />
+                        <img src={thumbUrls[r.id]} alt="Photo" className="w-14 h-14 object-cover rounded-md border border-border shrink-0" />
                       </div>
                     )}
                   </div>
