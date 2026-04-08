@@ -10,7 +10,7 @@ export const AppLayout = () => {
       {/* Desktop/Tablet top nav */}
       {!isAdmin && (
         <header className="hidden md:flex items-center justify-between px-6 py-4 max-w-4xl mx-auto">
-          <span className="text-lg font-bold font-heading text-gradient-gold">SWAN</span>
+          <span className="text-lg font-bold font-heading text-gradient-gold">SWAN · HUB</span>
           <DesktopNav />
         </header>
       )}

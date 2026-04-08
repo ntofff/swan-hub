@@ -1,26 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { Puzzle, Zap, Shield, Layers, Play, FileText, BookOpen, CheckSquare, Target, Receipt, Car, Users, Wallet, Calendar, ArrowRight, Star, Globe } from "lucide-react";
+import { Puzzle, Zap, Shield, Layers, Play, FileText, BookOpen, CheckSquare, Target, Receipt, Car, Users, Wallet, Calendar, ArrowRight, Star, Globe, Coffee, Heart, Sparkles } from "lucide-react";
 
 const benefits = [
-  { icon: Puzzle, title: "Modulaire", desc: "Activez uniquement les outils dont vous avez besoin" },
-  { icon: Zap, title: "Ultra rapide", desc: "3 taps max pour toute action principale" },
-  { icon: Shield, title: "Sécurisé", desc: "Privacy-first, conforme RGPD, données chiffrées" },
+  { icon: Puzzle, title: "Modulaire", desc: "Activez uniquement les outils dont vous avez besoin — payez uniquement ce que vous utilisez" },
+  { icon: Zap, title: "Ultra rapide", desc: "3 taps max pour toute action principale, pas de friction inutile" },
+  { icon: Shield, title: "Sécurisé", desc: "Privacy-first, conforme RGPD, données chiffrées, connexion biométrique" },
   { icon: Layers, title: "Multi-Activité", desc: "Gérez toutes vos activités professionnelles en un seul endroit" },
-  { icon: Globe, title: "Accessible", desc: "Web, mobile, tablette — partout, tout le temps" },
-  { icon: Star, title: "Premium", desc: "Une expérience fintech soignée jusque dans les détails" },
+  { icon: Globe, title: "Accessible", desc: "Web, mobile, tablette — partout, tout le temps, sans installation" },
+  { icon: Star, title: "Premium", desc: "Une expérience fintech soignée jusque dans les moindres détails" },
 ];
 
 const plugins = [
-  { name: "Outil Rapport", desc: "Rapports professionnels en quelques secondes", icon: FileText, active: true },
-  { name: "Journal de bord", desc: "Notes chronologiques avec horodatage", icon: BookOpen, active: true },
-  { name: "Tâches", desc: "Gestionnaire de tâches avec priorités", icon: CheckSquare, active: true },
-  { name: "Missions", desc: "Suivi missions, clients et checklists", icon: Target, active: true },
-  { name: "Devis & Factures", desc: "Facturation, conversion et paiements", icon: Receipt, active: true },
-  { name: "Carnet véhicule", desc: "Kilométrage, IK et suivi conducteurs", icon: Car, active: true },
-  { name: "CRM Lite", desc: "Gestion relation clients", icon: Users, active: false },
-  { name: "Suivi budget", desc: "Vue financière complète", icon: Wallet, active: false },
+  { name: "Outil Rapport", desc: "Rapports photo professionnels en quelques secondes avec partage intégré", icon: FileText, active: true },
+  { name: "Journal de bord", desc: "Notes chronologiques avec horodatage, priorités et code couleur", icon: BookOpen, active: true },
+  { name: "Tâches", desc: "Gestionnaire de tâches avec priorités, deadlines et archivage intelligent", icon: CheckSquare, active: true },
+  { name: "Missions", desc: "Suivi complet : clients, checklists, collaborateurs, montants devis", icon: Target, active: true },
+  { name: "Devis & Factures", desc: "Facturation complète : PDF, filigrane, RIB, mentions légales, remises", icon: Receipt, active: true },
+  { name: "Carnet véhicule", desc: "Kilométrage, calcul IK automatique, suivi conducteurs et véhicules", icon: Car, active: true },
+  { name: "CRM Lite", desc: "Gestion de la relation clients simplifiée", icon: Users, active: false },
+  { name: "Suivi budget", desc: "Vue financière complète de vos activités", icon: Wallet, active: false },
   { name: "Réservations", desc: "Prise de rendez-vous intelligente", icon: Calendar, active: false },
 ];
 
@@ -33,12 +33,13 @@ const AboutPage = () => {
       <div className="px-4 md:px-0">
         {/* Hero */}
         <div className="glass-card-glow p-8 text-center mb-6 space-y-4">
-          <h2 className="text-4xl font-bold font-heading text-gradient-gold">SWAN</h2>
+          <h2 className="text-4xl font-bold font-heading text-gradient-gold">SWAN · HUB</h2>
+          <p className="text-xs text-muted-foreground tracking-widest uppercase">Simple Work</p>
           <p className="text-base text-secondary-foreground leading-relaxed max-w-md mx-auto">
-            La plateforme de productivité modulaire pensée pour les professionnels indépendants et multi-activités.
+            La plateforme de productivité modulaire pensée pour les professionnels indépendants, artisans et multi-activités.
           </p>
           <p className="text-sm text-muted-foreground">
-            Simple. Puissant. Élégant.
+            Simple. Puissant. Élégant. Accessible.
           </p>
         </div>
 
@@ -46,7 +47,7 @@ const AboutPage = () => {
         <div className="grid grid-cols-3 gap-2.5 mb-6">
           {[
             { label: "Plugins", value: "9" },
-            { label: "Actions rapides", value: "3 taps" },
+            { label: "Par plugin", value: "1€/mois" },
             { label: "Conforme", value: "RGPD" },
           ].map(s => (
             <div key={s.label} className="glass-card p-4 text-center">
@@ -56,8 +57,42 @@ const AboutPage = () => {
           ))}
         </div>
 
+        {/* Mission */}
+        <div className="glass-card-glow p-6 mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Heart size={18} className="text-primary" />
+            <h2 className="text-sm font-bold font-heading">Notre mission</h2>
+          </div>
+          <p className="text-sm text-secondary-foreground leading-relaxed">
+            Rendre accessible à tous des outils professionnels habituellement réservés aux grandes structures. 
+            SWAN · HUB est né d'un constat simple : les indépendants et artisans méritent des outils modernes, 
+            sans la complexité ni le prix des solutions existantes.
+          </p>
+          <p className="text-sm text-secondary-foreground leading-relaxed">
+            Notre prix est <span className="text-primary font-semibold">volontairement bas</span> — parce que notre objectif n'est pas de vendre un logiciel, 
+            mais de permettre à chaque professionnel de se concentrer sur ce qu'il fait de mieux.
+          </p>
+        </div>
+
+        {/* Pricing teaser */}
+        <div className="glass-card p-6 mb-6 space-y-4 text-center">
+          <Coffee size={32} className="text-primary mx-auto" />
+          <h2 className="text-lg font-bold font-heading">Moins cher qu'un café</h2>
+          <p className="text-sm text-secondary-foreground leading-relaxed max-w-sm mx-auto">
+            <span className="text-primary font-bold">1€/mois par plugin</span>. C'est tout.
+            Pas de frais cachés, pas d'engagement.
+            Ça coûte moins qu'un expresso — mais ça vous permettra de prendre le temps d'en savourer davantage.
+          </p>
+          <div className="glass-card p-4 inline-block">
+            <p className="text-xs text-muted-foreground">🎉 <span className="text-foreground font-semibold">1 mois gratuit</span> avec 3 plugins au choix à l'inscription</p>
+          </div>
+          <button onClick={() => navigate("/pricing")} className="w-full btn-primary-glow py-3 text-sm flex items-center justify-center gap-2">
+            Voir les tarifs <ArrowRight size={16} />
+          </button>
+        </div>
+
         {/* Benefits */}
-        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Pourquoi SWAN</h2>
+        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Pourquoi SWAN · HUB</h2>
         <div className="grid grid-cols-2 gap-2.5 mb-8">
           {benefits.map(b => (
             <div key={b.title} className="glass-card p-4 space-y-2">
@@ -70,22 +105,11 @@ const AboutPage = () => {
           ))}
         </div>
 
-        {/* Video placeholder */}
-        <div className="glass-card p-10 flex flex-col items-center gap-4 mb-8">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Play size={28} className="text-primary ml-1" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold">Découvrir SWAN en vidéo</p>
-            <p className="text-xs text-muted-foreground mt-1">2 minutes pour tout comprendre</p>
-          </div>
-        </div>
-
         {/* Plugins */}
         <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Écosystème de plugins</h2>
         <div className="space-y-2 mb-8">
           {plugins.map(p => (
-            <div key={p.name} className={`glass-card p-4 flex items-center gap-3 ${!p.active ? 'opacity-50' : ''}`}>
+            <div key={p.name} className={`glass-card p-4 flex items-center gap-3 transition-all ${!p.active ? 'opacity-50' : 'hover:border-primary/20'}`}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${p.active ? 'bg-primary/10' : 'bg-secondary'}`}>
                 <p.icon size={18} className={p.active ? 'text-primary' : 'text-muted-foreground'} />
               </div>
@@ -93,11 +117,23 @@ const AboutPage = () => {
                 <div className="text-sm font-semibold">{p.name}</div>
                 <div className="text-[10px] text-muted-foreground">{p.desc}</div>
               </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.active ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>
-                {p.active ? "Disponible" : "Bientôt"}
-              </span>
+              <div className="text-right">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.active ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                  {p.active ? "1€/mois" : "Bientôt"}
+                </span>
+              </div>
             </div>
           ))}
+        </div>
+
+        {/* Engagement */}
+        <div className="glass-card-glow p-6 mb-8 space-y-3 text-center">
+          <Sparkles size={24} className="text-primary mx-auto" />
+          <h2 className="text-sm font-bold font-heading">En constante évolution</h2>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
+            Vous faites partie intégrante de cette aventure. Chaque retour, chaque suggestion façonne SWAN · HUB
+            pour le rendre utile à tous. Votre feedback construit l'app de demain.
+          </p>
         </div>
 
         {/* CTA */}
@@ -112,8 +148,8 @@ const AboutPage = () => {
 
         {/* Footer */}
         <div className="text-center pb-8">
-          <p className="text-[10px] text-muted-foreground">SWAN v1.0 · Simple Work Activity Network</p>
-          <p className="text-[10px] text-muted-foreground mt-1">© {new Date().getFullYear()} SWAN. Tous droits réservés.</p>
+          <p className="text-[10px] text-muted-foreground">SWAN · HUB v1.1.0 · Simple Work</p>
+          <p className="text-[10px] text-muted-foreground mt-1">© {new Date().getFullYear()} SWAN · HUB. Tous droits réservés.</p>
         </div>
       </div>
       <FeedbackButton context="about" />

@@ -36,8 +36,8 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm fade-in">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold font-heading text-gradient-gold">SWAN</h1>
-          <p className="text-xs text-muted-foreground mt-1">Simple Work Activity Network</p>
+          <h1 className="text-3xl font-bold font-heading text-gradient-gold">SWAN · HUB</h1>
+          <p className="text-xs text-muted-foreground mt-1">Simple Work</p>
         </div>
 
         <div className="glass-card p-6 space-y-5">
