@@ -44,14 +44,14 @@ const SignupPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm fade-in">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold font-heading text-gradient-gold">SWAN</h1>
-          <p className="text-xs text-muted-foreground mt-1">Simple Work Activity Network</p>
+          <h1 className="text-3xl font-bold font-heading text-gradient-gold">SWAN · HUB</h1>
+          <p className="text-xs text-muted-foreground mt-1">Simple Work</p>
         </div>
 
         <div className="glass-card p-6 space-y-5">
           <div>
             <h2 className="text-lg font-semibold font-heading">Créer un compte</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Rejoignez SWAN gratuitement</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Rejoignez SWAN · HUB gratuitement</p>
           </div>
 
           {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}

@@ -128,9 +128,9 @@ const HomePage = () => {
       {showWelcome && <WelcomeScreen onClose={() => setShowWelcome(false)} />}
       <div className="flex items-center justify-between px-4 pt-6 pb-2 md:px-0 md:pt-0">
         <div>
-          <h1 className="text-2xl font-bold font-heading md:hidden"><span className="text-gradient-gold">SWAN</span></h1>
+          <h1 className="text-2xl font-bold font-heading md:hidden"><span className="text-gradient-gold">SWAN · HUB</span></h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {profile?.full_name ? `${greeting}, ${profile.full_name}` : "Simple Work Activity Network"}
+            {profile?.full_name ? `${greeting}, ${profile.full_name}` : "Simple Work"}
           </p>
         </div>
         <button onClick={toggleDarkLight} className="p-2.5 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors" title={isDark ? "Mode clair" : "Mode sombre"}>
@@ -223,7 +223,7 @@ const HomePage = () => {
       </div>
 
       <div className="text-center mt-10 pb-2">
-        <p className="text-[9px] text-muted-foreground/50">SWAN v{APP_BUILD}</p>
+        <p className="text-[9px] text-muted-foreground/50">SWAN · HUB v{APP_BUILD}</p>
       </div>
       <FeedbackButton context="home" />
     </div>

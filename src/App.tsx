@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Plugins from "./pages/Plugins";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
+import Pricing from "./pages/Pricing";
 import Admin from "./pages/Admin";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
@@ -42,6 +43,9 @@ const App = () => (
             <Route path="/access-denied" element={<AccessDenied />} />
             <Route path="/about" element={<AppLayout />}>
               <Route index element={<About />} />
+            </Route>
+            <Route path="/pricing" element={<AppLayout />}>
+              <Route index element={<Pricing />} />
             </Route>
 
             {/* Authenticated */}
