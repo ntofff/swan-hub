@@ -4,7 +4,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { useAuth, parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight, Sun, Moon, Fingerprint, Loader2 } from "lucide-react";
+import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight, Sun, Moon, Fingerprint, Loader2, Coffee } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { usePasskey } from "@/hooks/usePasskey";
