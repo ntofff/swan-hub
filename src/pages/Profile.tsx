@@ -315,7 +315,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Style selector */}
-            <p className="text-xs text-muted-foreground">Choisissez un style visuel pour SWAN</p>
+            <p className="text-xs text-muted-foreground">Choisissez un style visuel pour SWAN · HUB</p>
             <div className="grid grid-cols-2 gap-2.5">
               {styleOptions.map(t => (
                 <button key={t.id} onClick={() => handleStyleChange(t.id)}

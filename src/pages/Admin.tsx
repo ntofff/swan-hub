@@ -170,7 +170,7 @@ const AdminPage = () => {
           <h1 className="text-xl font-bold font-heading flex items-center gap-2">
             <Shield size={20} className="text-primary" /> Console Admin
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Administration SWAN</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Administration SWAN · HUB</p>
         </div>
       </div>
 
