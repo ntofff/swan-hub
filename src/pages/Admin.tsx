@@ -131,7 +131,10 @@ const AdminPage = () => {
 
   const logAction = async (action: string, details?: any) => {
     if (!user) return;
-    await supabase.from("audit_logs").insert({ user_id: user.id, action, details });
+    await supabase.rpc("log_audit_event", {
+      _action: action,
+      _details: details ?? null,
+    });
   };
 
   // ── Stats ──

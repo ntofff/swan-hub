@@ -99,8 +99,9 @@ const ReportPlugin = () => {
           const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
           const { error: uploadError } = await supabase.storage.from("report-photos").upload(path, photo.file);
           if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage.from("report-photos").getPublicUrl(path);
-          uploadedPhotos.push({ url: urlData.publicUrl, photo });
+          // Store the storage path (not a public URL) — we'll generate signed URLs when displaying
+          const storagePath = path;
+          uploadedPhotos.push({ url: storagePath, photo });
         } else {
           uploadedPhotos.push({ url: photo.url, photo });
         }
