@@ -4,9 +4,10 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { useAuth, parseTheme, buildThemeId } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight, Sun, Moon } from "lucide-react";
+import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight, Sun, Moon, Fingerprint, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { usePasskey } from "@/hooks/usePasskey";
 
 const styleOptions = [
   { id: "dark-night", label: "Dark Night", color: "38 50% 58%" },
@@ -25,6 +26,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [section, setSection] = useState<string>("compte");
+  const { isAvailable: passkeyAvailable, register: registerPasskey, removePasskey, loading: passkeyLoading, passkeys } = usePasskey();
 
   // Account
   const [editName, setEditName] = useState(false);
@@ -216,6 +218,44 @@ const ProfilePage = () => {
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning/10 text-warning">Bientôt</span>
               </div>
             </div>
+
+            {/* Passkeys / Biometric */}
+            {passkeyAvailable && (
+              <div className="glass-card p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Fingerprint size={18} className="text-primary" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold">Connexion biométrique</h3>
+                    <p className="text-xs text-muted-foreground">Face ID, empreinte digitale ou passkey</p>
+                  </div>
+                </div>
+
+                {passkeys.length > 0 && (
+                  <div className="space-y-1.5">
+                    {passkeys.map((pk: any) => (
+                      <div key={pk.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2">
+                        <div>
+                          <p className="text-xs font-medium">{pk.device_name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Ajoutée le {new Date(pk.created_at).toLocaleDateString("fr-FR")}
+                          </p>
+                        </div>
+                        <button onClick={() => { if (window.confirm("Supprimer cette passkey ?")) removePasskey(pk.id); }}
+                          className="text-muted-foreground hover:text-destructive p-1">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button onClick={() => registerPasskey()} disabled={passkeyLoading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50">
+                  {passkeyLoading ? <Loader2 size={16} className="animate-spin" /> : <Fingerprint size={16} />}
+                  {passkeys.length > 0 ? "Ajouter une autre passkey" : "Configurer la connexion biométrique"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
