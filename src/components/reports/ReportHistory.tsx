@@ -293,9 +293,11 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                     </div>
 
                     {r.notes && <p className="text-xs text-muted-foreground line-clamp-2">{r.notes}</p>}
-                    {r.photo_url && thumbUrls[r.id] && (
-                      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                        <img src={thumbUrls[r.id]} alt="Photo" className="w-14 h-14 object-cover rounded-md border border-border shrink-0" />
+                    {(allPhotos[r.id]?.length ?? 0) > 0 && (
+                      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pt-1">
+                        {allPhotos[r.id].map((url, i) => (
+                          <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-14 h-14 object-cover rounded-md border border-border shrink-0" />
+                        ))}
                       </div>
                     )}
                   </div>
