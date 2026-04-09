@@ -145,9 +145,7 @@ const TasksPlugin = () => {
   const addTask = useMutation({
     mutationFn: async () => {
       if (!user || !input.trim()) return;
-      const entryDate = newDate && newTime ? new Date(`${newDate}T${newTime}`).toISOString()
-        : newDate ? new Date(`${newDate}T${new Date().toTimeString().slice(0, 5)}`).toISOString()
-        : new Date().toISOString();
+      const entryDate = new Date().toISOString();
       const deadline = newDeadline ? (newDeadlineTime ? new Date(`${newDeadline}T${newDeadlineTime}`).toISOString() : new Date(`${newDeadline}T23:59`).toISOString()) : null;
       const { error } = await supabase.from("tasks").insert({
         user_id: user.id, text: input.trim(), priority: newPriority,
@@ -157,7 +155,7 @@ const TasksPlugin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      setInput(""); setNewPriority("moyenne"); setNewDeadline(""); setNewDeadlineTime(""); setNewLocation(""); setNewDate(""); setNewTime("");
+      setInput(""); setNewPriority("moyenne"); setNewDeadline(""); setNewDeadlineTime(""); setNewLocation("");
       setShowForm(false); setShowOptions(false);
       toast.success("Tâche ajoutée");
     },
@@ -387,18 +385,6 @@ const TasksPlugin = () => {
                     <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input value={newLocation} onChange={e => setNewLocation(e.target.value)} placeholder="Lieu..."
                       className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Date</label>
-                    <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Heure</label>
-                    <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
