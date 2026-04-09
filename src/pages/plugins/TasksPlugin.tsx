@@ -100,8 +100,6 @@ const TasksPlugin = () => {
   const [newDeadline, setNewDeadline] = useState("");
   const [newDeadlineTime, setNewDeadlineTime] = useState("");
   const [newLocation, setNewLocation] = useState("");
-  const [newDate, setNewDate] = useState("");
-  const [newTime, setNewTime] = useState("");
   const [showOptions, setShowOptions] = useState(false);
 
   // Edit state
