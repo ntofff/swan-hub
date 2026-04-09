@@ -182,8 +182,17 @@ const ReportPlugin = () => {
 
     // Helper to resolve signed URLs for private bucket
     const resolveUrl = async (path: string) => {
-      if (path.startsWith("http")) return path;
-      const { data } = await supabase.storage.from("report-photos").createSignedUrl(path, 3600);
+      let storagePath = path;
+      const publicPrefix = "/storage/v1/object/public/report-photos/";
+      if (path.startsWith("http")) {
+        const idx = path.indexOf(publicPrefix);
+        if (idx !== -1) {
+          storagePath = decodeURIComponent(path.substring(idx + publicPrefix.length));
+        } else {
+          return path;
+        }
+      }
+      const { data } = await supabase.storage.from("report-photos").createSignedUrl(storagePath, 3600);
       return data?.signedUrl ?? path;
     };
 
