@@ -452,7 +452,7 @@ const TasksPlugin = () => {
               const pInfo = getPriorityInfo(t.priority);
               const urgency = getDeadlineUrgency(t);
               return (
-                <div key={t.id} className={`glass-card p-3 space-y-2 transition-all ${urgency === "red" ? "border-destructive/30" : urgency === "orange" ? "border-orange-500/30" : ""}`}>
+                <div key={t.id} className={`glass-card p-3 space-y-2 transition-all ${urgency === "overdue" ? "border-foreground/30" : urgency === "red" ? "border-destructive/30" : urgency === "orange" ? "border-orange-500/30" : ""}`}>
                   <div className="flex items-start justify-between gap-1">
                     <button onClick={() => toggleTask.mutate(t)}
                       className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${t.done ? "bg-primary border-primary" : "border-border hover:border-primary/50"}`}>
@@ -525,7 +525,7 @@ const TasksPlugin = () => {
               }
 
               return (
-                <div key={t.id} className={`px-4 py-3 space-y-1.5 transition-colors ${urgency === "red" ? "bg-destructive/5" : urgency === "orange" ? "bg-orange-500/5" : ""}`}>
+                <div key={t.id} className={`px-4 py-3 space-y-1.5 transition-colors ${urgency === "overdue" ? "bg-foreground/5" : urgency === "red" ? "bg-destructive/5" : urgency === "orange" ? "bg-orange-500/5" : ""}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2.5 min-w-0 flex-1">
                       {/* Checkbox: only toggles done, no archive/delete */}
