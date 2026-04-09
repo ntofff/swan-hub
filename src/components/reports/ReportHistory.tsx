@@ -62,17 +62,39 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
     });
   }, [reports, filterColor, filterFolderId, searchQuery]);
 
-  // Resolve signed URLs for thumbnails
+  // Load all photos for visible reports
   useEffect(() => {
-    const resolve = async () => {
-      for (const r of filtered) {
-        if (r.photo_url && !thumbUrls[r.id]) {
-          const url = await getSignedUrl(r.photo_url);
-          setThumbUrls((prev) => ({ ...prev, [r.id]: url }));
+    if (!showHistory || filtered.length === 0) return;
+    const loadPhotos = async () => {
+      const ids = filtered.map((r) => r.id);
+      const missing = ids.filter((id) => !allPhotos[id]);
+      if (missing.length === 0) return;
+
+      const { data: photos } = await supabase
+        .from("report_photos")
+        .select("report_id, photo_url, sort_order")
+        .in("report_id", missing)
+        .order("sort_order", { ascending: true });
+
+      const grouped: Record<string, string[]> = {};
+      for (const id of missing) {
+        const reportPhotos = photos?.filter((p) => p.report_id === id).map((p) => p.photo_url) ?? [];
+        const report = filtered.find((r) => r.id === id);
+        // Include legacy photo_url if not already in the list
+        if (report?.photo_url && !reportPhotos.includes(report.photo_url)) {
+          reportPhotos.unshift(report.photo_url);
         }
+        grouped[id] = reportPhotos;
       }
+
+      // Resolve signed URLs
+      const resolved: Record<string, string[]> = {};
+      for (const [id, urls] of Object.entries(grouped)) {
+        resolved[id] = await Promise.all(urls.map(getSignedUrl));
+      }
+      setAllPhotos((prev) => ({ ...prev, ...resolved }));
     };
-    if (showHistory) resolve();
+    loadPhotos();
   }, [filtered, showHistory]);
 
   const getSignedUrl = async (path: string): Promise<string> => {
