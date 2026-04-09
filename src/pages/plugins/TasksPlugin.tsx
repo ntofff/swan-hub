@@ -25,35 +25,35 @@ const getPriorityInfo = (p: string) => priorityOptions.find(o => o.value === p) 
 type ViewMode = "list" | "compact";
 type Tab = "active" | "archived";
 
-/** Deadline urgency: returns "red" (<12h), "orange" (<24h), "normal", or null */
-const getDeadlineUrgency = (task: any): "red" | "orange" | "normal" | null => {
+/** Deadline urgency: "overdue" (past), "red" (<12h), "orange" (<24h), "green" (>24h), or null */
+const getDeadlineUrgency = (task: any): "overdue" | "red" | "orange" | "green" | null => {
   if (!task.deadline || task.done) return null;
   const now = Date.now();
   const dl = new Date(task.deadline).getTime();
-  if (dl < now) return "red"; // overdue
+  if (dl < now) return "overdue";
   const hoursLeft = (dl - now) / 3600000;
   if (hoursLeft <= 12) return "red";
   if (hoursLeft <= 24) return "orange";
-  return "normal";
-};
-
-const deadlineClasses: Record<string, string> = {
-  red: "text-destructive font-semibold",
-  orange: "text-orange-500 font-medium",
-  normal: "text-muted-foreground",
+  return "green";
 };
 
 const deadlineBadgeClasses: Record<string, string> = {
-  red: "bg-destructive/15 text-destructive border-destructive/20",
-  orange: "bg-orange-500/15 text-orange-500 border-orange-500/20",
-  normal: "bg-secondary text-muted-foreground border-border",
+  overdue: "bg-foreground/10 text-foreground border-foreground/20 font-bold",
+  red: "bg-destructive/15 text-destructive border-destructive/20 font-semibold",
+  orange: "bg-orange-500/15 text-orange-500 border-orange-500/20 font-medium",
+  green: "bg-green-500/10 text-green-600 border-green-500/20",
 };
 
 const formatDeadlineLabel = (deadline: string, urgency: string) => {
   const dl = new Date(deadline);
   const now = new Date();
   const diff = dl.getTime() - now.getTime();
-  if (diff < 0) return "En retard";
+  if (diff < 0) {
+    const overHours = Math.floor(-diff / 3600000);
+    if (overHours < 1) return "Dépassée";
+    if (overHours < 24) return `Dépassée +${overHours}h`;
+    return `Dépassée +${Math.floor(overHours / 24)}j`;
+  }
   const hours = Math.floor(diff / 3600000);
   const mins = Math.floor((diff % 3600000) / 60000);
   if (hours < 1) return `${mins}min restantes`;
@@ -100,8 +100,6 @@ const TasksPlugin = () => {
   const [newDeadline, setNewDeadline] = useState("");
   const [newDeadlineTime, setNewDeadlineTime] = useState("");
   const [newLocation, setNewLocation] = useState("");
-  const [newDate, setNewDate] = useState("");
-  const [newTime, setNewTime] = useState("");
   const [showOptions, setShowOptions] = useState(false);
 
   // Edit state
@@ -147,9 +145,7 @@ const TasksPlugin = () => {
   const addTask = useMutation({
     mutationFn: async () => {
       if (!user || !input.trim()) return;
-      const entryDate = newDate && newTime ? new Date(`${newDate}T${newTime}`).toISOString()
-        : newDate ? new Date(`${newDate}T${new Date().toTimeString().slice(0, 5)}`).toISOString()
-        : new Date().toISOString();
+      const entryDate = new Date().toISOString();
       const deadline = newDeadline ? (newDeadlineTime ? new Date(`${newDeadline}T${newDeadlineTime}`).toISOString() : new Date(`${newDeadline}T23:59`).toISOString()) : null;
       const { error } = await supabase.from("tasks").insert({
         user_id: user.id, text: input.trim(), priority: newPriority,
@@ -159,7 +155,7 @@ const TasksPlugin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      setInput(""); setNewPriority("moyenne"); setNewDeadline(""); setNewDeadlineTime(""); setNewLocation(""); setNewDate(""); setNewTime("");
+      setInput(""); setNewPriority("moyenne"); setNewDeadline(""); setNewDeadlineTime(""); setNewLocation("");
       setShowForm(false); setShowOptions(false);
       toast.success("Tâche ajoutée");
     },
@@ -331,11 +327,11 @@ const TasksPlugin = () => {
     const cls = deadlineBadgeClasses[urgency];
     return (
       <span className={`inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full border transition-colors ${cls}`}>
-        <Calendar size={8} className={urgency === "red" ? "animate-pulse" : ""} />
+        <Calendar size={8} className={urgency === "red" || urgency === "overdue" ? "animate-pulse" : ""} />
         {label}
-        {urgency !== "normal" && <span className="text-[8px]">
+        <span className="text-[8px]">
           {new Date(task.deadline).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-        </span>}
+        </span>
       </span>
     );
   };
@@ -389,18 +385,6 @@ const TasksPlugin = () => {
                     <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input value={newLocation} onChange={e => setNewLocation(e.target.value)} placeholder="Lieu..."
                       className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Date</label>
-                    <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Heure</label>
-                    <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -468,7 +452,7 @@ const TasksPlugin = () => {
               const pInfo = getPriorityInfo(t.priority);
               const urgency = getDeadlineUrgency(t);
               return (
-                <div key={t.id} className={`glass-card p-3 space-y-2 transition-all ${urgency === "red" ? "border-destructive/30" : urgency === "orange" ? "border-orange-500/30" : ""}`}>
+                <div key={t.id} className={`glass-card p-3 space-y-2 transition-all ${urgency === "overdue" ? "border-foreground/30" : urgency === "red" ? "border-destructive/30" : urgency === "orange" ? "border-orange-500/30" : ""}`}>
                   <div className="flex items-start justify-between gap-1">
                     <button onClick={() => toggleTask.mutate(t)}
                       className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${t.done ? "bg-primary border-primary" : "border-border hover:border-primary/50"}`}>
@@ -541,7 +525,7 @@ const TasksPlugin = () => {
               }
 
               return (
-                <div key={t.id} className={`px-4 py-3 space-y-1.5 transition-colors ${urgency === "red" ? "bg-destructive/5" : urgency === "orange" ? "bg-orange-500/5" : ""}`}>
+                <div key={t.id} className={`px-4 py-3 space-y-1.5 transition-colors ${urgency === "overdue" ? "bg-foreground/5" : urgency === "red" ? "bg-destructive/5" : urgency === "orange" ? "bg-orange-500/5" : ""}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2.5 min-w-0 flex-1">
                       {/* Checkbox: only toggles done, no archive/delete */}
