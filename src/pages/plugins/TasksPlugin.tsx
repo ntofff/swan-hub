@@ -25,35 +25,35 @@ const getPriorityInfo = (p: string) => priorityOptions.find(o => o.value === p) 
 type ViewMode = "list" | "compact";
 type Tab = "active" | "archived";
 
-/** Deadline urgency: returns "red" (<12h), "orange" (<24h), "normal", or null */
-const getDeadlineUrgency = (task: any): "red" | "orange" | "normal" | null => {
+/** Deadline urgency: "overdue" (past), "red" (<12h), "orange" (<24h), "green" (>24h), or null */
+const getDeadlineUrgency = (task: any): "overdue" | "red" | "orange" | "green" | null => {
   if (!task.deadline || task.done) return null;
   const now = Date.now();
   const dl = new Date(task.deadline).getTime();
-  if (dl < now) return "red"; // overdue
+  if (dl < now) return "overdue";
   const hoursLeft = (dl - now) / 3600000;
   if (hoursLeft <= 12) return "red";
   if (hoursLeft <= 24) return "orange";
-  return "normal";
-};
-
-const deadlineClasses: Record<string, string> = {
-  red: "text-destructive font-semibold",
-  orange: "text-orange-500 font-medium",
-  normal: "text-muted-foreground",
+  return "green";
 };
 
 const deadlineBadgeClasses: Record<string, string> = {
-  red: "bg-destructive/15 text-destructive border-destructive/20",
-  orange: "bg-orange-500/15 text-orange-500 border-orange-500/20",
-  normal: "bg-secondary text-muted-foreground border-border",
+  overdue: "bg-foreground/10 text-foreground border-foreground/20 font-bold",
+  red: "bg-destructive/15 text-destructive border-destructive/20 font-semibold",
+  orange: "bg-orange-500/15 text-orange-500 border-orange-500/20 font-medium",
+  green: "bg-green-500/10 text-green-600 border-green-500/20",
 };
 
 const formatDeadlineLabel = (deadline: string, urgency: string) => {
   const dl = new Date(deadline);
   const now = new Date();
   const diff = dl.getTime() - now.getTime();
-  if (diff < 0) return "En retard";
+  if (diff < 0) {
+    const overHours = Math.floor(-diff / 3600000);
+    if (overHours < 1) return "Dépassée";
+    if (overHours < 24) return `Dépassée +${overHours}h`;
+    return `Dépassée +${Math.floor(overHours / 24)}j`;
+  }
   const hours = Math.floor(diff / 3600000);
   const mins = Math.floor((diff % 3600000) / 60000);
   if (hours < 1) return `${mins}min restantes`;
