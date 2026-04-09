@@ -75,9 +75,18 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
   }, [filtered, showHistory]);
 
   const getSignedUrl = async (path: string): Promise<string> => {
-    // If it's already a full URL (legacy data), return as-is
-    if (path.startsWith("http")) return path;
-    const { data } = await supabase.storage.from("report-photos").createSignedUrl(path, 3600);
+    // Extract storage path from legacy public URLs
+    let storagePath = path;
+    const publicPrefix = "/storage/v1/object/public/report-photos/";
+    if (path.startsWith("http")) {
+      const idx = path.indexOf(publicPrefix);
+      if (idx !== -1) {
+        storagePath = decodeURIComponent(path.substring(idx + publicPrefix.length));
+      } else {
+        return path; // External URL, return as-is
+      }
+    }
+    const { data } = await supabase.storage.from("report-photos").createSignedUrl(storagePath, 3600);
     return data?.signedUrl ?? path;
   };
 
