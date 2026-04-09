@@ -331,11 +331,11 @@ const TasksPlugin = () => {
     const cls = deadlineBadgeClasses[urgency];
     return (
       <span className={`inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full border transition-colors ${cls}`}>
-        <Calendar size={8} className={urgency === "red" ? "animate-pulse" : ""} />
+        <Calendar size={8} className={urgency === "red" || urgency === "overdue" ? "animate-pulse" : ""} />
         {label}
-        {urgency !== "normal" && <span className="text-[8px]">
+        <span className="text-[8px]">
           {new Date(task.deadline).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-        </span>}
+        </span>
       </span>
     );
   };
