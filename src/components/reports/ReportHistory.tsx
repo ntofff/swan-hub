@@ -44,6 +44,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
   const [sharePhotoUrls, setSharePhotoUrls] = useState<Record<string, string[]>>({});
   const [loadingShareId, setLoadingShareId] = useState<string | null>(null);
   const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
+  const [allPhotos, setAllPhotos] = useState<Record<string, string[]>>({});
   const [filterColor, setFilterColor] = useState<string | null>(null);
   const [filterFolderId, setFilterFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
