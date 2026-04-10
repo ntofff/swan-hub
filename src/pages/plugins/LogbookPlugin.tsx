@@ -77,7 +77,7 @@ const LogbookPlugin = () => {
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["log_entries"],
     queryFn: async () => {
-      const { data } = await supabase.from("log_entries").select("*").order("entry_date", { ascending: false });
+      const { data } = await supabase.from("log_entries").select("*").order("entry_date", { ascending: true });
       return data ?? [];
     },
     enabled: !!user,
@@ -169,7 +169,11 @@ const LogbookPlugin = () => {
     if (window.confirm("Supprimer cette entrée ?")) deleteEntry.mutate(id);
   };
 
-  const shortId = (id: string) => id.slice(0, 6).toUpperCase();
+  // Sequential numbering based on chronological position
+  const getSeqNumber = (id: string) => {
+    const idx = entries.findIndex((e: any) => e.id === id);
+    return idx >= 0 ? String(idx + 1).padStart(3, "0") : "???";
+  };
   const getPriorityInfo = (p: string) => priorityOptions.find(o => o.value === p) || priorityOptions[0];
 
   // Selection logic
@@ -450,7 +454,7 @@ const LogbookPlugin = () => {
                           {formatDate(date)} · {new Date(date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
-                          <Hash size={9} />{shortId(e.id)}
+                          <Hash size={9} />{getSeqNumber(e.id)}
                         </span>
                       </div>
                     </>
