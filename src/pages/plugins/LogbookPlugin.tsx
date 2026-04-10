@@ -169,10 +169,16 @@ const LogbookPlugin = () => {
     if (window.confirm("Supprimer cette entrée ?")) deleteEntry.mutate(id);
   };
 
-  // Sequential numbering based on chronological position
+  // Sequential numbering: AA001..AA999, AB001..AB999, ..., ZZ999
   const getSeqNumber = (id: string) => {
     const idx = entries.findIndex((e: any) => e.id === id);
-    return idx >= 0 ? String(idx + 1).padStart(3, "0") : "???";
+    if (idx < 0) return "??000";
+    const n = idx + 1;
+    const group = Math.floor((n - 1) / 999);
+    const num = ((n - 1) % 999) + 1;
+    const firstLetter = String.fromCharCode(65 + Math.floor(group / 26));
+    const secondLetter = String.fromCharCode(65 + (group % 26));
+    return `${firstLetter}${secondLetter}${String(num).padStart(3, "0")}`;
   };
   const getPriorityInfo = (p: string) => priorityOptions.find(o => o.value === p) || priorityOptions[0];
 
