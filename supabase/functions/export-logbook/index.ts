@@ -32,8 +32,8 @@ function buildTablePdf(entries: any[]): Uint8Array {
   };
 
   // Pre-calculate row heights
-  const rowsData = entries.map((e, i) => {
-    const num = String(i + 1).padStart(3, "0");
+  const rowsData = entries.map((e: any, i: number) => {
+    const num = e.seq_number || String(i + 1).padStart(3, "0");
     const d = new Date(e.entry_date || e.created_at);
     const dateStr = strip(d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }));
     const timeStr = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
