@@ -418,31 +418,37 @@ export type Database = {
       log_entries: {
         Row: {
           activity_id: string | null
+          archived: boolean
           color: string | null
           created_at: string
           entry_date: string | null
           id: string
           priority: string | null
+          seq_number: string | null
           text: string
           user_id: string
         }
         Insert: {
           activity_id?: string | null
+          archived?: boolean
           color?: string | null
           created_at?: string
           entry_date?: string | null
           id?: string
           priority?: string | null
+          seq_number?: string | null
           text: string
           user_id: string
         }
         Update: {
           activity_id?: string | null
+          archived?: boolean
           color?: string | null
           created_at?: string
           entry_date?: string | null
           id?: string
           priority?: string | null
+          seq_number?: string | null
           text?: string
           user_id?: string
         }
@@ -455,6 +461,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      logbook_counters: {
+        Row: {
+          current_number: number
+          letter_group: number
+          user_id: string
+        }
+        Insert: {
+          current_number?: number
+          letter_group?: number
+          user_id: string
+        }
+        Update: {
+          current_number?: number
+          letter_group?: number
+          user_id?: string
+        }
+        Relationships: []
       }
       mission_activity_logs: {
         Row: {
@@ -1334,6 +1358,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      next_logbook_seq: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
