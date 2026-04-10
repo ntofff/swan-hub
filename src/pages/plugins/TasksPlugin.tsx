@@ -144,13 +144,24 @@ const TasksPlugin = () => {
 
   const addTask = useMutation({
     mutationFn: async () => {
-      if (!user || !input.trim()) return;
+      if (!user || !input.trim()) throw new Error("Champ requis");
       const entryDate = new Date().toISOString();
-      const deadline = newDeadline ? (newDeadlineTime ? new Date(`${newDeadline}T${newDeadlineTime}`).toISOString() : new Date(`${newDeadline}T23:59`).toISOString()) : null;
-      const { error } = await supabase.from("tasks").insert({
-        user_id: user.id, text: input.trim(), priority: newPriority,
-        entry_date: entryDate, deadline, location: newLocation.trim() || null, sort_order: 0,
-      } as any);
+      let deadline: string | null = null;
+      if (newDeadline) {
+        const timeStr = newDeadlineTime || "23:59";
+        const dlDate = new Date(`${newDeadline}T${timeStr}:00`);
+        if (!isNaN(dlDate.getTime())) deadline = dlDate.toISOString();
+      }
+      const insertData: Record<string, any> = {
+        user_id: user.id,
+        text: input.trim(),
+        priority: newPriority,
+        entry_date: entryDate,
+        deadline,
+        location: newLocation.trim() || null,
+        sort_order: 0,
+      };
+      const { error } = await supabase.from("tasks").insert(insertData as any);
       if (error) throw error;
     },
     onSuccess: () => {
