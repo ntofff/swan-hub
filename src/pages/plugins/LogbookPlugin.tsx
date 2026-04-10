@@ -41,7 +41,7 @@ const buildShareText = (entries: any[]) => {
     const d = new Date(e.entry_date || e.created_at);
     const dateStr = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
     const prio = e.priority && e.priority !== "normale" ? ` [${e.priority.toUpperCase()}]` : "";
-    text += `#${e.id.slice(0, 6).toUpperCase()} — ${dateStr}${prio}\n${e.text}\n`;
+    text += `#${String(i + 1).padStart(3, "0")} — ${dateStr}${prio}\n${e.text}\n`;
     if (i < entries.length - 1) text += "---\n";
   });
   return text;
