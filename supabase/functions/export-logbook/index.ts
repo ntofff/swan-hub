@@ -5,213 +5,169 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Simple PDF builder (no external deps)
-function buildPdf(entries: any[]): Uint8Array {
-  const objects: string[] = [];
-  let objCount = 0;
-  const offsets: number[] = [];
+const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+const strip = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  const newObj = (content: string) => {
-    objCount++;
-    objects.push(content);
-    return objCount;
-  };
+function buildTablePdf(entries: any[]): Uint8Array {
+  const W = 595, H = 842, M = 40;
+  const colWidths = [45, 100, 60, W - 2 * M - 45 - 100 - 60]; // # | Date | Priorité | Contenu
+  const headerH = 22, rowPad = 8, fontSize = 9, headerFontSize = 9;
+  const lineH = 12;
 
-  // Catalog, Pages placeholder
-  newObj("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj");
-  newObj(""); // placeholder for pages
-
-  // Font
-  newObj("3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj");
-  newObj("4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj");
-
-  const pageWidth = 595;
-  const pageHeight = 842;
-  const margin = 50;
-  const lineHeight = 14;
-  const maxTextWidth = pageWidth - 2 * margin;
-
-  // Escape special PDF chars
-  const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-
-  // Remove accents for PDF Type1 font compatibility
-  const removeAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  // Approximate text width (Helvetica ~0.5 * fontSize per char)
-  const approxWidth = (text: string, fontSize: number) => text.length * fontSize * 0.5;
-
-  // Word-wrap
-  const wrapText = (text: string, fontSize: number): string[] => {
+  // Approximate char width
+  const charW = (fs: number) => fs * 0.48;
+  const wrapText = (text: string, maxW: number, fs: number): string[] => {
+    const cw = charW(fs);
+    const maxChars = Math.floor(maxW / cw);
     const words = text.split(" ");
     const lines: string[] = [];
-    let current = "";
+    let cur = "";
     for (const word of words) {
-      const test = current ? current + " " + word : word;
-      if (approxWidth(test, fontSize) > maxTextWidth) {
-        if (current) lines.push(current);
-        current = word;
-      } else {
-        current = test;
-      }
+      const test = cur ? cur + " " + word : word;
+      if (test.length > maxChars && cur) { lines.push(cur); cur = word; }
+      else cur = test;
     }
-    if (current) lines.push(current);
-    return lines;
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [""];
   };
 
-  // Build content for pages
-  const pages: number[] = [];
-  const pageContents: number[] = [];
+  // Pre-calculate row heights
+  const rowsData = entries.map((e, i) => {
+    const num = String(i + 1).padStart(3, "0");
+    const d = new Date(e.entry_date || e.created_at);
+    const dateStr = strip(d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }));
+    const timeStr = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const prio = e.priority && e.priority !== "normale" ? strip(e.priority.charAt(0).toUpperCase() + e.priority.slice(1)) : "-";
+    const textLines = wrapText(strip(e.text), colWidths[3] - 10, fontSize);
+    const rowH = Math.max(headerH, textLines.length * lineH + 2 * rowPad);
+    return { num, dateStr, timeStr, prio, textLines, rowH };
+  });
 
-  let y = pageHeight - margin;
-  let streamLines: string[] = [];
+  // Build pages
+  const pages: string[] = [];
+  let stream = "";
+  let y = H - M;
+
+  const drawHeader = () => {
+    // Title
+    stream += `BT /F2 14 Tf ${M} ${y} Td (${esc(strip("Journal de bord"))}) Tj ET\n`;
+    y -= 8;
+    const now = new Date();
+    const dateExp = strip(now.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }));
+    stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc("Exporte le " + dateExp)}) Tj 0 0 0 rg ET\n`;
+    y -= 20;
+    drawTableHeader();
+  };
+
+  const drawTableHeader = () => {
+    // Header background
+    stream += `0.15 0.15 0.18 rg ${M} ${y - headerH} ${W - 2 * M} ${headerH} re f 0 0 0 rg\n`;
+    const headers = ["#", "Date", "Priorite", "Contenu"];
+    let x = M;
+    for (let c = 0; c < 4; c++) {
+      stream += `BT /F2 ${headerFontSize} Tf 1 1 1 rg ${x + 5} ${y - headerH + 7} Td (${esc(headers[c])}) Tj 0 0 0 rg ET\n`;
+      x += colWidths[c];
+    }
+    y -= headerH;
+  };
+
+  const finishPage = () => { pages.push(stream); stream = ""; };
 
   const startPage = () => {
-    y = pageHeight - margin;
-    streamLines = [];
-    // Title on first page only
-    if (pages.length === 0) {
-      streamLines.push("BT");
-      streamLines.push("/F2 18 Tf");
-      streamLines.push(`${margin} ${y} Td`);
-      streamLines.push(`(${esc(removeAccents("Journal de bord"))}) Tj`);
-      streamLines.push("ET");
-      y -= 10;
-
-      // Date line
-      const now = new Date();
-      const dateStr = removeAccents(now.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }));
-      streamLines.push("BT");
-      streamLines.push("/F1 9 Tf");
-      streamLines.push("0.5 0.5 0.5 rg");
-      streamLines.push(`${margin} ${y} Td`);
-      streamLines.push(`(${esc("Exporte le " + dateStr)}) Tj`);
-      streamLines.push("0 0 0 rg");
-      streamLines.push("ET");
-      y -= 25;
-    }
-  };
-
-  const finishPage = () => {
-    const stream = streamLines.join("\n");
-    const streamObjId = newObj("");
-    const contentObjId = newObj("");
-    const pageObjId = newObj("");
-
-    objects[streamObjId - 1] = `${streamObjId} 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj`;
-    objects[contentObjId - 1] = ""; // unused, we pack into stream
-    objects[pageObjId - 1] = ""; // unused
-
-    // Actually, let's simplify: one stream obj per page
-    // Reset and redo
-    objCount -= 2; // undo extra
-    objects.splice(streamObjId - 1, 2);
-
-    const sObjId = newObj(`${objCount} 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj`);
-    const pObjId = newObj(`${objCount} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${sObjId} 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> >>\nendobj`);
-
-    pages.push(pObjId);
+    stream = "";
+    y = H - M;
+    if (pages.length === 0) drawHeader();
+    else drawTableHeader();
   };
 
   startPage();
 
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
-    const priorityLabel = entry.priority && entry.priority !== "normale" ? ` [${removeAccents(entry.priority.toUpperCase())}]` : "";
-    const entryDate = entry.entry_date || entry.created_at;
-    const dateStr = removeAccents(new Date(entryDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }));
-    const idStr = entry.id.slice(0, 6).toUpperCase();
+  for (let i = 0; i < rowsData.length; i++) {
+    const r = rowsData[i];
+    if (y - r.rowH < M) { finishPage(); startPage(); }
 
-    // Check space needed (approx)
-    const textLines = wrapText(removeAccents(entry.text), 10);
-    const neededHeight = 30 + textLines.length * lineHeight;
-
-    if (y - neededHeight < margin) {
-      finishPage();
-      startPage();
+    // Alternate row bg
+    if (i % 2 === 0) {
+      stream += `0.96 0.96 0.97 rg ${M} ${y - r.rowH} ${W - 2 * M} ${r.rowH} re f 0 0 0 rg\n`;
     }
 
-    // Separator line
-    if (i > 0 || pages.length > 0) {
-      streamLines.push("0.85 0.85 0.85 RG");
-      streamLines.push(`${margin} ${y} m ${pageWidth - margin} ${y} l S`);
-      y -= 10;
+    // Row borders
+    stream += `0.85 0.85 0.85 RG 0.5 w ${M} ${y - r.rowH} ${W - 2 * M} ${r.rowH} re S\n`;
+
+    // Vertical lines
+    let x = M;
+    for (let c = 0; c < 3; c++) {
+      x += colWidths[c];
+      stream += `${x} ${y} m ${x} ${y - r.rowH} l S\n`;
     }
 
-    // Header: #ID + date + priority
-    streamLines.push("BT");
-    streamLines.push("/F2 9 Tf");
-    streamLines.push("0.3 0.3 0.3 rg");
-    streamLines.push(`${margin} ${y} Td`);
-    streamLines.push(`(${esc("#" + idStr + "  " + dateStr + priorityLabel)}) Tj`);
-    streamLines.push("0 0 0 rg");
-    streamLines.push("ET");
-    y -= 18;
+    // Cell content
+    const textY = y - rowPad - fontSize;
+    x = M;
 
-    // Body text
-    for (const line of textLines) {
-      if (y < margin) {
-        finishPage();
-        startPage();
-      }
-      streamLines.push("BT");
-      streamLines.push("/F1 10 Tf");
-      streamLines.push(`${margin} ${y} Td`);
-      streamLines.push(`(${esc(line)}) Tj`);
-      streamLines.push("ET");
-      y -= lineHeight;
+    // Col 0: #
+    stream += `BT /F2 ${fontSize} Tf 0.3 0.3 0.3 rg ${x + 5} ${textY} Td (${esc(r.num)}) Tj 0 0 0 rg ET\n`;
+    x += colWidths[0];
+
+    // Col 1: Date
+    stream += `BT /F1 ${fontSize} Tf ${x + 5} ${textY} Td (${esc(r.dateStr)}) Tj ET\n`;
+    stream += `BT /F1 7 Tf 0.5 0.5 0.5 rg ${x + 5} ${textY - lineH} Td (${esc(r.timeStr)}) Tj 0 0 0 rg ET\n`;
+    x += colWidths[1];
+
+    // Col 2: Priorité with color
+    if (r.prio === "Urgent") stream += "0.85 0.2 0.2 rg\n";
+    else if (r.prio === "Important") stream += "0.9 0.6 0.1 rg\n";
+    stream += `BT /F2 ${fontSize} Tf ${x + 5} ${textY} Td (${esc(r.prio)}) Tj ET\n`;
+    stream += "0 0 0 rg\n";
+    x += colWidths[2];
+
+    // Col 3: Contenu (wrapped)
+    for (let l = 0; l < r.textLines.length; l++) {
+      const ly = textY - l * lineH;
+      if (ly < y - r.rowH + 2) break;
+      stream += `BT /F1 ${fontSize} Tf ${x + 5} ${ly} Td (${esc(r.textLines[l])}) Tj ET\n`;
     }
 
-    y -= 8;
+    // Reset stroke
+    stream += "0 0 0 RG\n";
+    y -= r.rowH;
   }
 
+  // Footer
+  stream += `BT /F1 7 Tf 0.5 0.5 0.5 rg ${M} ${M - 15} Td (${esc(strip(`SWAN - ${entries.length} entree(s)`))}) Tj 0 0 0 rg ET\n`;
   finishPage();
 
-  // Fix pages object
-  const kids = pages.map(p => `${p} 0 R`).join(" ");
-  objects[1] = `2 0 obj\n<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>\nendobj`;
+  // Assemble PDF
+  const objs: string[] = [];
+  let oc = 0;
+  const addObj = (c: string) => { oc++; objs.push(`${oc} 0 obj\n${c}\nendobj`); return oc; };
 
-  // Build PDF bytes
+  addObj("<< /Type /Catalog /Pages 2 0 R >>");
+  addObj(""); // pages placeholder
+  addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+
+  const pageRefs: number[] = [];
+  for (const s of pages) {
+    const sId = addObj(`<< /Length ${s.length} >>\nstream\n${s}\nendstream`);
+    const pId = addObj(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Contents ${sId} 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> >>`);
+    pageRefs.push(pId);
+  }
+
+  objs[1] = `2 0 obj\n<< /Type /Pages /Kids [${pageRefs.map(r => `${r} 0 R`).join(" ")}] /Count ${pageRefs.length} >>\nendobj`;
+
   let pdf = "%PDF-1.4\n";
-  const finalOffsets: number[] = [];
-  for (let i = 0; i < objects.length; i++) {
-    if (!objects[i]) continue;
-    finalOffsets.push(pdf.length);
-    pdf += objects[i] + "\n";
+  const offsets: number[] = [];
+  for (const o of objs) {
+    offsets.push(pdf.length);
+    pdf += o + "\n";
   }
+  const xref = pdf.length;
+  pdf += `xref\n0 ${oc + 1}\n0000000000 65535 f \n`;
+  for (const off of offsets) pdf += `${String(off).padStart(10, "0")} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${oc + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
 
-  const xrefOffset = pdf.length;
-  pdf += "xref\n";
-  pdf += `0 ${objCount + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-  
-  // Simple approach: rebuild
-  // Actually let's just use a simpler approach
-  const encoder = new TextEncoder();
-
-  // Rebuild properly
-  let pdfStr = "%PDF-1.4\n";
-  const objOffsets: number[] = [];
-
-  for (let i = 0; i < objects.length; i++) {
-    if (!objects[i]) continue;
-    objOffsets.push(pdfStr.length);
-    // If obj doesn't start with number, wrap it
-    if (!objects[i].startsWith(`${i + 1} 0 obj`)) {
-      pdfStr += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
-    } else {
-      pdfStr += objects[i] + "\n";
-    }
-  }
-
-  const xref = pdfStr.length;
-  pdfStr += `xref\n0 ${objCount + 1}\n`;
-  pdfStr += "0000000000 65535 f \n";
-  for (const off of objOffsets) {
-    pdfStr += `${String(off).padStart(10, "0")} 00000 n \n`;
-  }
-  pdfStr += `trailer\n<< /Size ${objCount + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-
-  return encoder.encode(pdfStr);
+  return new TextEncoder().encode(pdf);
 }
 
 serve(async (req) => {
@@ -225,7 +181,14 @@ serve(async (req) => {
       });
     }
 
-    const pdfBytes = buildPdf(entries);
+    // Sort entries chronologically ascending
+    entries.sort((a: any, b: any) => {
+      const da = new Date(a.entry_date || a.created_at).getTime();
+      const db = new Date(b.entry_date || b.created_at).getTime();
+      return da - db;
+    });
+
+    const pdfBytes = buildTablePdf(entries);
     const base64 = btoa(String.fromCharCode(...pdfBytes));
 
     return new Response(JSON.stringify({ pdf_base64: base64 }), {
