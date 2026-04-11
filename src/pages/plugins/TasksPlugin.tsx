@@ -413,7 +413,7 @@ const TasksPlugin = () => {
               </div>
             )}
 
-            <button onClick={() => addTask.mutate()} disabled={!input.trim() || addTask.isPending}
+            <button type="button" onClick={() => addTask.mutate()} disabled={!input.trim() || addTask.isPending}
               className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40 transition-all active:scale-95">Ajouter</button>
           </div>
         )}
