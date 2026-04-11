@@ -371,7 +371,7 @@ const TasksPlugin = () => {
               <label className="text-[10px] text-muted-foreground mb-1.5 block">Priorité</label>
               <div className="flex gap-1.5">
                 {priorityOptions.map(p => (
-                  <button key={p.value} onClick={() => setNewPriority(p.value)}
+                  <button type="button" key={p.value} onClick={() => setNewPriority(p.value)}
                     className={`flex-1 text-[10px] py-2 rounded-lg border transition-all ${newPriority === p.value ? p.cls + " border-transparent font-medium scale-105" : "border-border text-muted-foreground"}`}>
                     {p.value === "urgente" && <AlertTriangle size={9} className="inline mr-0.5" />}
                     {p.label}
@@ -383,7 +383,7 @@ const TasksPlugin = () => {
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && addTask.mutate()}
               placeholder="Nom de la tâche..." className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" autoFocus />
 
-            <button onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <button type="button" onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
               {showOptions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               Plus d'options
             </button>
@@ -413,7 +413,7 @@ const TasksPlugin = () => {
               </div>
             )}
 
-            <button onClick={() => addTask.mutate()} disabled={!input.trim() || addTask.isPending}
+            <button type="button" onClick={() => addTask.mutate()} disabled={!input.trim() || addTask.isPending}
               className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40 transition-all active:scale-95">Ajouter</button>
           </div>
         )}
