@@ -371,7 +371,7 @@ const TasksPlugin = () => {
               <label className="text-[10px] text-muted-foreground mb-1.5 block">Priorité</label>
               <div className="flex gap-1.5">
                 {priorityOptions.map(p => (
-                  <button key={p.value} onClick={() => setNewPriority(p.value)}
+                  <button type="button" key={p.value} onClick={() => setNewPriority(p.value)}
                     className={`flex-1 text-[10px] py-2 rounded-lg border transition-all ${newPriority === p.value ? p.cls + " border-transparent font-medium scale-105" : "border-border text-muted-foreground"}`}>
                     {p.value === "urgente" && <AlertTriangle size={9} className="inline mr-0.5" />}
                     {p.label}
