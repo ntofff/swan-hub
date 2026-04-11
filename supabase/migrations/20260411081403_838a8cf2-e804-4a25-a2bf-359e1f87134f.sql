@@ -1,0 +1,2 @@
+ALTER TABLE public.tasks DROP CONSTRAINT IF EXISTS tasks_priority_check;
+ALTER TABLE public.tasks ADD CONSTRAINT tasks_priority_check CHECK (priority = ANY (ARRAY['basse'::text, 'moyenne'::text, 'haute'::text, 'urgente'::text]));
