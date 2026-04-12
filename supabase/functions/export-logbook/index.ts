@@ -54,7 +54,8 @@ function buildTablePdf(entries: any[]): Uint8Array {
     stream += `BT /F2 14 Tf ${M} ${y} Td (${esc(strip("Journal de bord"))}) Tj ET\n`;
     y -= 8;
     const now = new Date();
-    const dateExp = strip(now.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }));
+    const months = ["janvier","fevrier","mars","avril","mai","juin","juillet","aout","septembre","octobre","novembre","decembre"];
+    const dateExp = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
     stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc("Exporte le " + dateExp)}) Tj 0 0 0 rg ET\n`;
     y -= 20;
     drawTableHeader();
