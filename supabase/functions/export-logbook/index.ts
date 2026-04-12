@@ -194,7 +194,7 @@ serve(async (req) => {
       return da - db;
     });
 
-    const pdfBytes = buildTablePdf(entries);
+    const pdfBytes = buildTablePdf(entries, userName);
     const base64 = btoa(String.fromCharCode(...pdfBytes));
 
     return new Response(JSON.stringify({ pdf_base64: base64 }), {
