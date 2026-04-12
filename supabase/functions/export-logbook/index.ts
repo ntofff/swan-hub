@@ -8,7 +8,7 @@ const corsHeaders = {
 const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 const strip = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-function buildTablePdf(entries: any[]): Uint8Array {
+function buildTablePdf(entries: any[], userName: string): Uint8Array {
   const W = 595, H = 842, M = 40;
   const colWidths = [45, 100, 60, W - 2 * M - 45 - 100 - 60]; // # | Date | Priorité | Contenu
   const headerH = 22, rowPad = 8, fontSize = 9, headerFontSize = 9;
