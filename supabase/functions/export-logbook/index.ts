@@ -32,11 +32,12 @@ function buildTablePdf(entries: any[]): Uint8Array {
   };
 
   // Pre-calculate row heights
+  const pad2 = (n: number) => String(n).padStart(2, "0");
   const rowsData = entries.map((e: any, i: number) => {
     const num = e.seq_number || String(i + 1).padStart(3, "0");
     const d = new Date(e.entry_date || e.created_at);
-    const dateStr = strip(d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }));
-    const timeStr = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const dateStr = `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+    const timeStr = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
     const prio = e.priority && e.priority !== "normale" ? strip(e.priority.charAt(0).toUpperCase() + e.priority.slice(1)) : "-";
     const textLines = wrapText(strip(e.text), colWidths[3] - 10, fontSize);
     const rowH = Math.max(headerH, textLines.length * lineH + 2 * rowPad);
@@ -53,7 +54,8 @@ function buildTablePdf(entries: any[]): Uint8Array {
     stream += `BT /F2 14 Tf ${M} ${y} Td (${esc(strip("Journal de bord"))}) Tj ET\n`;
     y -= 8;
     const now = new Date();
-    const dateExp = strip(now.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }));
+    const months = ["janvier","fevrier","mars","avril","mai","juin","juillet","aout","septembre","octobre","novembre","decembre"];
+    const dateExp = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
     stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc("Exporte le " + dateExp)}) Tj 0 0 0 rg ET\n`;
     y -= 20;
     drawTableHeader();
