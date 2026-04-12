@@ -239,7 +239,10 @@ const LogbookPlugin = () => {
     if (selected.length === 0) { toast.error("Aucune entrée à exporter"); return; }
     setExporting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("export-logbook", { body: { entries: selected } });
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: profileData } = await supabase.from("profiles").select("full_name").eq("user_id", currentUser?.id ?? "").maybeSingle();
+      const userName = profileData?.full_name || currentUser?.email || "Utilisateur";
+      const { data, error } = await supabase.functions.invoke("export-logbook", { body: { entries: selected, userName } });
       if (error) throw error;
       if (data?.pdf_base64) {
         const byteChars = atob(data.pdf_base64);

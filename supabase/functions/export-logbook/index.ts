@@ -56,7 +56,10 @@ function buildTablePdf(entries: any[]): Uint8Array {
     const now = new Date();
     const months = ["janvier","fevrier","mars","avril","mai","juin","juillet","aout","septembre","octobre","novembre","decembre"];
     const dateExp = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
-    stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc("Exporte le " + dateExp)}) Tj 0 0 0 rg ET\n`;
+    const timeExp = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc(`Exporte le ${dateExp} a ${timeExp}`)}) Tj 0 0 0 rg ET\n`;
+    y -= 12;
+    stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc(`Certifie par : ${userName}`)}) Tj 0 0 0 rg ET\n`;
     y -= 20;
     drawTableHeader();
   };
