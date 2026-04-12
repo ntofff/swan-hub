@@ -179,7 +179,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { entries } = await req.json();
+    const { entries, userName: rawUserName } = await req.json();
+    const userName = strip(String(rawUserName || "Utilisateur"));
     if (!entries || !Array.isArray(entries) || entries.length === 0) {
       return new Response(JSON.stringify({ error: "Aucune entrée fournie" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
