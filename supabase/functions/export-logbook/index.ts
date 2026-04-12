@@ -8,7 +8,7 @@ const corsHeaders = {
 const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 const strip = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-function buildTablePdf(entries: any[]): Uint8Array {
+function buildTablePdf(entries: any[], userName: string): Uint8Array {
   const W = 595, H = 842, M = 40;
   const colWidths = [45, 100, 60, W - 2 * M - 45 - 100 - 60]; // # | Date | Priorité | Contenu
   const headerH = 22, rowPad = 8, fontSize = 9, headerFontSize = 9;
@@ -56,7 +56,10 @@ function buildTablePdf(entries: any[]): Uint8Array {
     const now = new Date();
     const months = ["janvier","fevrier","mars","avril","mai","juin","juillet","aout","septembre","octobre","novembre","decembre"];
     const dateExp = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
-    stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc("Exporte le " + dateExp)}) Tj 0 0 0 rg ET\n`;
+    const timeExp = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc(`Exporte le ${dateExp} a ${timeExp}`)}) Tj 0 0 0 rg ET\n`;
+    y -= 12;
+    stream += `BT /F1 8 Tf 0.5 0.5 0.5 rg ${M} ${y} Td (${esc(`Certifie par : ${userName}`)}) Tj 0 0 0 rg ET\n`;
     y -= 20;
     drawTableHeader();
   };
@@ -176,7 +179,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { entries } = await req.json();
+    const { entries, userName: rawUserName } = await req.json();
+    const userName = strip(String(rawUserName || "Utilisateur"));
     if (!entries || !Array.isArray(entries) || entries.length === 0) {
       return new Response(JSON.stringify({ error: "Aucune entrée fournie" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -190,7 +194,7 @@ serve(async (req) => {
       return da - db;
     });
 
-    const pdfBytes = buildTablePdf(entries);
+    const pdfBytes = buildTablePdf(entries, userName);
     const base64 = btoa(String.fromCharCode(...pdfBytes));
 
     return new Response(JSON.stringify({ pdf_base64: base64 }), {
