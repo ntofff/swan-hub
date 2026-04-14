@@ -1,20 +1,38 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { FileText, CheckSquare, Target, Car, Sun, Moon, ArrowUp, ArrowDown } from "lucide-react";
-import { parseTheme, buildThemeId } from "@/hooks/useAuth";
+import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sun, Moon, ArrowUp, ArrowDown } from "lucide-react";
+import { parseTheme, buildThemeId, useAuth } from "@/hooks/useAuth";
 import { WelcomeScreen, APP_BUILD } from "@/components/WelcomeScreen";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ACTIVE_PLUGINS } from "@/config/plugins";
 
-// ─── Icônes pour l'iconMap (compatibilité mode édition) ───────────────────────
-const iconMap: Record<string, React.ComponentType<any>> = Object.fromEntries(
-  ACTIVE_PLUGINS.map((p) => [p.iconName, p.icon]),
-);
+// ─── Données plugins ──────────────────────────────────────────────────────────
+export const ACTIVE_PLUGINS = [
+  { id: "report", label: "Outil Rapport", iconName: "FileText", path: "/plugins/report", color: "38 50% 58%" },
+  { id: "logbook", label: "Journal de bord", iconName: "BookOpen", path: "/plugins/logbook", color: "217 91% 60%" },
+  { id: "tasks", label: "Tâches", iconName: "CheckSquare", path: "/plugins/tasks", color: "142 71% 45%" },
+  {
+    id: "missions",
+    label: "Gestionnaire de missions",
+    iconName: "Target",
+    path: "/plugins/missions",
+    color: "0 72% 51%",
+  },
+  { id: "quotes", label: "Devis & Factures", iconName: "Receipt", path: "/plugins/quotes", color: "270 50% 60%" },
+  { id: "vehicle", label: "Carnet de véhicule", iconName: "Car", path: "/plugins/vehicle", color: "38 92% 50%" },
+];
 
-// ─── Persistance de l'ordre des plugins ───────────────────────────────────────
+const iconMap: Record<string, React.ComponentType<any>> = {
+  FileText,
+  BookOpen,
+  CheckSquare,
+  Target,
+  Receipt,
+  Car,
+};
+
+// ─── Persistance ordre plugins ────────────────────────────────────────────────
 const STORAGE_KEY = "swan_hub_plugin_order";
 
 function getStoredOrder() {
@@ -23,7 +41,6 @@ function getStoredOrder() {
     if (!stored) return ACTIVE_PLUGINS;
     const ids: string[] = JSON.parse(stored);
     const ordered = ids.map((id) => ACTIVE_PLUGINS.find((a) => a.id === id)).filter(Boolean) as typeof ACTIVE_PLUGINS;
-    // Ajoute les nouveaux plugins non encore stockés
     ACTIVE_PLUGINS.forEach((a) => {
       if (!ordered.find((o) => o.id === a.id)) ordered.push(a);
     });
@@ -33,7 +50,7 @@ function getStoredOrder() {
   }
 }
 
-// ─── Clé welcome liée au build → réapparaît à chaque nouvelle version ─────────
+// ─── Clé welcome liée au build ────────────────────────────────────────────────
 const WELCOME_KEY = `welcome_seen_v${APP_BUILD}`;
 
 // ─── Composant ────────────────────────────────────────────────────────────────
@@ -43,14 +60,12 @@ const HomePage = () => {
   const [quickActions, setQuickActions] = useState(getStoredOrder);
   const [editMode, setEditMode] = useState(false);
 
-  // Welcome screen : ne s'affiche qu'une fois par version
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem(WELCOME_KEY));
   const handleCloseWelcome = () => {
     localStorage.setItem(WELCOME_KEY, "1");
     setShowWelcome(false);
   };
 
-  // Thème
   const { style, mode } = parseTheme(profile?.theme || "dark-night");
   const isDark = mode === "dark";
   const toggleDarkLight = async () => {
@@ -58,7 +73,6 @@ const HomePage = () => {
     await updateProfile({ theme: next });
   };
 
-  // Réorganisation plugins
   const movePlugin = (idx: number, dir: -1 | 1) => {
     const newIdx = idx + dir;
     if (newIdx < 0 || newIdx >= quickActions.length) return;
@@ -68,7 +82,7 @@ const HomePage = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reordered.map((a) => a.id)));
   };
 
-  // ─── Requêtes Supabase groupées en 1 seul appel ───────────────────────────
+  // ─── 1 seule requête groupée au lieu de 4 ────────────────────────────────
   const {
     data: activityData,
     isLoading: activityLoading,
@@ -102,7 +116,7 @@ const HomePage = () => {
       };
     },
     enabled: !!user,
-    staleTime: 30_000, // cache 30s → évite les rechargements inutiles
+    staleTime: 30_000,
   });
 
   const recentTasks = activityData?.tasks ?? [];
@@ -110,7 +124,6 @@ const HomePage = () => {
   const recentMissions = activityData?.missions ?? [];
   const recentTrips = activityData?.trips ?? [];
 
-  // Promo (requête légère, séparée intentionnellement)
   const { data: promo } = useQuery({
     queryKey: ["active_promo"],
     queryFn: async () => {
@@ -127,7 +140,6 @@ const HomePage = () => {
     staleTime: 60_000,
   });
 
-  // ─── Formatage temps relatif ──────────────────────────────────────────────
   const formatTime = (date: string) => {
     const d = new Date(date);
     const diff = Date.now() - d.getTime();
@@ -136,7 +148,6 @@ const HomePage = () => {
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   };
 
-  // ─── Activité récente fusionnée ───────────────────────────────────────────
   const recentActivity = [
     ...recentReports.map((r: any) => ({
       text: `Rapport « ${r.title} »`,
@@ -167,7 +178,6 @@ const HomePage = () => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
-  // ─── Skeleton loader ──────────────────────────────────────────────────────
   const ActivitySkeleton = () => (
     <div className="glass-card divide-y divide-border animate-pulse">
       {[...Array(3)].map((_, i) => (
@@ -180,7 +190,6 @@ const HomePage = () => {
     </div>
   );
 
-  // ─── Rendu ────────────────────────────────────────────────────────────────
   return (
     <div className="fade-in">
       {showWelcome && <WelcomeScreen onClose={handleCloseWelcome} />}
@@ -204,7 +213,7 @@ const HomePage = () => {
         </button>
       </div>
 
-      {/* Promo banner */}
+      {/* Promo */}
       {promo && (
         <div className="px-4 md:px-0 mt-4">
           <div className="glass-card-glow p-4 flex items-center gap-3">
@@ -297,17 +306,14 @@ const HomePage = () => {
           Activité récente
         </h2>
 
-        {/* Erreur */}
         {activityError && (
           <div className="glass-card p-4 text-center text-xs text-muted-foreground">
             ⚠️ Impossible de charger l'activité. Vérifie ta connexion.
           </div>
         )}
 
-        {/* Chargement */}
         {activityLoading && <ActivitySkeleton />}
 
-        {/* Vide */}
         {!activityLoading && !activityError && recentActivity.length === 0 && (
           <div className="glass-card p-8 text-center space-y-2">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -318,7 +324,6 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* Liste */}
         {!activityLoading && !activityError && recentActivity.length > 0 && (
           <div className="glass-card divide-y divide-border">
             {recentActivity.map((item, i) => (
@@ -336,7 +341,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Footer version */}
+      {/* Footer */}
       <div className="text-center mt-10 pb-2">
         <p className="text-[10px] text-muted-foreground/50">SWAN · HUB v{APP_BUILD}</p>
       </div>
