@@ -1,93 +1,181 @@
-import { useNavigate } from "react-router-dom";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { FeedbackButton } from "@/components/FeedbackButton";
-import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Lock, Users, Wallet, Calendar } from "lucide-react";
-import { toast } from "sonner";
-import { ACTIVE_PLUGINS } from "@/pages/Home";
+// ============================================================
+// SWAN · HUB — Page Plugins
+// Catalogue : plugins actifs + plugins à venir avec ETA
+// ============================================================
 
-// ─── Map iconName → composant (doit rester en sync avec Home.tsx) ─────────────
-const iconMap: Record<string, React.ComponentType<any>> = {
-  FileText,
-  BookOpen,
-  CheckSquare,
-  Target,
-  Receipt,
-  Car,
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  FileText, CheckSquare, Target, Receipt, BookOpen, Car,
+  Users, Wallet, Calendar, Banknote, Timer, Package, ShieldCheck,
+  Lock, Clock, Crown, Sparkles,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { ACTIVE_PLUGINS, LOCKED_PLUGINS, TRADES } from '@/config/tokens';
+
+const ICON_MAP: Record<string, any> = {
+  FileText, CheckSquare, Target, Receipt, BookOpen, Car,
+  Users, Wallet, Calendar, Banknote, Timer, Package, ShieldCheck,
 };
 
-// ─── Plugins verrouillés ──────────────────────────────────────────────────────
-const LOCKED_PLUGINS = [
-  { name: "CRM Lite", desc: "Gestion clients", icon: Users, eta: "Q3 2025" },
-  { name: "Suivi budget", desc: "Vue financière", icon: Wallet, eta: "Q4 2025" },
-  { name: "Outil réservation", desc: "Prise de rendez-vous", icon: Calendar, eta: "2026" },
-];
-
-// ─── Composant ────────────────────────────────────────────────────────────────
-const PluginsPage = () => {
+export default function Plugins() {
   const navigate = useNavigate();
+  const { profile, hasAccessToPlugin } = useAuth();
+
+  // Tri : plugins pertinents pour le métier en premier
+  const sortedActive = useMemo(() => {
+    if (!profile?.trade) return ACTIVE_PLUGINS;
+    const userTrade = TRADES.find(t => t.id === profile.trade);
+    if (!userTrade) return ACTIVE_PLUGINS;
+
+    return [...ACTIVE_PLUGINS].sort((a, b) => {
+      const aRelevant = userTrade.pluginIds.includes(a.id) ? 0 : 1;
+      const bRelevant = userTrade.pluginIds.includes(b.id) ? 0 : 1;
+      return aRelevant - bRelevant;
+    });
+  }, [profile?.trade]);
 
   return (
-    <div className="fade-in">
-      <PageHeader title="Plugins" subtitle={`${ACTIVE_PLUGINS.length} outils actifs pour votre workflow`} />
+    <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+      <header className="page-header">
+        <div>
+          <h1 className="page-header-title">Plugins</h1>
+          <p className="page-header-subtitle">
+            {ACTIVE_PLUGINS.length} outils disponibles · {LOCKED_PLUGINS.length} à venir
+          </p>
+        </div>
+      </header>
 
       {/* ── Plugins actifs ── */}
-      <div className="px-4 md:px-0 space-y-2.5">
-        {ACTIVE_PLUGINS.map((p) => {
-          const IconComp = iconMap[p.iconName];
-          return (
-            <button
-              key={p.id}
-              onClick={() => navigate(p.path)}
-              className="w-full glass-card p-4 flex items-center gap-4 hover:border-primary/30 transition-all active:scale-[0.98] text-left"
-            >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `hsl(${p.color} / 0.12)` }}
-              >
-                {IconComp && <IconComp size={20} style={{ color: `hsl(${p.color})` }} />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold">{p.label}</div>
-              </div>
-              <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary shrink-0">
-                Actif
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Plugins verrouillés ── */}
-      <div className="px-4 md:px-0 mt-8">
-        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">
-          Bientôt disponible
+      <section className="px-4" style={{ marginBottom: 'var(--space-8)' }}>
+        <h2 className="text-label" style={{ marginBottom: 'var(--space-3)' }}>
+          Disponibles maintenant
         </h2>
-        <div className="space-y-2.5">
-          {LOCKED_PLUGINS.map((p) => (
-            <button
-              key={p.name}
-              onClick={() => toast(`${p.name} arrive ${p.eta} — reste connecté ! 🚀`)}
-              className="w-full glass-card p-4 flex items-center gap-4 opacity-50 hover:opacity-70 active:scale-[0.98] transition-all text-left"
-            >
-              <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                <p.icon size={20} className="text-muted-foreground" />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold">{p.name}</div>
-                <div className="text-xs text-muted-foreground">{p.desc}</div>
-              </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <Lock size={13} className="text-muted-foreground" />
-                <span className="text-[9px] text-muted-foreground">{p.eta}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
 
-      <FeedbackButton context="plugins" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }} className="stagger">
+          {sortedActive.map((plugin) => {
+            const Icon = ICON_MAP[plugin.icon] || FileText;
+            const hasAccess = hasAccessToPlugin(plugin.id);
+
+            return (
+              <button
+                key={plugin.id}
+                onClick={() => hasAccess ? navigate(plugin.route) : navigate('/pricing')}
+                className="card card-interactive"
+                style={{
+                  display: 'flex',
+                  gap: 'var(--space-3)',
+                  padding: 'var(--space-4)',
+                  textAlign: 'left',
+                  width: '100%',
+                  alignItems: 'center',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  className="plugin-icon-wrapper"
+                  style={{ backgroundColor: `hsl(${plugin.color} / 0.12)`, flexShrink: 0 }}
+                >
+                  <Icon size={22} style={{ color: `hsl(${plugin.color})` }} strokeWidth={2} />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
+                    <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>{plugin.name}</h3>
+                    {!hasAccess && <Lock size={12} style={{ color: 'var(--color-text-3)' }} />}
+                  </div>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: 1.4 }}>
+                    {plugin.description}
+                  </p>
+                </div>
+
+                {hasAccess ? (
+                  <Sparkles size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                ) : (
+                  <span className="badge badge-warning" style={{ flexShrink: 0 }}>
+                    Débloquer
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Plugins à venir ── */}
+      {LOCKED_PLUGINS.length > 0 && (
+        <section className="px-4">
+          <h2 className="text-label" style={{ marginBottom: 'var(--space-3)' }}>
+            Bientôt disponibles
+          </h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {LOCKED_PLUGINS.map((plugin) => {
+              const Icon = ICON_MAP[plugin.icon] || FileText;
+              return (
+                <div
+                  key={plugin.id}
+                  className="card"
+                  style={{
+                    display: 'flex',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-4)',
+                    alignItems: 'center',
+                    opacity: 0.7,
+                  }}
+                >
+                  <div
+                    className="plugin-icon-wrapper"
+                    style={{ backgroundColor: `hsl(${plugin.color} / 0.08)`, flexShrink: 0 }}
+                  >
+                    <Icon size={22} style={{ color: `hsl(${plugin.color} / 0.6)` }} strokeWidth={2} />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
+                      <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text-2)' }}>
+                        {plugin.name}
+                      </h3>
+                    </div>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: 1.4 }}>
+                      {plugin.description}
+                    </p>
+                  </div>
+
+                  <span className="badge badge-info" style={{ flexShrink: 0, gap: 4 }}>
+                    <Clock size={10} />
+                    {plugin.eta || 'À venir'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div
+            className="card"
+            style={{
+              marginTop: 'var(--space-4)',
+              padding: 'var(--space-4)',
+              background: 'var(--color-primary-glow)',
+              borderColor: 'rgba(201,169,97,0.3)',
+              textAlign: 'center',
+            }}
+          >
+            <Crown size={20} style={{ color: 'var(--color-primary)', marginBottom: 'var(--space-2)' }} />
+            <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--space-1)' }}>
+              Un besoin spécifique ?
+            </p>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>
+              Proposez un nouveau plugin et votez pour les futures fonctionnalités.
+            </p>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/profile')}>
+              Donner mon avis
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
-};
+}
 
-export default PluginsPage;
+// END
