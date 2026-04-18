@@ -1,391 +1,619 @@
-import { useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { FeedbackButton } from "@/components/FeedbackButton";
-import { useAuth, parseTheme, buildThemeId } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Shield, Eye, Download, Trash2, CreditCard, Palette, LogOut, Plus, X, Pencil, Lock, Check, ChevronRight, Sun, Moon, Fingerprint, Loader2, Coffee } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { usePasskey } from "@/hooks/usePasskey";
+// ============================================================
+// SWAN · HUB — Page Profil
+// Infos perso · Sécurité · Thème · Voix · Plan · Données
+// ============================================================
 
-const styleOptions = [
-  { id: "dark-night", label: "Dark Night", color: "38 50% 58%" },
-  { id: "corporate", label: "Corporate", color: "210 80% 55%" },
-  { id: "professional", label: "Professional", color: "0 0% 75%" },
-  { id: "artistic", label: "Artistic", color: "280 65% 60%" },
-  { id: "sunset", label: "Sunset", color: "20 85% 55%" },
-  { id: "gaming", label: "Gaming", color: "160 100% 45%" },
-  { id: "fun", label: "Fun", color: "330 85% 60%" },
-];
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  User, Shield, Palette, Volume2, CreditCard, Download,
+  LogOut, ChevronRight, Crown, Star, Check, X, Eye, EyeOff,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/components/ThemeProvider';
+import { useVoice } from '@/hooks/useVoice';
+import { THEMES } from '@/config/tokens';
+import { toast } from 'sonner';
 
-const colorPresets = ["38 50% 58%", "217 91% 60%", "142 71% 45%", "0 72% 51%", "270 50% 60%", "38 92% 50%", "190 80% 50%", "330 70% 55%"];
+type Section = 'main' | 'security' | 'theme' | 'voice' | 'plan' | 'data';
 
-const ProfilePage = () => {
-  const { user, profile, signOut, updateProfile, updatePassword } = useAuth();
+export default function Profile() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [section, setSection] = useState<string>("compte");
-  const { isAvailable: passkeyAvailable, register: registerPasskey, removePasskey, loading: passkeyLoading, passkeys } = usePasskey();
+  const { profile, user, signOut, updateProfile, setAntiPhishingCode } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { settings: voiceSettings, updateSettings: updateVoice, speak } = useVoice();
 
-  // Account
-  const [editName, setEditName] = useState(false);
-  const [nameValue, setNameValue] = useState("");
+  const [section, setSection] = useState<Section>('main');
+  const [editingPhishing, setEditingPhishing] = useState(false);
+  const [newPhishingCode, setNewPhishingCode] = useState('');
+  const [showPhishing, setShowPhishing] = useState(false);
 
-  // Security
-  const [changePw, setChangePw] = useState(false);
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-
-  // Activities
-  const [newActivity, setNewActivity] = useState("");
-  const [newColor, setNewColor] = useState("38 50% 58%");
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editActivityName, setEditActivityName] = useState("");
-  const [editColor, setEditColor] = useState("");
-
-  const { data: activities = [] } = useQuery({
-    queryKey: ["user_activities"],
-    queryFn: async () => {
-      const { data } = await supabase.from("user_activities").select("*").order("created_at");
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const addActivity = useMutation({
-    mutationFn: async () => {
-      if (!user || !newActivity.trim()) return;
-      await supabase.from("user_activities").insert({ user_id: user.id, name: newActivity.trim(), color: newColor });
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["user_activities"] }); setNewActivity(""); },
-  });
-
-  const updateActivity = useMutation({
-    mutationFn: async () => {
-      if (!editId) return;
-      await supabase.from("user_activities").update({ name: editActivityName, color: editColor }).eq("id", editId);
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["user_activities"] }); setEditId(null); },
-  });
-
-  const deleteActivity = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("user_activities").delete().eq("id", id); },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user_activities"] }),
-  });
-
-  const handleLogout = async () => { await signOut(); navigate("/login"); };
-
-  const handleNameSave = async () => {
-    if (!nameValue.trim()) return;
-    await updateProfile({ full_name: nameValue.trim() });
-    setEditName(false);
-    toast.success("Nom mis à jour");
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
   };
 
-  const handlePasswordChange = async () => {
-    if (newPw.length < 6) { toast.error("6 caractères minimum"); return; }
-    if (newPw !== confirmPw) { toast.error("Les mots de passe ne correspondent pas"); return; }
-    const { error } = await updatePassword(newPw);
-    if (error) { toast.error(error.message); return; }
-    setChangePw(false); setNewPw(""); setConfirmPw("");
-    toast.success("Mot de passe modifié");
+  const handleUpdatePhishing = async () => {
+    const { error } = await setAntiPhishingCode(newPhishingCode);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success('Code anti-phishing mis à jour');
+    setEditingPhishing(false);
+    setNewPhishingCode('');
   };
 
-  const { style: currentStyle, mode: currentMode } = parseTheme(profile?.theme || "dark-night");
+  if (!profile) return null;
 
-  const handleStyleChange = async (styleId: string) => {
-    const newTheme = buildThemeId(styleId, currentMode);
-    await updateProfile({ theme: newTheme });
-    toast.success("Style appliqué");
-  };
+  const isVip = profile.is_vip;
+  const isBeta = profile.is_beta;
 
-  const handleModeToggle = async () => {
-    const newMode = currentMode === "dark" ? "light" : "dark";
-    const newTheme = buildThemeId(currentStyle, newMode);
-    await updateProfile({ theme: newTheme });
-    toast.success(newMode === "dark" ? "Mode sombre" : "Mode clair");
-  };
+  // ════════════════════════════════════════════════════════
+  // VUE PRINCIPALE
+  // ════════════════════════════════════════════════════════
 
-  const handleExportData = () => {
-    const data = { profile, activities, exportedAt: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "swan-data-export.json"; a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Données exportées");
-  };
-
-  const sections = [
-    { id: "compte", label: "Compte", icon: User },
-    { id: "securite", label: "Sécurité", icon: Shield },
-    { id: "activites", label: "Activités", icon: Palette },
-    { id: "apparence", label: "Apparence", icon: Palette },
-    { id: "confidentialite", label: "Confidentialité", icon: Eye },
-    { id: "abonnement", label: "Abonnement", icon: CreditCard },
-    { id: "donnees", label: "Données", icon: Download },
-  ];
-
-  const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
-
-  return (
-    <div className="fade-in">
-      <PageHeader title="Profil" />
-      <div className="px-4 md:px-0">
-        {/* User card */}
-        <div className="glass-card-glow p-5 flex items-center gap-4 mb-5">
-          <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center">
-            <User size={24} className="text-primary" />
+  if (section === 'main') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+        <header className="page-header">
+          <div>
+            <h1 className="page-header-title">Profil</h1>
+            <p className="page-header-subtitle">Gérez votre compte et vos préférences</p>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold font-heading truncate">{profile?.full_name || "Utilisateur"}</div>
-            <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">ID : {user?.id?.slice(0, 8)}… · <span className="capitalize">{profile?.plan || "free"}</span></div>
-          </div>
-        </div>
+        </header>
 
-        {/* Section nav — grid on mobile, row on desktop */}
-        <div className="grid grid-cols-4 gap-1.5 mb-5 md:flex md:flex-wrap md:gap-1">
-          {sections.map(s => (
-            <button key={s.id} onClick={() => setSection(s.id)}
-              className={`flex flex-col md:flex-row items-center gap-1 md:gap-1.5 px-2 py-2.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full text-[10px] md:text-xs font-medium transition-colors ${section === s.id ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary/50 text-muted-foreground border border-transparent'}`}>
-              <s.icon size={16} className="shrink-0 md:hidden" />
-              <span className="leading-tight text-center">{s.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* ── Compte ── */}
-        {section === "compte" && (
-          <div className="space-y-4 slide-up">
-            <div className="glass-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Nom</p>
-                  {editName ? (
-                    <div className="flex gap-2 mt-1">
-                      <input value={nameValue} onChange={e => setNameValue(e.target.value)} className={inputCls} autoFocus />
-                      <button onClick={handleNameSave} className="p-2 rounded-lg bg-primary/10 text-primary"><Check size={16} /></button>
-                      <button onClick={() => setEditName(false)} className="p-2 rounded-lg bg-secondary text-muted-foreground"><X size={16} /></button>
-                    </div>
-                  ) : (
-                    <p className="text-sm font-medium mt-0.5">{profile?.full_name || "—"}</p>
-                  )}
+        {/* ── Carte utilisateur ── */}
+        <div className="px-4" style={{ marginBottom: 'var(--space-5)' }}>
+          <div className="card" style={{ padding: 'var(--space-5)', textAlign: 'center' }}>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--gradient-gold)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto var(--space-3)',
+                fontFamily: 'var(--font-display)',
+                fontSize: 'var(--text-2xl)',
+                fontWeight: 800,
+                color: 'var(--color-primary-text)',
+                position: 'relative',
+              }}
+            >
+              {getInitials(profile.full_name)}
+              {isVip && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: -4,
+                    right: -4,
+                    background: 'var(--color-bg)',
+                    borderRadius: 'var(--radius-full)',
+                    padding: 4,
+                  }}
+                >
+                  <Crown size={16} style={{ color: 'var(--color-primary)' }} />
                 </div>
-                {!editName && <button onClick={() => { setNameValue(profile?.full_name || ""); setEditName(true); }} className="text-muted-foreground hover:text-foreground"><Pencil size={14} /></button>}
-              </div>
-              <div className="border-t border-border pt-3">
-                <p className="text-xs text-muted-foreground">Email</p>
-                <p className="text-sm font-medium mt-0.5">{user?.email}</p>
-              </div>
-              <div className="border-t border-border pt-3">
-                <p className="text-xs text-muted-foreground">ID utilisateur</p>
-                <p className="text-sm font-mono mt-0.5 text-muted-foreground">{user?.id}</p>
-              </div>
-            </div>
-            <button onClick={handleLogout} className="w-full glass-card p-4 flex items-center gap-3 text-destructive hover:bg-destructive/5 transition-colors">
-              <LogOut size={18} /> <span className="text-sm font-medium">Se déconnecter</span>
-            </button>
-          </div>
-        )}
-
-        {/* ── Sécurité ── */}
-        {section === "securite" && (
-          <div className="space-y-4 slide-up">
-            <div className="glass-card p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Mot de passe</h3>
-              {changePw ? (
-                <div className="space-y-2">
-                  <input value={newPw} onChange={e => setNewPw(e.target.value)} type="password" placeholder="Nouveau mot de passe" className={inputCls} />
-                  <input value={confirmPw} onChange={e => setConfirmPw(e.target.value)} type="password" placeholder="Confirmer" className={inputCls} />
-                  <div className="flex gap-2">
-                    <button onClick={handlePasswordChange} className="flex-1 btn-primary-glow py-2.5 text-sm">Modifier</button>
-                    <button onClick={() => setChangePw(false)} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground text-sm">Annuler</button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => setChangePw(true)} className="text-sm text-primary">Changer le mot de passe</button>
               )}
             </div>
-            <div className="glass-card p-4 space-y-2">
-              <div className="flex items-center gap-3">
-                <Lock size={18} className="text-muted-foreground" />
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold">Authentification 2FA</h3>
-                  <p className="text-xs text-muted-foreground">Non activée</p>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning/10 text-warning">Bientôt</span>
-              </div>
+            <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 2 }}>
+              {profile.full_name || 'Utilisateur'}
+            </h2>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+              {profile.email || user?.email}
+            </p>
+
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'center', marginTop: 'var(--space-3)', flexWrap: 'wrap' }}>
+              {isVip && (
+                <span className="badge badge-vip">
+                  <Crown size={10} /> VIP
+                </span>
+              )}
+              {isBeta && (
+                <span className="badge badge-info">
+                  <Star size={10} /> Bêta testeur
+                </span>
+              )}
+              <span className="badge badge-gold">
+                {profile.plan === 'free'  ? 'Découverte' : profile.plan === 'pro' ? 'Pro Total' : 'À la carte'}
+              </span>
             </div>
+          </div>
+        </div>
 
-            {/* Passkeys / Biometric */}
-            {passkeyAvailable && (
-              <div className="glass-card p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Fingerprint size={18} className="text-primary" />
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold">Connexion biométrique</h3>
-                    <p className="text-xs text-muted-foreground">Face ID, empreinte digitale ou passkey</p>
-                  </div>
+        {/* ── Sections ── */}
+        <div className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <MenuItem
+            icon={<Shield size={20} />}
+            title="Sécurité & anti-phishing"
+            subtitle="Code personnel, MFA, sessions"
+            onClick={() => setSection('security')}
+          />
+          <MenuItem
+            icon={<Palette size={20} />}
+            title="Apparence"
+            subtitle={`Thème actuel : ${THEMES.find(t => t.id === theme)?.label}`}
+            onClick={() => setSection('theme')}
+          />
+          <MenuItem
+            icon={<Volume2 size={20} />}
+            title="Assistance vocale"
+            subtitle={voiceSettings.enabled ? `Voix ${voiceSettings.gender === 'female' ? 'féminine' : 'masculine'} · ${voiceSettings.speed}x` : 'Désactivée'}
+            onClick={() => setSection('voice')}
+          />
+          <MenuItem
+            icon={<CreditCard size={20} />}
+            title="Plan & facturation"
+            subtitle={`Plan : ${profile.plan}`}
+            onClick={() => navigate('/pricing')}
+          />
+          <MenuItem
+            icon={<Download size={20} />}
+            title="Mes données"
+            subtitle="Export, suppression, RGPD"
+            onClick={() => setSection('data')}
+          />
+        </div>
+
+        {/* ── Déconnexion ── */}
+        <div className="px-4" style={{ marginTop: 'var(--space-8)' }}>
+          <button
+            onClick={handleSignOut}
+            className="btn btn-secondary btn-full"
+            style={{ color: 'var(--color-danger)' }}
+          >
+            <LogOut size={18} />
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // SECTION SÉCURITÉ
+  // ════════════════════════════════════════════════════════
+
+  if (section === 'security') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+        <SectionHeader title="Sécurité" onBack={() => setSection('main')} />
+
+        <div className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {/* Code anti-phishing */}
+          <div className="card" style={{ padding: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+              <Shield size={16} style={{ color: 'var(--color-primary)' }} />
+              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Code anti-phishing</h3>
+            </div>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.6, marginBottom: 'var(--space-3)' }}>
+              Ce code apparaît dans tous nos messages. Si vous recevez un email prétendu venir de nous <strong>sans ce code</strong>, c'est une tentative de phishing.
+            </p>
+
+            {!editingPhishing ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+                <div
+                  style={{
+                    flex: 1,
+                    padding: 'var(--space-3)',
+                    background: 'var(--color-surface-2)',
+                    borderRadius: 'var(--radius-md)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 'var(--text-base)',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {showPhishing ? profile.anti_phishing_code || '—' : '••••••••'}
                 </div>
-
-                {passkeys.length > 0 && (
-                  <div className="space-y-1.5">
-                    {passkeys.map((pk: any) => (
-                      <div key={pk.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2">
-                        <div>
-                          <p className="text-xs font-medium">{pk.device_name}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            Ajoutée le {new Date(pk.created_at).toLocaleDateString("fr-FR")}
-                          </p>
-                        </div>
-                        <button onClick={() => { if (window.confirm("Supprimer cette passkey ?")) removePasskey(pk.id); }}
-                          className="text-muted-foreground hover:text-destructive p-1">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button onClick={() => registerPasskey()} disabled={passkeyLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50">
-                  {passkeyLoading ? <Loader2 size={16} className="animate-spin" /> : <Fingerprint size={16} />}
-                  {passkeys.length > 0 ? "Ajouter une autre passkey" : "Configurer la connexion biométrique"}
+                <button
+                  onClick={() => setShowPhishing(!showPhishing)}
+                  className="btn btn-icon btn-secondary"
+                  aria-label={showPhishing ? 'Masquer' : 'Afficher'}
+                >
+                  {showPhishing ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+                <button onClick={() => setEditingPhishing(true)} className="btn btn-secondary btn-sm">
+                  Modifier
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <input
+                  className="input"
+                  type="text"
+                  value={newPhishingCode}
+                  onChange={(e) => setNewPhishingCode(e.target.value.replace(/\s/g, ''))}
+                  placeholder="Nouveau code (4-20 caractères)"
+                  maxLength={20}
+                  autoFocus
+                />
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <button
+                    onClick={handleUpdatePhishing}
+                    disabled={newPhishingCode.length < 4}
+                    className="btn btn-primary flex-1"
+                  >
+                    <Check size={16} /> Confirmer
+                  </button>
+                  <button
+                    onClick={() => { setEditingPhishing(false); setNewPhishingCode(''); }}
+                    className="btn btn-secondary"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
             )}
           </div>
-        )}
 
-        {/* ── Activités ── */}
-        {section === "activites" && (
-          <div className="space-y-3 slide-up">
-            {activities.map((a: any) => (
-              <div key={a.id} className="glass-card p-3 flex items-center gap-3">
-                {editId === a.id ? (
-                  <>
-                    <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: `hsl(${editColor})` }} />
-                    <input value={editActivityName} onChange={e => setEditActivityName(e.target.value)}
-                      className="flex-1 bg-secondary border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                    <div className="flex gap-1">
-                      {colorPresets.slice(0, 4).map(c => (
-                        <button key={c} onClick={() => setEditColor(c)} className={`w-4 h-4 rounded-full border ${editColor === c ? 'border-foreground' : 'border-transparent'}`} style={{ backgroundColor: `hsl(${c})` }} />
-                      ))}
-                    </div>
-                    <button onClick={() => updateActivity.mutate()} className="text-primary text-xs">✓</button>
-                    <button onClick={() => setEditId(null)} className="text-muted-foreground"><X size={14} /></button>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: `hsl(${a.color})` }} />
-                    <span className="text-sm flex-1">{a.name}</span>
-                    <button onClick={() => { setEditId(a.id); setEditActivityName(a.name); setEditColor(a.color); }} className="text-muted-foreground hover:text-foreground"><Pencil size={14} /></button>
-                    <button onClick={() => { if (window.confirm("Supprimer cette activité ?")) deleteActivity.mutate(a.id); }} className="text-muted-foreground hover:text-destructive"><X size={14} /></button>
-                  </>
+          {/* Info sécurité */}
+          <div className="card" style={{ padding: 'var(--space-4)', background: 'var(--color-info-bg)', borderColor: 'var(--color-info)' }}>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-1)', lineHeight: 1.6 }}>
+              🛡️ Nous ne vous demanderons <strong>jamais</strong> votre mot de passe ou code anti-phishing par email ou téléphone.
+            </p>
+          </div>
+
+          {/* Session & password */}
+          <MenuItem
+            icon={<User size={18} />}
+            title="Changer mon mot de passe"
+            onClick={() => navigate('/forgot-password')}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // SECTION THÈME
+  // ════════════════════════════════════════════════════════
+
+  if (section === 'theme') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+        <SectionHeader title="Apparence" onBack={() => setSection('main')} />
+
+        <div className="px-4">
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 'var(--space-4)', lineHeight: 1.6 }}>
+            Choisissez l'ambiance qui vous convient. Adaptez-la selon votre environnement de travail.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setTheme(t.id);
+                  toast.success(`Thème "${t.label}" activé`);
+                }}
+                style={{
+                  padding: 'var(--space-4)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: `1.5px solid ${theme === t.id ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  background: t.preview.bg,
+                  color: t.preview.text,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: 'var(--space-2)',
+                  minHeight: 140,
+                  position: 'relative',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ fontSize: 24 }}>{t.icon}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)' }}>
+                  {t.label}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', opacity: 0.75, lineHeight: 1.4 }}>
+                  {t.description}
+                </div>
+                {theme === t.id && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'var(--space-2)',
+                      right: 'var(--space-2)',
+                      width: 22,
+                      height: 22,
+                      borderRadius: 'var(--radius-full)',
+                      background: 'var(--color-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Check size={14} style={{ color: 'var(--color-primary-text)' }} strokeWidth={3} />
+                  </div>
                 )}
-              </div>
+              </button>
             ))}
-            <div className="flex gap-2">
-              <input value={newActivity} onChange={e => setNewActivity(e.target.value)} placeholder="Nouvelle activité..."
-                className="flex-1 bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-              <div className="flex gap-1 items-center">
-                {colorPresets.slice(0, 4).map(c => (
-                  <button key={c} onClick={() => setNewColor(c)} className={`w-5 h-5 rounded-full border-2 ${newColor === c ? 'border-foreground' : 'border-transparent'}`} style={{ backgroundColor: `hsl(${c})` }} />
-                ))}
-              </div>
-              <button onClick={() => addActivity.mutate()} disabled={!newActivity.trim()} className="p-2 rounded-xl bg-primary/10 text-primary disabled:opacity-40"><Plus size={18} /></button>
-            </div>
           </div>
-        )}
+        </div>
+      </div>
+    );
+  }
 
-        {/* ── Apparence ── */}
-        {section === "apparence" && (
-          <div className="space-y-4 slide-up">
-            {/* Mode toggle */}
-            <div className="glass-card p-4 flex items-center justify-between">
+  // ════════════════════════════════════════════════════════
+  // SECTION VOIX
+  // ════════════════════════════════════════════════════════
+
+  if (section === 'voice') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+        <SectionHeader title="Assistance vocale" onBack={() => setSection('main')} />
+
+        <div className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {/* Toggle activation */}
+          <div className="card" style={{ padding: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <p className="text-sm font-medium">Mode d'affichage</p>
-                <p className="text-xs text-muted-foreground">{currentMode === "dark" ? "Sombre" : "Clair"}</p>
+                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Activer l'assistance vocale</h3>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
+                  SWAN peut lire les briefs et résumés à voix haute
+                </p>
               </div>
-              <button onClick={handleModeToggle} className="p-2.5 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors">
-                {currentMode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-            </div>
-
-            {/* Style selector */}
-            <p className="text-xs text-muted-foreground">Choisissez un style visuel pour SWAN · HUB</p>
-            <div className="grid grid-cols-2 gap-2.5">
-              {styleOptions.map(t => (
-                <button key={t.id} onClick={() => handleStyleChange(t.id)}
-                  className={`glass-card p-4 flex flex-col items-center gap-3 transition-all ${currentStyle === t.id ? 'border-primary ring-1 ring-primary/30' : 'hover:border-primary/20'}`}>
-                  <div className="w-10 h-10 rounded-xl" style={{ backgroundColor: `hsl(${t.color})` }} />
-                  <span className="text-xs font-medium">{t.label}</span>
-                  {currentStyle === t.id && <Check size={14} className="text-primary" />}
-                </button>
-              ))}
+              <Toggle
+                checked={voiceSettings.enabled}
+                onChange={(v) => updateVoice({ enabled: v })}
+              />
             </div>
           </div>
-        )}
 
-        {/* ── Confidentialité ── */}
-        {section === "confidentialite" && (
-          <div className="space-y-3 slide-up">
-            {["Politique de confidentialité", "Conditions d'utilisation", "Préférences cookies", "Droits RGPD"].map(l => (
-              <button key={l} className="w-full glass-card p-4 flex items-center justify-between text-sm text-left hover:bg-secondary/50 transition-colors">
-                {l} <ChevronRight size={16} className="text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* ── Abonnement ── */}
-        {section === "abonnement" && (
-          <div className="space-y-4 slide-up">
-            <div className="glass-card-glow p-5 text-center">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Plan actuel</div>
-              <div className="text-2xl font-bold font-heading capitalize">{profile?.plan || "free"}</div>
-            </div>
-            <div className="glass-card p-5 space-y-3 text-center">
-              <Coffee size={28} className="text-primary mx-auto" />
-              <p className="text-sm font-semibold">1€/mois par plugin</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Moins cher qu'un café — mais ça vous permettra d'en prendre le temps d'en boire plus.
-              </p>
-              <p className="text-[10px] text-muted-foreground italic">
-                1 mois gratuit · 3 plugins au choix · Sans engagement
-              </p>
-            </div>
-            <button onClick={() => navigate("/pricing")} className="w-full btn-primary-glow py-3 text-sm">Voir les tarifs</button>
-          </div>
-        )}
-
-        {/* ── Données ── */}
-        {section === "donnees" && (
-          <div className="space-y-4 slide-up">
-            <button onClick={handleExportData} className="w-full glass-card p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors">
-              <Download size={18} className="text-primary" />
-              <div className="flex-1 text-left">
-                <div className="text-sm font-medium">Exporter mes données</div>
-                <div className="text-[10px] text-muted-foreground">Télécharger profil, activités et préférences</div>
+          {voiceSettings.enabled && (
+            <>
+              {/* Voix */}
+              <div className="card" style={{ padding: 'var(--space-4)' }}>
+                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
+                  Voix de SWAN
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                  <VoiceOption
+                    label="Voix féminine"
+                    name="Claire"
+                    selected={voiceSettings.gender === 'female'}
+                    onClick={() => {
+                      updateVoice({ gender: 'female' });
+                      setTimeout(() => speak('Bonjour, je suis Claire, votre assistante SWAN.'), 100);
+                    }}
+                  />
+                  <VoiceOption
+                    label="Voix masculine"
+                    name="Antoine"
+                    selected={voiceSettings.gender === 'male'}
+                    onClick={() => {
+                      updateVoice({ gender: 'male' });
+                      setTimeout(() => speak('Bonjour, je suis Antoine, votre assistant SWAN.'), 100);
+                    }}
+                  />
+                </div>
               </div>
-              <ChevronRight size={16} className="text-muted-foreground" />
-            </button>
-            <button className="w-full glass-card p-4 flex items-center gap-3 text-destructive hover:bg-destructive/5 transition-colors">
-              <Trash2 size={18} />
-              <div className="flex-1 text-left">
-                <div className="text-sm font-medium">Supprimer le compte</div>
-                <div className="text-[10px] text-muted-foreground/70">Suppression définitive après 30 jours</div>
+
+              {/* Vitesse */}
+              <div className="card" style={{ padding: 'var(--space-4)' }}>
+                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
+                  Vitesse de lecture
+                </h3>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  {[0.75, 1, 1.25, 1.5].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => updateVoice({ speed: s as any })}
+                      style={{
+                        flex: 1,
+                        minHeight: 'var(--tap-min)',
+                        padding: 'var(--space-2)',
+                        borderRadius: 'var(--radius-md)',
+                        background: voiceSettings.speed === s ? 'var(--color-primary)' : 'var(--color-surface-2)',
+                        color: voiceSettings.speed === s ? 'var(--color-primary-text)' : 'var(--color-text-1)',
+                        border: '1px solid var(--color-border)',
+                        fontSize: 'var(--text-sm)',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all var(--duration-fast)',
+                      }}
+                    >
+                      {s}x
+                    </button>
+                  ))}
+                </div>
               </div>
-              <ChevronRight size={16} className="text-muted-foreground" />
-            </button>
+
+              {/* Lecture auto */}
+              <div className="card" style={{ padding: 'var(--space-4)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Lecture automatique</h3>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
+                      Lire le brief quotidien à l'ouverture
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={voiceSettings.autoRead}
+                    onChange={(v) => updateVoice({ autoRead: v })}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // SECTION DONNÉES & RGPD
+  // ════════════════════════════════════════════════════════
+
+  if (section === 'data') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+        <SectionHeader title="Mes données" onBack={() => setSection('main')} />
+
+        <div className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div className="card" style={{ padding: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+              <Shield size={16} style={{ color: 'var(--color-primary)' }} />
+              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Vos droits RGPD</h3>
+            </div>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.6 }}>
+              Vos données sont hébergées en France, chiffrées et jamais revendues. Vous pouvez les exporter ou demander leur suppression à tout moment.
+            </p>
+          </div>
+
+          <MenuItem
+            icon={<Download size={18} />}
+            title="Exporter mes données"
+            subtitle={profile.free_export_used ? 'Export payant (sur devis)' : 'Gratuit, 1 fois par an'}
+            onClick={() => toast.info('Fonctionnalité à venir à l\'étape 1.8')}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════════
+// SOUS-COMPOSANTS
+// ════════════════════════════════════════════════════════════
+
+function SectionHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <header className="page-header">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <button onClick={onBack} className="back-button" aria-label="Retour">
+          <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+        </button>
+        <h1 className="page-header-title">{title}</h1>
+      </div>
+    </header>
+  );
+}
+
+function MenuItem({
+  icon,
+  title,
+  subtitle,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="card card-interactive"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-4)',
+        textAlign: 'left',
+        minHeight: 'var(--tap-comfort)',
+        border: '1px solid var(--color-border)',
+        background: 'var(--color-surface)',
+        cursor: 'pointer',
+        width: '100%',
+      }}
+    >
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--color-surface-2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--color-text-2)',
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-1)' }}>
+          {title}
+        </div>
+        {subtitle && (
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
+            {subtitle}
           </div>
         )}
       </div>
-      <FeedbackButton context="profile" />
-    </div>
+      <ChevronRight size={16} style={{ color: 'var(--color-text-3)', flexShrink: 0 }} />
+    </button>
   );
-};
+}
 
-export default ProfilePage;
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      role="switch"
+      aria-checked={checked}
+      style={{
+        width: 48,
+        height: 28,
+        borderRadius: 'var(--radius-full)',
+        background: checked ? 'var(--color-primary)' : 'var(--color-surface-2)',
+        border: '1px solid var(--color-border)',
+        cursor: 'pointer',
+        position: 'relative',
+        transition: 'background var(--duration-fast)',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: 2,
+          left: checked ? 22 : 2,
+          width: 22,
+          height: 22,
+          borderRadius: 'var(--radius-full)',
+          background: '#FFFFFF',
+          transition: 'left var(--duration-fast) var(--ease-spring)',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+        }}
+      />
+    </button>
+  );
+}
+
+function VoiceOption({ label, name, selected, onClick }: { label: string; name: string; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: 'var(--space-3)',
+        borderRadius: 'var(--radius-md)',
+        background: selected ? 'var(--color-primary-glow)' : 'var(--color-surface-2)',
+        border: `1.5px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+        cursor: 'pointer',
+        textAlign: 'center',
+        transition: 'all var(--duration-fast)',
+      }}
+    >
+      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: selected ? 'var(--color-primary)' : 'var(--color-text-1)' }}>
+        {name}
+      </div>
+    </button>
+  );
+}
+
+function getInitials(name: string | null): string {
+  if (!name) return 'U';
+  return name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+}
