@@ -5,7 +5,7 @@
 
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, Check, Shield, ChevronLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Check, Shield, ChevronLeft, Info, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -13,15 +13,17 @@ type Step = 'info' | 'password' | 'consent';
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, updateProfile } = useAuth();
 
   const [step, setStep] = useState<Step>('info');
   const [loading, setLoading] = useState(false);
+  const [showSecurityInfo, setShowSecurityInfo] = useState(false);
 
   // Données du formulaire
-  const [fullName, setFullName]   = useState('');
-  const [email, setEmail]         = useState('');
-  const [password, setPassword]   = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail]       = useState('');
+  const [phone, setPhone]       = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Consentements
@@ -45,13 +47,23 @@ export default function Signup() {
     }
     setLoading(true);
     const { error } = await signUp(email, password, fullName);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       toast.error(error.message || 'Erreur lors de la création du compte');
       return;
     }
-    toast.success('Compte créé. Vérifiez votre email pour confirmer.');
+
+    // Sauvegarde du téléphone dans le profil (s'il est renseigné)
+    if (phone.trim()) {
+      // Petit délai pour laisser le trigger Supabase créer le profil
+      setTimeout(async () => {
+        await updateProfile({ phone: phone.trim() });
+      }, 1500);
+    }
+
+    setLoading(false);
+    toast.success('Compte créé. Bienvenue !');
     navigate('/onboarding');
   };
 
@@ -70,7 +82,7 @@ export default function Signup() {
       }}
     >
       {/* ── Header ── */}
-      <div style={{ marginBottom: 'var(--space-8)' }}>
+      <div style={{ marginBottom: 'var(--space-6)' }}>
         {step !== 'info' && (
           <button
             onClick={() => setStep(step === 'consent' ? 'password' : 'info')}
@@ -82,7 +94,15 @@ export default function Signup() {
           </button>
         )}
 
-        <h1 className="text-gold" style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: '-0.03em' }}>
+        <h1
+          className="text-gold"
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'var(--text-2xl)',
+            fontWeight: 800,
+            letterSpacing: '-0.03em',
+          }}
+        >
           SWAN · HUB
         </h1>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)', marginTop: '2px' }}>
@@ -91,7 +111,7 @@ export default function Signup() {
       </div>
 
       {/* ── Indicateur d'étape ── */}
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-8)' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-6)' }}>
         {['info', 'password', 'consent'].map((s, i) => (
           <div
             key={s}
@@ -109,13 +129,17 @@ export default function Signup() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }} className="slide-up">
+      <form
+        onSubmit={handleSubmit}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}
+        className="slide-up"
+      >
         {/* ═══ ÉTAPE 1 : INFOS ═══ */}
         {step === 'info' && (
           <>
             <div>
               <label className="text-label" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
-                Votre nom complet
+                Votre nom complet <span style={{ color: 'var(--color-danger)' }}>*</span>
               </label>
               <input
                 className="input"
@@ -129,9 +153,34 @@ export default function Signup() {
               />
             </div>
 
+            {/* ── NOUVEAU : Téléphone optionnel ── */}
             <div>
               <label className="text-label" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
-                Votre email
+                Téléphone <span style={{ color: 'var(--color-text-3)', fontWeight: 400 }}>(optionnel)</span>
+              </label>
+              <input
+                className="input"
+                type="tel"
+                placeholder="06 12 34 56 78"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                autoComplete="tel"
+              />
+              <p
+                style={{
+                  fontSize: 'var(--text-2xs)',
+                  color: 'var(--color-text-3)',
+                  marginTop: 'var(--space-1)',
+                  lineHeight: 1.4,
+                }}
+              >
+                Modifiable à tout moment, utile pour automatiser certaines tâches (SMS, rappels).
+              </p>
+            </div>
+
+            <div>
+              <label className="text-label" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+                Votre email <span style={{ color: 'var(--color-danger)' }}>*</span>
               </label>
               <input
                 className="input"
@@ -161,9 +210,35 @@ export default function Signup() {
         {step === 'password' && (
           <>
             <div>
-              <label className="text-label" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
-                Choisissez votre mot de passe
-              </label>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 'var(--space-2)',
+                }}
+              >
+                <label className="text-label">Choisissez votre mot de passe</label>
+                <button
+                  type="button"
+                  onClick={() => setShowSecurityInfo(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--color-primary)',
+                    cursor: 'pointer',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 500,
+                    padding: 'var(--space-1)',
+                  }}
+                >
+                  <Info size={14} />
+                  Sécurité
+                </button>
+              </div>
               <div style={{ position: 'relative' }}>
                 <input
                   className="input"
@@ -201,6 +276,7 @@ export default function Signup() {
                 <PasswordCriterion met={password.length >= 8} text="Au moins 8 caractères" />
                 <PasswordCriterion met={/[A-Z]/.test(password)} text="Une majuscule (recommandé)" />
                 <PasswordCriterion met={/[0-9]/.test(password)} text="Un chiffre (recommandé)" />
+                <PasswordCriterion met={/[^A-Za-z0-9]/.test(password)} text="Un caractère spécial (fortement recommandé)" />
               </div>
             </div>
 
@@ -302,11 +378,139 @@ export default function Signup() {
           </Link>
         </div>
       </form>
+
+      {/* ═══ POPUP SÉCURITÉ ═══ */}
+      {showSecurityInfo && (
+        <SecurityInfoModal onClose={() => setShowSecurityInfo(false)} />
+      )}
     </div>
   );
 }
 
-// ── Sous-composants ────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+// POPUP D'INFORMATION SÉCURITÉ
+// ════════════════════════════════════════════════════════════
+function SecurityInfoModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--space-4)',
+        zIndex: 'var(--z-modal)',
+        animation: 'fadeIn var(--duration-normal) var(--ease-out)',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="scale-in"
+        style={{
+          background: 'var(--color-bg-elevated)',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--color-border)',
+          maxWidth: 420,
+          width: '100%',
+          padding: 'var(--space-5)',
+          boxShadow: 'var(--shadow-lg)',
+          position: 'relative',
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: 'var(--space-3)',
+            right: 'var(--space-3)',
+            width: 32,
+            height: 32,
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--color-surface-2)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--color-text-2)',
+          }}
+          aria-label="Fermer"
+        >
+          <X size={16} />
+        </button>
+
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--gradient-gold)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 'var(--space-3)',
+          }}
+        >
+          <Shield size={24} style={{ color: 'var(--color-primary-text)' }} />
+        </div>
+
+        <h3
+          style={{
+            fontSize: 'var(--text-lg)',
+            fontWeight: 700,
+            marginBottom: 'var(--space-3)',
+            fontFamily: 'var(--font-display)',
+          }}
+        >
+          Votre sécurité, notre engagement
+        </h3>
+
+        <div
+          style={{
+            fontSize: 'var(--text-sm)',
+            color: 'var(--color-text-2)',
+            lineHeight: 1.6,
+            marginBottom: 'var(--space-4)',
+          }}
+        >
+          <p style={{ marginBottom: 'var(--space-3)' }}>
+            Environ <strong style={{ color: 'var(--color-primary)' }}>60% des cyberattaques</strong> ciblent aujourd'hui les TPE et PME.
+          </p>
+          <p style={{ marginBottom: 'var(--space-3)' }}>
+            Chez SWAN, nous mettons en œuvre des standards de sécurité élevés afin de protéger vos données au mieux.
+          </p>
+          <p style={{ marginBottom: 'var(--space-3)' }}>
+            Toutefois, la sécurité repose également sur des bonnes pratiques individuelles. Nous vous recommandons vivement d'utiliser un <strong style={{ color: 'var(--color-text-1)' }}>mot de passe robuste, unique et non réutilisé</strong>, car les identifiants compromis restent la première cause de fuite de données.
+          </p>
+          <p
+            style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-text-3)',
+              fontStyle: 'italic',
+              paddingTop: 'var(--space-2)',
+              borderTop: '1px solid var(--color-border)',
+            }}
+          >
+            Sources : Verizon DBIR, ANSSI, Cybermalveillance.gouv — 2025-2026
+          </p>
+        </div>
+
+        <button onClick={onClose} className="btn btn-primary btn-full">
+          J'ai compris
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// SOUS-COMPOSANTS
+// ════════════════════════════════════════════════════════════
 
 function PasswordCriterion({ met, text }: { met: boolean; text: string }) {
   return (
@@ -383,3 +587,5 @@ function Checkbox({
     </label>
   );
 }
+
+// END
