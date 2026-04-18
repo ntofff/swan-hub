@@ -5,7 +5,7 @@
 
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, AlertTriangle, ShieldCheck, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -62,8 +62,16 @@ export default function Login() {
       }}
     >
       {/* ── Header ── */}
-      <div style={{ marginBottom: 'var(--space-8)', marginTop: 'var(--space-4)' }}>
-        <h1 className="text-gold" style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: '-0.03em' }}>
+      <div style={{ marginBottom: 'var(--space-6)', marginTop: 'var(--space-4)' }}>
+        <h1
+          className="text-gold"
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'var(--text-2xl)',
+            fontWeight: 800,
+            letterSpacing: '-0.03em',
+          }}
+        >
           SWAN · HUB
         </h1>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)', marginTop: '2px' }}>
@@ -83,14 +91,24 @@ export default function Login() {
           }}
         >
           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-            <AlertTriangle size={20} style={{ color: 'var(--color-danger)', flexShrink: 0, marginTop: 2 }} />
+            <AlertTriangle
+              size={20}
+              style={{ color: 'var(--color-danger)', flexShrink: 0, marginTop: 2 }}
+            />
             <div>
-              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-1)', marginBottom: 4 }}>
+              <p
+                style={{
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 600,
+                  color: 'var(--color-text-1)',
+                  marginBottom: 4,
+                }}
+              >
                 Compte temporairement verrouillé
               </p>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5 }}>
-                Trop de tentatives de connexion. Un email vous a été envoyé avec un lien de déblocage immédiat. 
-                Sinon, réessayez dans 3 minutes.
+                Trop de tentatives de connexion. Un email vous a été envoyé avec un lien de déblocage
+                immédiat. Sinon, réessayez dans 3 minutes.
               </p>
             </div>
           </div>
@@ -98,7 +116,10 @@ export default function Login() {
       )}
 
       {/* ── Formulaire ── */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}
+      >
         <div>
           <label className="text-label" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
             Email
@@ -116,7 +137,14 @@ export default function Login() {
         </div>
 
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 'var(--space-2)',
+            }}
+          >
             <label className="text-label">Mot de passe</label>
             <Link
               to="/forgot-password"
@@ -162,7 +190,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Avertissement si tentatives */}
         {failedAttempts >= 3 && !blocked && (
           <div
             style={{
@@ -192,6 +219,26 @@ export default function Login() {
         </button>
       </form>
 
+      {/* ── Séparateur ── */}
+      <div className="divider-text" style={{ margin: 'var(--space-5) 0 var(--space-4)' }}>
+        Pas encore de compte ?
+      </div>
+
+      {/* ── Bouton Créer mon compte — AUSSI GROS que Se connecter ── */}
+      <button
+        onClick={() => navigate('/signup')}
+        className="btn btn-lg btn-full"
+        style={{
+          background: 'transparent',
+          border: '1.5px solid var(--color-primary)',
+          color: 'var(--color-primary)',
+          fontWeight: 600,
+        }}
+      >
+        <UserPlus size={18} />
+        Créer mon compte
+      </button>
+
       {/* ── Sécurité ── */}
       <div
         style={{
@@ -199,8 +246,8 @@ export default function Login() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 'var(--space-2)',
-          marginTop: 'var(--space-6)',
-          padding: 'var(--space-3)',
+          marginTop: 'auto',
+          paddingTop: 'var(--space-8)',
           fontSize: 'var(--text-xs)',
           color: 'var(--color-text-3)',
         }}
@@ -208,19 +255,8 @@ export default function Login() {
         <ShieldCheck size={14} />
         <span>Connexion sécurisée · Protection anti-phishing active</span>
       </div>
-
-      {/* ── Lien vers signup ── */}
-      <div style={{ textAlign: 'center', marginTop: 'auto', paddingTop: 'var(--space-6)' }}>
-        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>
-          Pas encore de compte ?{' '}
-        </span>
-        <Link
-          to="/signup"
-          style={{ fontSize: 'var(--text-sm)', color: 'var(--color-primary)', fontWeight: 600 }}
-        >
-          Créer mon compte
-        </Link>
-      </div>
     </div>
   );
 }
+
+// END
