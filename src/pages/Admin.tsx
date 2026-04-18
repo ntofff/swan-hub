@@ -1,465 +1,502 @@
-import { useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+// ============================================================
+// SWAN · HUB — Dashboard Admin
+// Gestion : users, VIP, bêta, plugins, broadcasts, sécurité
+// ============================================================
+
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Users, Puzzle, MessageSquare, Shield, Settings, ChevronRight, Search,
-  Plus, Check, X, Palette, ScrollText, BarChart3, Megaphone, Eye, Trash2
-} from "lucide-react";
+  Users, Megaphone, ShieldAlert, Gift, Search,
+  Crown, Star, Ban, Plus, Send, Eye, EyeOff, TrendingUp,
+  AlertTriangle, CheckCircle2, Activity,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { ACTIVE_PLUGINS } from '@/config/tokens';
+import { toast } from 'sonner';
 
-const AdminPage = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [section, setSection] = useState<string>("dashboard");
-  const [search, setSearch] = useState("");
-  const [promoForm, setPromoForm] = useState({ title: "", message: "", type: "banner" });
-  const [showPromoForm, setShowPromoForm] = useState(false);
-  const [themeForm, setThemeForm] = useState({ name: "" });
-  const [showThemeForm, setShowThemeForm] = useState(false);
-  const [feedbackFilter, setFeedbackFilter] = useState("all");
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+type Tab = 'overview' | 'users' | 'broadcasts' | 'security';
 
-  // ── Queries ──
-  const { data: profiles = [] } = useQuery({
-    queryKey: ["admin_profiles"],
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-    enabled: !!user && section !== "themes",
-  });
+export default function Admin() {
+  const { isAdmin } = useAuth();
+  const [tab, setTab] = useState<Tab>('overview');
 
-  const { data: allFeedback = [] } = useQuery({
-    queryKey: ["admin_feedback"],
-    queryFn: async () => {
-      const { data } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: plugins = [] } = useQuery({
-    queryKey: ["admin_plugins"],
-    queryFn: async () => {
-      const { data } = await supabase.from("plugins").select("*").order("name");
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: userPlugins = [] } = useQuery({
-    queryKey: ["admin_user_plugins"],
-    queryFn: async () => {
-      const { data } = await supabase.from("user_plugins").select("*");
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: promotions = [] } = useQuery({
-    queryKey: ["admin_promotions"],
-    queryFn: async () => {
-      const { data } = await supabase.from("promotions").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: themes = [] } = useQuery({
-    queryKey: ["admin_themes"],
-    queryFn: async () => {
-      const { data } = await supabase.from("themes").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: auditLogs = [] } = useQuery({
-    queryKey: ["admin_audit_logs"],
-    queryFn: async () => {
-      const { data } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(50);
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  // ── Mutations ──
-  const updateFeedback = useMutation({
-    mutationFn: async ({ id, status, admin_note }: { id: string; status?: string; admin_note?: string }) => {
-      const update: any = {};
-      if (status) update.status = status;
-      if (admin_note !== undefined) update.admin_note = admin_note;
-      await supabase.from("feedback").update(update).eq("id", id);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin_feedback"] }),
-  });
-
-  const createPromo = useMutation({
-    mutationFn: async () => {
-      if (!user) return;
-      await supabase.from("promotions").insert({ ...promoForm, created_by: user.id });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_promotions"] });
-      setPromoForm({ title: "", message: "", type: "banner" });
-      setShowPromoForm(false);
-      toast.success("Promotion créée");
-    },
-  });
-
-  const togglePromo = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      await supabase.from("promotions").update({ is_active }).eq("id", id);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin_promotions"] }),
-  });
-
-  const createTheme = useMutation({
-    mutationFn: async () => {
-      if (!user) return;
-      await supabase.from("themes").insert({ name: themeForm.name, created_by: user.id });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_themes"] });
-      setThemeForm({ name: "" });
-      setShowThemeForm(false);
-      toast.success("Thème créé");
-    },
-  });
-
-  const logAction = async (action: string, details?: any) => {
-    if (!user) return;
-    await supabase.rpc("log_audit_event", {
-      _action: action,
-      _details: details ?? null,
-    });
-  };
-
-  // ── Stats ──
-  const totalUsers = profiles.length;
-  const recentSignups = profiles.filter((p: any) => Date.now() - new Date(p.created_at).getTime() < 86400000 * 7).length;
-  const feedbackOpen = allFeedback.filter((f: any) => f.status === "open").length;
-  const pluginActivations = userPlugins.length;
-
-  const pluginUsage = plugins.map((p: any) => ({
-    ...p,
-    activations: userPlugins.filter((up: any) => up.plugin_id === p.id).length,
-  })).sort((a: any, b: any) => b.activations - a.activations);
-
-  const filteredFeedback = feedbackFilter === "all" ? allFeedback : allFeedback.filter((f: any) => f.type === feedbackFilter);
-
-  const filteredProfiles = search
-    ? profiles.filter((p: any) => p.full_name?.toLowerCase().includes(search.toLowerCase()) || p.user_id?.includes(search))
-    : profiles;
-
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { id: "users", label: "Utilisateurs", icon: Users },
-    { id: "promotions", label: "Promotions", icon: Megaphone },
-    { id: "feedback", label: "Feedback", icon: MessageSquare },
-    { id: "plugins", label: "Plugins", icon: Puzzle },
-    { id: "themes", label: "Thèmes", icon: Palette },
-    { id: "audit", label: "Audit", icon: ScrollText },
-  ];
-
-  const formatDate = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+        <ShieldAlert size={48} style={{ color: 'var(--color-danger)', margin: '0 auto var(--space-3)' }} />
+        <p>Accès admin requis.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="fade-in max-w-6xl mx-auto">
-      <div className="flex items-center justify-between px-4 pt-6 pb-4">
+    <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+      <header className="page-header">
         <div>
-          <h1 className="text-xl font-bold font-heading flex items-center gap-2">
-            <Shield size={20} className="text-primary" /> Console Admin
+          <h1 className="page-header-title">
+            <span className="text-gold">Admin</span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Administration SWAN · HUB</p>
+          <p className="page-header-subtitle">Console d'administration SWAN HUB</p>
+        </div>
+      </header>
+
+      {/* ── Tabs ── */}
+      <div
+        className="px-4"
+        style={{
+          marginBottom: 'var(--space-4)',
+          borderBottom: '1px solid var(--color-border)',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 'var(--space-2)', minWidth: 'max-content' }}>
+          <TabButton active={tab === 'overview'}   onClick={() => setTab('overview')} icon={<Activity size={16} />}  label="Vue d'ensemble" />
+          <TabButton active={tab === 'users'}      onClick={() => setTab('users')}    icon={<Users size={16} />}     label="Utilisateurs" />
+          <TabButton active={tab === 'broadcasts'} onClick={() => setTab('broadcasts')} icon={<Megaphone size={16} />} label="Messages" />
+          <TabButton active={tab === 'security'}   onClick={() => setTab('security')} icon={<ShieldAlert size={16} />} label="Sécurité" />
         </div>
       </div>
 
-      <div className="px-4">
-        {/* Nav */}
-        <div className="flex gap-1 overflow-x-auto pb-1 mb-5 -mx-1 px-1">
-          {navItems.map(n => (
-            <button key={n.id} onClick={() => setSection(n.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${section === n.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-              <n.icon size={12} /> {n.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Dashboard ── */}
-        {section === "dashboard" && (
-          <div className="space-y-5 slide-up">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-              {[
-                { label: "Utilisateurs", value: totalUsers },
-                { label: "Inscrits 7j", value: recentSignups },
-                { label: "Plugins actifs", value: pluginActivations },
-                { label: "Feedback ouvert", value: feedbackOpen },
-              ].map(s => (
-                <div key={s.label} className="glass-card p-4">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</div>
-                  <div className="text-2xl font-bold font-heading mt-1">{s.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Inscriptions récentes</h2>
-                <div className="glass-card divide-y divide-border">
-                  {profiles.slice(0, 5).map((p: any) => (
-                    <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{p.full_name || "—"}</div>
-                        <div className="text-[10px] text-muted-foreground">{p.user_id?.slice(0, 8)}… · {p.plan}</div>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">{formatDate(p.created_at)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Plugins populaires</h2>
-                <div className="glass-card divide-y divide-border">
-                  {pluginUsage.slice(0, 6).map((p: any) => (
-                    <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                      <span className="text-sm flex-1">{p.name}</span>
-                      <span className="text-xs text-muted-foreground">{p.activations} activations</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Feedback récent</h2>
-              <div className="glass-card divide-y divide-border">
-                {allFeedback.slice(0, 5).map((f: any) => (
-                  <div key={f.id} className="px-4 py-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] text-muted-foreground">{f.user_id?.slice(0, 8)}…</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{f.plugin || f.context}</span>
-                      <TypeBadge type={f.type} />
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${f.status === 'resolved' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>{f.status === 'resolved' ? 'Résolu' : 'Ouvert'}</span>
-                      <span className="text-[10px] text-muted-foreground ml-auto">{formatDate(f.created_at)}</span>
-                    </div>
-                    <p className="text-sm">{f.message}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Users ── */}
-        {section === "users" && (
-          <div className="space-y-4 slide-up">
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par nom ou ID..."
-                className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-            </div>
-
-            {selectedUser ? (
-              <div className="glass-card p-5 space-y-4 slide-up">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">{selectedUser.full_name || "—"}</h3>
-                  <button onClick={() => setSelectedUser(null)} className="text-muted-foreground"><X size={16} /></button>
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>ID : {selectedUser.user_id}</p>
-                  <p>Plan : {selectedUser.plan}</p>
-                  <p>Inscrit : {formatDate(selectedUser.created_at)}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Plugins actifs :</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {plugins.map((p: any) => {
-                      const active = userPlugins.some((up: any) => up.user_id === selectedUser.user_id && up.plugin_id === p.id);
-                      return (
-                        <span key={p.id} className={`text-[10px] px-2 py-1 rounded-full ${active ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>
-                          {p.name}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="glass-card divide-y divide-border">
-                {filteredProfiles.map((p: any) => (
-                  <button key={p.id} onClick={() => setSelectedUser(p)} className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-secondary/50 transition-colors">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{p.full_name || "—"}</div>
-                      <div className="text-[10px] text-muted-foreground">{p.user_id?.slice(0, 12)}… · {p.plan}</div>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">{formatDate(p.created_at)}</span>
-                    <ChevronRight size={14} className="text-muted-foreground" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Promotions ── */}
-        {section === "promotions" && (
-          <div className="space-y-4 slide-up">
-            <button onClick={() => setShowPromoForm(!showPromoForm)} className="btn-primary-glow px-4 py-2 text-sm flex items-center gap-2">
-              <Plus size={14} /> Nouvelle promotion
-            </button>
-            {showPromoForm && (
-              <div className="glass-card p-4 space-y-3 slide-up">
-                <input value={promoForm.title} onChange={e => setPromoForm(f => ({ ...f, title: e.target.value }))} placeholder="Titre"
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                <textarea value={promoForm.message} onChange={e => setPromoForm(f => ({ ...f, message: e.target.value }))} placeholder="Message" rows={2}
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
-                <button onClick={() => { createPromo.mutate(); logAction("create_promotion", promoForm); }} disabled={!promoForm.title.trim()}
-                  className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40">Créer</button>
-              </div>
-            )}
-            <div className="glass-card divide-y divide-border">
-              {promotions.map((p: any) => (
-                <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{p.title}</div>
-                    <div className="text-[10px] text-muted-foreground">{p.message}</div>
-                  </div>
-                  <button onClick={() => togglePromo.mutate({ id: p.id, is_active: !p.is_active })}
-                    className={`text-[10px] px-2.5 py-1 rounded-full ${p.is_active ? 'bg-success/10 text-success' : 'bg-secondary text-muted-foreground'}`}>
-                    {p.is_active ? "Actif" : "Inactif"}
-                  </button>
-                </div>
-              ))}
-              {promotions.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">Aucune promotion</div>}
-            </div>
-          </div>
-        )}
-
-        {/* ── Feedback ── */}
-        {section === "feedback" && (
-          <div className="space-y-4 slide-up">
-            <div className="flex gap-1.5 overflow-x-auto">
-              {["all", "bug", "suggestion", "ux", "useful"].map(t => (
-                <button key={t} onClick={() => setFeedbackFilter(t)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${feedbackFilter === t ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-                  {t === "all" ? "Tout" : t}
-                </button>
-              ))}
-            </div>
-            <div className="glass-card divide-y divide-border">
-              {filteredFeedback.map((f: any) => (
-                <div key={f.id} className="px-4 py-3 space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] text-muted-foreground">{f.user_id?.slice(0, 8)}…</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{f.plugin || f.context || "—"}</span>
-                    <TypeBadge type={f.type} />
-                    <span className="text-[10px] text-muted-foreground ml-auto">{formatDate(f.created_at)}</span>
-                  </div>
-                  <p className="text-sm">{f.message}</p>
-                  {f.screen && <p className="text-[10px] text-muted-foreground">Écran : {f.screen}</p>}
-                  {f.admin_note && <p className="text-xs text-info bg-info/5 rounded-lg p-2">Note : {f.admin_note}</p>}
-                  <div className="flex gap-2">
-                    <button onClick={() => {
-                      const note = prompt("Note admin :");
-                      if (note) updateFeedback.mutate({ id: f.id, admin_note: note });
-                    }} className="text-[10px] text-muted-foreground hover:text-foreground">+ Note</button>
-                    <button onClick={() => updateFeedback.mutate({ id: f.id, status: f.status === "resolved" ? "open" : "resolved" })}
-                      className={`text-[10px] ${f.status === "resolved" ? 'text-success' : 'text-warning'}`}>
-                      {f.status === "resolved" ? "✓ Résolu" : "○ Ouvert"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {filteredFeedback.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">Aucun feedback</div>}
-            </div>
-          </div>
-        )}
-
-        {/* ── Plugins ── */}
-        {section === "plugins" && (
-          <div className="space-y-4 slide-up">
-            <div className="glass-card divide-y divide-border">
-              {pluginUsage.map((p: any) => (
-                <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{p.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{p.description}</div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{p.activations} act.</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.is_active ? 'bg-success/10 text-success' : 'bg-secondary text-muted-foreground'}`}>
-                    {p.is_active ? "Actif" : "Inactif"}
-                  </span>
-                  {p.is_locked && <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning/10 text-warning">Verrouillé</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Themes ── */}
-        {section === "themes" && (
-          <div className="space-y-4 slide-up">
-            <button onClick={() => setShowThemeForm(!showThemeForm)} className="btn-primary-glow px-4 py-2 text-sm flex items-center gap-2">
-              <Plus size={14} /> Nouveau thème
-            </button>
-            {showThemeForm && (
-              <div className="glass-card p-4 space-y-3 slide-up">
-                <input value={themeForm.name} onChange={e => setThemeForm({ name: e.target.value })} placeholder="Nom du thème"
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                <button onClick={() => createTheme.mutate()} disabled={!themeForm.name.trim()}
-                  className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40">Créer</button>
-              </div>
-            )}
-            <div className="glass-card divide-y divide-border">
-              {themes.map((t: any) => (
-                <div key={t.id} className="px-4 py-3 flex items-center gap-3">
-                  <Palette size={16} className="text-muted-foreground" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{t.name}</div>
-                  </div>
-                  {t.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">Par défaut</span>}
-                </div>
-              ))}
-              {themes.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">Aucun thème</div>}
-            </div>
-          </div>
-        )}
-
-        {/* ── Audit ── */}
-        {section === "audit" && (
-          <div className="slide-up">
-            <div className="glass-card divide-y divide-border">
-              {auditLogs.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Aucun log d'audit</div>
-              ) : auditLogs.map((l: any) => (
-                <div key={l.id} className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{l.action}</span>
-                    <span className="text-[10px] text-muted-foreground ml-auto">{formatDate(l.created_at)}</span>
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">{l.user_id?.slice(0, 8)}…{l.details ? ` · ${JSON.stringify(l.details).slice(0, 80)}` : ""}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="h-8" />
+      {/* ── Contenu ── */}
+      {tab === 'overview'   && <AdminOverview />}
+      {tab === 'users'      && <AdminUsers />}
+      {tab === 'broadcasts' && <AdminBroadcasts />}
+      {tab === 'security'   && <AdminSecurity />}
     </div>
   );
-};
+}
 
-const TypeBadge = ({ type }: { type: string }) => {
-  const colors: Record<string, string> = {
-    bug: "bg-destructive/10 text-destructive",
-    suggestion: "bg-primary/10 text-primary",
-    ux: "bg-warning/10 text-warning",
-    useful: "bg-success/10 text-success",
+// ════════════════════════════════════════════════════════════
+// VUE D'ENSEMBLE
+// ════════════════════════════════════════════════════════════
+
+function AdminOverview() {
+  const { data: stats } = useQuery({
+    queryKey: ['admin_stats'],
+    queryFn: async () => {
+      const [profiles, tasks, reports, invoices] = await Promise.all([
+        supabase.from('profiles').select('plan, is_vip, is_beta, created_at'),
+        supabase.from('tasks').select('id'),
+        supabase.from('reports').select('id'),
+        supabase.from('invoices').select('amount_ht, status'),
+      ]);
+
+      const users = profiles.data ?? [];
+      const newLast30d = users.filter(
+        (u: any) => Date.now() - new Date(u.created_at).getTime() < 30 * 86_400_000
+      ).length;
+
+      const paidInvoices = (invoices.data ?? []).filter((i: any) => i.status === 'Payé');
+      const totalCA = paidInvoices.reduce((s, i: any) => s + (Number(i.amount_ht) || 0), 0);
+
+      return {
+        totalUsers: users.length,
+        newLast30d,
+        vipCount:  users.filter((u: any) => u.is_vip).length,
+        betaCount: users.filter((u: any) => u.is_beta).length,
+        freeCount: users.filter((u: any) => u.plan === 'free').length,
+        paidCount: users.filter((u: any) => u.plan !== 'free').length,
+        totalTasks: tasks.data?.length ?? 0,
+        totalReports: reports.data?.length ?? 0,
+        totalCA,
+      };
+    },
+    staleTime: 60_000,
+  });
+
+  if (!stats) return <div className="px-4"><div className="skeleton" style={{ height: 200 }} /></div>;
+
+  return (
+    <div className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div className="grid-2 stagger">
+        <OverviewCard label="Utilisateurs" value={stats.totalUsers.toString()} trend={`+${stats.newLast30d} ce mois`} />
+        <OverviewCard label="CA encaissé" value={`${Math.round(stats.totalCA)} €`} />
+        <OverviewCard label="Comptes VIP" value={stats.vipCount.toString()} icon={<Crown size={14} />} />
+        <OverviewCard label="Bêta testeurs" value={stats.betaCount.toString()} icon={<Star size={14} />} />
+      </div>
+
+      <div className="card" style={{ padding: 'var(--space-4)' }}>
+        <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
+          Répartition des plans
+        </h3>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <PlanStat label="Gratuits" count={stats.freeCount} total={stats.totalUsers} color="var(--color-info)" />
+          <PlanStat label="Payants" count={stats.paidCount} total={stats.totalUsers} color="var(--color-success)" />
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <OverviewCard label="Tâches créées" value={stats.totalTasks.toString()} />
+        <OverviewCard label="Rapports créés" value={stats.totalReports.toString()} />
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILISATEURS
+// ════════════════════════════════════════════════════════════
+
+function AdminUsers() {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'vip' | 'beta' | 'blocked'>('all');
+
+  const { data: users = [], refetch } = useQuery({
+    queryKey: ['admin_users', search, filter],
+    queryFn: async () => {
+      let query = supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(50);
+      if (search) query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+      if (filter === 'vip')  query = query.eq('is_vip', true);
+      if (filter === 'beta') query = query.eq('is_beta', true);
+      const { data } = await query;
+      return data ?? [];
+    },
+  });
+
+  const toggleVip = async (userId: string, currentVip: boolean) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        is_vip: !currentVip,
+        vip_granted_at: !currentVip ? new Date().toISOString() : null,
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      toast.error('Erreur');
+      return;
+    }
+    toast.success(currentVip ? 'Statut VIP retiré' : 'Statut VIP attribué');
+    refetch();
   };
-  return <span className={`text-[10px] px-2 py-0.5 rounded-full ${colors[type] || 'bg-secondary text-muted-foreground'}`}>{type}</span>;
-};
 
-export default AdminPage;
+  const toggleBeta = async (userId: string, currentBeta: boolean) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_beta: !currentBeta })
+      .eq('user_id', userId);
+
+    if (error) {
+      toast.error('Erreur');
+      return;
+    }
+    toast.success(currentBeta ? 'Statut bêta retiré' : 'Statut bêta attribué');
+    refetch();
+  };
+
+  return (
+    <div className="px-4">
+      {/* Search */}
+      <div className="input-group" style={{ marginBottom: 'var(--space-3)' }}>
+        <Search size={16} className="input-icon-left" />
+        <input
+          type="text"
+          className="input input-with-icon-left"
+          placeholder="Rechercher par nom ou email"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Filtres */}
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', overflowX: 'auto' }}>
+        {(['all', 'vip', 'beta'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {f === 'all' ? 'Tous' : f === 'vip' ? 'VIP' : 'Bêta'}
+          </button>
+        ))}
+      </div>
+
+      {/* Liste */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        {users.map((u: any) => (
+          <div key={u.user_id} className="card" style={{ padding: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-1)' }}>
+                    {u.full_name || 'Sans nom'}
+                  </span>
+                  {u.is_vip && <Crown size={12} style={{ color: 'var(--color-primary)' }} />}
+                  {u.is_beta && <Star size={12} style={{ color: 'var(--color-info)' }} />}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
+                  {u.email} · plan : {u.plan}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                <button
+                  onClick={() => toggleVip(u.user_id, u.is_vip)}
+                  className="btn btn-sm btn-ghost"
+                  title={u.is_vip ? 'Retirer VIP' : 'Accorder VIP'}
+                >
+                  <Crown size={14} style={{ color: u.is_vip ? 'var(--color-primary)' : 'var(--color-text-3)' }} />
+                </button>
+                <button
+                  onClick={() => toggleBeta(u.user_id, u.is_beta)}
+                  className="btn btn-sm btn-ghost"
+                  title={u.is_beta ? 'Retirer bêta' : 'Accorder bêta'}
+                >
+                  <Star size={14} style={{ color: u.is_beta ? 'var(--color-info)' : 'var(--color-text-3)' }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {users.length === 0 && (
+          <p style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-3)' }}>
+            Aucun utilisateur trouvé.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// BROADCASTS
+// ════════════════════════════════════════════════════════════
+
+function AdminBroadcasts() {
+  const [title, setTitle] = useState('');
+  const [body, setBody]   = useState('');
+  const [category, setCategory] = useState<'news' | 'promo' | 'maintenance' | 'seasonal'>('news');
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    if (!title || !body) {
+      toast.error('Titre et message requis');
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase.from('broadcasts').insert({
+      title,
+      body,
+      category,
+      channels: ['in_app'],
+      target_type: 'all',
+      sent_at: new Date().toISOString(),
+    });
+    setSending(false);
+
+    if (error) {
+      toast.error('Erreur d\'envoi : ' + error.message);
+      return;
+    }
+    toast.success('Message envoyé à tous les utilisateurs');
+    setTitle('');
+    setBody('');
+  };
+
+  return (
+    <div className="px-4">
+      <div className="card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+        <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
+          Composer un message
+        </h3>
+
+        <div style={{ marginBottom: 'var(--space-3)' }}>
+          <label className="text-label" style={{ display: 'block', marginBottom: 6 }}>Catégorie</label>
+          <select className="input" value={category} onChange={(e) => setCategory(e.target.value as any)}>
+            <option value="news">Nouveauté</option>
+            <option value="promo">Promotion</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="seasonal">Saisonnier</option>
+          </select>
+        </div>
+
+        <div style={{ marginBottom: 'var(--space-3)' }}>
+          <label className="text-label" style={{ display: 'block', marginBottom: 6 }}>Titre</label>
+          <input
+            className="input"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Nouveau plugin CRM disponible"
+          />
+        </div>
+
+        <div style={{ marginBottom: 'var(--space-4)' }}>
+          <label className="text-label" style={{ display: 'block', marginBottom: 6 }}>Message</label>
+          <textarea
+            className="input"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Contenu du message..."
+            rows={5}
+          />
+        </div>
+
+        <button onClick={send} disabled={sending} className="btn btn-primary btn-full">
+          {sending ? 'Envoi...' : <><Send size={16} /> Envoyer à tous</>}
+        </button>
+      </div>
+
+      <div
+        className="card"
+        style={{
+          padding: 'var(--space-3)',
+          background: 'var(--color-warning-bg)',
+          borderColor: 'var(--color-warning)',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start' }}>
+          <AlertTriangle size={16} style={{ color: 'var(--color-warning)', flexShrink: 0, marginTop: 2 }} />
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5 }}>
+            Maximum 1 broadcast par semaine recommandé pour ne pas spammer les utilisateurs.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// SÉCURITÉ
+// ════════════════════════════════════════════════════════════
+
+function AdminSecurity() {
+  const { data: events = [] } = useQuery({
+    queryKey: ['admin_security_events'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('security_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return data ?? [];
+    },
+    refetchInterval: 30_000,
+  });
+
+  const critical = events.filter((e: any) => e.severity === 'critical').length;
+  const warning  = events.filter((e: any) => e.severity === 'warning').length;
+
+  return (
+    <div className="px-4">
+      <div className="grid-2" style={{ marginBottom: 'var(--space-4)' }}>
+        <OverviewCard label="Alertes critiques" value={critical.toString()} icon={<AlertTriangle size={14} />} />
+        <OverviewCard label="Avertissements" value={warning.toString()} icon={<ShieldAlert size={14} />} />
+      </div>
+
+      <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
+        Événements récents
+      </h3>
+
+      {events.length === 0 ? (
+        <div className="card" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+          <CheckCircle2 size={24} style={{ color: 'var(--color-success)', margin: '0 auto var(--space-2)' }} />
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)' }}>
+            Aucun événement récent. Tout est sous contrôle.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          {events.map((e: any) => (
+            <div
+              key={e.id}
+              className="card"
+              style={{
+                padding: 'var(--space-3)',
+                borderLeft: `3px solid ${
+                  e.severity === 'critical' ? 'var(--color-danger)' :
+                  e.severity === 'warning'  ? 'var(--color-warning)' :
+                  'var(--color-info)'
+                }`,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>{e.event_type}</span>
+                <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-3)' }}>
+                  {new Date(e.created_at).toLocaleString('fr-FR')}
+                </span>
+              </div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
+                {JSON.stringify(e.details || {}).slice(0, 80)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// COMPOSANTS
+// ════════════════════════════════════════════════════════════
+
+function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-2)',
+        padding: 'var(--space-3) var(--space-4)',
+        border: 'none',
+        background: 'none',
+        color: active ? 'var(--color-primary)' : 'var(--color-text-2)',
+        fontSize: 'var(--text-sm)',
+        fontWeight: active ? 600 : 500,
+        cursor: 'pointer',
+        borderBottom: active ? '2px solid var(--color-primary)' : '2px solid transparent',
+        transition: 'all var(--duration-fast)',
+        whiteSpace: 'nowrap',
+        minHeight: 'var(--tap-min)',
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function OverviewCard({ label, value, trend, icon }: { label: string; value: string; trend?: string; icon?: React.ReactNode }) {
+  return (
+    <div className="kpi-card">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        {icon && <span style={{ color: 'var(--color-primary)' }}>{icon}</span>}
+        <div className="kpi-label" style={{ margin: 0 }}>{label}</div>
+      </div>
+      <div className="kpi-value">{value}</div>
+      {trend && (
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)', fontWeight: 500 }}>
+          <TrendingUp size={10} style={{ display: 'inline', marginRight: 2 }} />
+          {trend}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlanStat({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+  return (
+    <div style={{ flex: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>{label}</span>
+        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>{count} ({percent}%)</span>
+      </div>
+      <div
+        style={{
+          height: 6,
+          background: 'var(--color-surface-2)',
+          borderRadius: 'var(--radius-full)',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ height: '100%', width: `${percent}%`, background: color, transition: 'width var(--duration-normal)' }} />
+      </div>
+    </div>
+  );
+}
