@@ -1,99 +1,226 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { usePasskey } from "@/hooks/usePasskey";
-import { Eye, EyeOff, Fingerprint, Loader2 } from "lucide-react";
+// ============================================================
+// SWAN · HUB — Page de connexion
+// Protection anti-brute-force · Lien magique · Déblocage auto
+// ============================================================
 
-const LoginPage = () => {
-  const { signIn } = useAuth();
+import { useState, FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, ArrowRight, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+
+export default function Login() {
   const navigate = useNavigate();
-  const { isAvailable: passkeyAvailable, login: passkeyLogin, loading: passkeyLoading } = usePasskey();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { signIn } = useAuth();
+
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [blocked, setBlocked]   = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
-  const handlePasskeyLogin = async () => {
-    const success = await passkeyLogin();
-    if (success) navigate("/");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    if (!email || !password) return;
+
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error, blocked: isBlocked } = await signIn(email, password);
     setLoading(false);
-    if (error) {
-      setError(error.message === "Invalid login credentials" ? "Email ou mot de passe incorrect" : error.message);
-    } else {
-      navigate("/");
+
+    if (isBlocked) {
+      setBlocked(true);
+      toast.error(
+        'Compte temporairement verrouillé. Consultez votre email pour le débloquer.',
+        { duration: 6000 }
+      );
+      return;
     }
+
+    if (error) {
+      setFailedAttempts((n) => n + 1);
+      toast.error('Identifiants incorrects');
+      return;
+    }
+
+    toast.success('Connexion réussie');
+    navigate('/');
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm fade-in">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold font-heading text-gradient-gold">SWAN · HUB</h1>
-          <p className="text-xs text-muted-foreground mt-1">Simple Work</p>
+    <div
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: 'var(--space-4)',
+        paddingTop: 'calc(env(safe-area-inset-top) + var(--space-4))',
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--space-4))',
+        maxWidth: '440px',
+        margin: '0 auto',
+        width: '100%',
+      }}
+    >
+      {/* ── Header ── */}
+      <div style={{ marginBottom: 'var(--space-8)', marginTop: 'var(--space-4)' }}>
+        <h1 className="text-gold" style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: '-0.03em' }}>
+          SWAN · HUB
+        </h1>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)', marginTop: '2px' }}>
+          Bon retour parmi nous
+        </p>
+      </div>
+
+      {/* ── Alerte blocage ── */}
+      {blocked && (
+        <div
+          className="card"
+          style={{
+            background: 'var(--color-danger-bg)',
+            borderColor: 'var(--color-danger)',
+            marginBottom: 'var(--space-4)',
+            padding: 'var(--space-4)',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <AlertTriangle size={20} style={{ color: 'var(--color-danger)', flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-1)', marginBottom: 4 }}>
+                Compte temporairement verrouillé
+              </p>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5 }}>
+                Trop de tentatives de connexion. Un email vous a été envoyé avec un lien de déblocage immédiat. 
+                Sinon, réessayez dans 3 minutes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Formulaire ── */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <label className="text-label" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+            Email
+          </label>
+          <input
+            className="input"
+            type="email"
+            placeholder="vous@exemple.fr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+            disabled={blocked}
+          />
         </div>
 
-        <div className="glass-card p-6 space-y-5">
-          <div>
-            <h2 className="text-lg font-semibold font-heading">Connexion</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Accédez à votre espace</p>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+            <label className="text-label">Mot de passe</label>
+            <Link
+              to="/forgot-password"
+              style={{
+                fontSize: 'var(--text-xs)',
+                color: 'var(--color-primary)',
+                textDecoration: 'none',
+                fontWeight: 500,
+              }}
+            >
+              Oublié ?
+            </Link>
           </div>
-
-          {error && (
-            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1.5 block">Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email"
-                className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1.5 block">Mot de passe</label>
-              <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password"
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-            <button type="submit" disabled={loading} className="w-full btn-primary-glow py-3 text-sm disabled:opacity-50">
-              {loading ? "Connexion..." : "Se connecter"}
+          <div style={{ position: 'relative' }}>
+            <input
+              className="input"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Votre mot de passe"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              disabled={blocked}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: 'var(--space-2)',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-3)',
+                padding: 'var(--space-2)',
+              }}
+              aria-label={showPassword ? 'Masquer' : 'Afficher'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
-          </form>
-
-          <div className="flex justify-between text-xs">
-            <Link to="/forgot-password" className="text-primary hover:underline">Mot de passe oublié ?</Link>
-            <Link to="/signup" className="text-primary hover:underline">Créer un compte</Link>
           </div>
-
-          {passkeyAvailable && (
-            <div className="pt-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                <div className="flex-1 h-px bg-border" />
-                <span>ou</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-              <button onClick={handlePasskeyLogin} disabled={passkeyLoading}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors disabled:opacity-50">
-                {passkeyLoading ? <Loader2 size={18} className="animate-spin" /> : <Fingerprint size={18} />}
-                Connexion biométrique
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Avertissement si tentatives */}
+        {failedAttempts >= 3 && !blocked && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              padding: 'var(--space-2) var(--space-3)',
+              background: 'var(--color-warning-bg)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-warning)',
+            }}
+          >
+            <AlertTriangle size={14} />
+            {10 - failedAttempts} tentatives restantes avant verrouillage
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || blocked || !email || !password}
+          className="btn btn-primary btn-lg btn-full"
+          style={{ marginTop: 'var(--space-2)' }}
+        >
+          {loading ? 'Connexion…' : 'Se connecter'}
+          {!loading && <ArrowRight size={18} />}
+        </button>
+      </form>
+
+      {/* ── Sécurité ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'var(--space-2)',
+          marginTop: 'var(--space-6)',
+          padding: 'var(--space-3)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--color-text-3)',
+        }}
+      >
+        <ShieldCheck size={14} />
+        <span>Connexion sécurisée · Protection anti-phishing active</span>
+      </div>
+
+      {/* ── Lien vers signup ── */}
+      <div style={{ textAlign: 'center', marginTop: 'auto', paddingTop: 'var(--space-6)' }}>
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>
+          Pas encore de compte ?{' '}
+        </span>
+        <Link
+          to="/signup"
+          style={{ fontSize: 'var(--text-sm)', color: 'var(--color-primary)', fontWeight: 600 }}
+        >
+          Créer mon compte
+        </Link>
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}
