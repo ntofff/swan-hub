@@ -1,7 +1,3 @@
-// ============================================================
-// SWAN · HUB — Client Supabase
-// ============================================================
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
