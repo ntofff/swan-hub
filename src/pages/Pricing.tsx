@@ -1,120 +1,282 @@
-import { useNavigate } from "react-router-dom";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { FeedbackButton } from "@/components/FeedbackButton";
-import { Coffee, Check, ArrowRight, FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sparkles, Gift } from "lucide-react";
+// ============================================================
+// SWAN · HUB — Page Pricing
+// 3 plans : Découverte · À la carte · Pro Total
+// ============================================================
 
-const allPlugins = [
-  { id: "report", name: "Outil Rapport", icon: FileText },
-  { id: "logbook", name: "Journal de bord", icon: BookOpen },
-  { id: "tasks", name: "Tâches", icon: CheckSquare },
-  { id: "missions", name: "Missions", icon: Target },
-  { id: "quotes", name: "Devis & Factures", icon: Receipt },
-  { id: "vehicle", name: "Carnet véhicule", icon: Car },
-];
+import { useState } from 'react';
+import { Check, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS } from '@/config/tokens';
+import { toast } from 'sonner';
 
-const PricingPage = () => {
+export default function Pricing() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+
+  const [pluginCount, setPluginCount] = useState(
+    profile?.active_plugins?.length || 3
+  );
+
+  // Calcul coût à la carte
+  const carteCost = pluginCount * BUSINESS.PLUGIN_PRICE_TTC;
+  const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
 
   return (
-    <div className="fade-in">
-      <PageHeader title="Tarifs" subtitle="Simple, transparent, accessible" />
-      <div className="px-4 md:px-0">
-
-        {/* Hero pricing */}
-        <div className="glass-card-glow p-8 text-center mb-6 space-y-4">
-          <Coffee size={40} className="text-primary mx-auto" />
-          <h2 className="text-2xl font-bold font-heading">Moins cher qu'un café</h2>
-          <p className="text-sm text-secondary-foreground leading-relaxed max-w-sm mx-auto">
-            Chaque plugin coûte seulement <span className="text-primary font-bold text-lg">1€/mois</span>.
-            C'est le prix d'un expresso — mais ça vous fera gagner des heures.
-          </p>
-          <p className="text-xs text-muted-foreground italic max-w-xs mx-auto">
-            Un prix volontairement bas pour permettre le développement de tous avec des outils simplifiés mais efficaces.
-          </p>
-        </div>
-
-        {/* Free trial */}
-        <div className="glass-card border-primary/30 p-6 mb-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center">
-              <Gift size={24} className="text-primary" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold font-heading">Essai gratuit</h3>
-              <p className="text-xs text-muted-foreground">1 mois complet, aucun engagement</p>
-            </div>
-          </div>
-          <ul className="space-y-2">
-            {[
-              "3 plugins de votre choix pendant 30 jours",
-              "Toutes les fonctionnalités incluses",
-              "Aucune carte bancaire requise",
-              "Résiliation automatique si vous ne continuez pas",
-            ].map(f => (
-              <li key={f} className="flex items-start gap-2 text-sm text-secondary-foreground">
-                <Check size={16} className="text-primary mt-0.5 shrink-0" />
-                {f}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Pricing per plugin */}
-        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Choisissez vos plugins</h2>
-        <div className="space-y-2 mb-6">
-          {allPlugins.map(p => (
-            <div key={p.id} className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <p.icon size={18} className="text-primary" />
-              </div>
-              <span className="text-sm font-medium flex-1">{p.name}</span>
-              <span className="text-sm font-bold text-primary">1€<span className="text-xs font-normal text-muted-foreground">/mois</span></span>
-            </div>
-          ))}
-        </div>
-
-        {/* Examples */}
-        <div className="glass-card p-5 mb-6 space-y-3">
-          <h3 className="text-sm font-bold font-heading flex items-center gap-2">
-            <Sparkles size={16} className="text-primary" /> Exemples
-          </h3>
-          <div className="space-y-2">
-            {[
-              { plugins: 3, price: "3€/mois", desc: "Rapport + Tâches + Missions — le kit de base" },
-              { plugins: 5, price: "5€/mois", desc: "Presque tout — le pro complet" },
-              { plugins: 6, price: "6€/mois", desc: "Tous les plugins — zéro limite" },
-            ].map(e => (
-              <div key={e.plugins} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                <span className="text-lg font-bold text-primary w-14 text-center">{e.price}</span>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold">{e.plugins} plugins</p>
-                  <p className="text-[10px] text-muted-foreground">{e.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Marketing message */}
-        <div className="glass-card-glow p-6 mb-6 text-center space-y-3">
-          <p className="text-sm text-secondary-foreground leading-relaxed">
-            ☕ C'est moins cher qu'un café, mais ça vous permettra de <span className="text-foreground font-bold">prendre le temps d'en boire plus</span>.
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
-            Notre prix est volontairement bas parce que nous croyons que des outils simples et efficaces 
-            doivent être accessibles à tous les professionnels, pas seulement ceux qui ont les moyens 
-            de s'offrir des solutions complexes et coûteuses.
-          </p>
-        </div>
-
-        {/* CTA */}
-        <button onClick={() => navigate("/signup")} className="w-full btn-primary-glow py-3.5 text-sm flex items-center justify-center gap-2 mb-8">
-          Essayer gratuitement 1 mois <ArrowRight size={16} />
+    <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+      <header className="page-header">
+        <button onClick={() => navigate(-1)} className="back-button" aria-label="Retour">
+          <ChevronLeft size={20} />
         </button>
+        <div>
+          <h1 className="page-header-title">Tarifs</h1>
+          <p className="page-header-subtitle">Transparents, flexibles, sans engagement</p>
+        </div>
+      </header>
+
+      {/* ── Simulateur ── */}
+      <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
+        <div className="card card-glow" style={{ padding: 'var(--space-5)' }}>
+          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
+            Combien de plugins utilisez-vous ?
+          </h3>
+
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+              <button
+                onClick={() => setPluginCount(Math.max(1, pluginCount - 1))}
+                className="btn btn-icon btn-secondary"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-4xl)',
+                  fontWeight: 500,
+                  minWidth: 80,
+                  textAlign: 'center',
+                  color: 'var(--color-primary)',
+                }}
+              >
+                {pluginCount}
+              </div>
+              <button
+                onClick={() => setPluginCount(Math.min(13, pluginCount + 1))}
+                className="btn btn-icon btn-secondary"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+            <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+              plugin{pluginCount > 1 ? 's' : ''} activé{pluginCount > 1 ? 's' : ''}
+            </p>
+          </div>
+
+          {/* Comparaison visuelle */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 'var(--space-3)',
+              padding: 'var(--space-3)',
+              background: 'var(--color-surface-2)',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>
+                À la carte
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-lg)',
+                  fontWeight: 500,
+                  color: !proIsCheaper ? 'var(--color-success)' : 'var(--color-text-2)',
+                }}
+              >
+                {carteCost.toFixed(2)} €
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', borderLeft: '1px solid var(--color-border)' }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>
+                Pro Total
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-lg)',
+                  fontWeight: 500,
+                  color: proIsCheaper ? 'var(--color-success)' : 'var(--color-text-2)',
+                }}
+              >
+                {BUSINESS.PRO_PRICE_TTC.toFixed(2)} €
+              </div>
+            </div>
+          </div>
+
+          <p
+            style={{
+              textAlign: 'center',
+              fontSize: 'var(--text-xs)',
+              color: proIsCheaper ? 'var(--color-success)' : 'var(--color-text-3)',
+              marginTop: 'var(--space-3)',
+              fontWeight: proIsCheaper ? 600 : 400,
+            }}
+          >
+            {proIsCheaper
+              ? `✓ Le Pro Total est plus avantageux à partir de ${PLAN_BREAKEVEN_PLUGINS} plugins`
+              : `À partir de ${PLAN_BREAKEVEN_PLUGINS} plugins, le Pro Total devient plus avantageux`}
+          </p>
+        </div>
+      </section>
+
+      {/* ── Plans ── */}
+      <section className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        {PLANS.map((plan) => {
+          const isCurrent = profile?.plan === plan.id;
+
+          return (
+            <div
+              key={plan.id}
+              className="card"
+              style={{
+                padding: 'var(--space-5)',
+                border: `1.5px solid ${plan.id === 'pro' ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                background: plan.id === 'pro' ? 'linear-gradient(145deg, rgba(201,169,97,0.04), var(--color-surface))' : undefined,
+                position: 'relative',
+              }}
+            >
+              {plan.badge && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -10,
+                    right: 'var(--space-4)',
+                    padding: '4px 10px',
+                    background: 'var(--gradient-gold)',
+                    color: 'var(--color-primary-text)',
+                    fontSize: 'var(--text-2xs)',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-full)',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {plan.badge}
+                </div>
+              )}
+
+              <div style={{ marginBottom: 'var(--space-3)' }}>
+                <h3
+                  style={{
+                    fontSize: 'var(--text-xl)',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    marginBottom: 'var(--space-1)',
+                  }}
+                >
+                  {plan.name}
+                </h3>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>
+                  {plan.description}
+                </p>
+              </div>
+
+              {/* Prix */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                {plan.priceTTC === null ? (
+                  <span
+                    className="text-gold"
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: 'var(--text-3xl)',
+                      fontWeight: 800,
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    Gratuit
+                  </span>
+                ) : (
+                  <>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 'var(--text-3xl)',
+                        fontWeight: 500,
+                        color: 'var(--color-text-1)',
+                      }}
+                    >
+                      {plan.priceTTC.toFixed(2)}
+                    </span>
+                    <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>
+                      €TTC / {plan.id === 'carte' ? 'plugin · ' : ''}mois
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {plan.priceHT !== null && (
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 'var(--space-4)' }}>
+                  ({plan.priceHT.toFixed(2)} € HT · TVA 20% incluse)
+                </div>
+              )}
+
+              {/* Features */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
+                {plan.features.map((feat, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
+                    <Check
+                      size={14}
+                      style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: 3 }}
+                      strokeWidth={3}
+                    />
+                    <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-1)', lineHeight: 1.5 }}>
+                      {feat}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <button
+                disabled={isCurrent}
+                className={`btn btn-full btn-lg ${plan.id === 'pro' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => {
+                  if (!isCurrent) {
+                    toast.info('Paiement Stripe à venir à l\'étape 1.7');
+                  }
+                }}
+              >
+                {isCurrent ? 'Plan actuel' : plan.priceTTC === null ? 'Commencer' : 'Choisir ce plan'}
+                {!isCurrent && <ChevronRight size={16} />}
+              </button>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* ── Info ── */}
+      <div className="px-4" style={{ marginTop: 'var(--space-6)' }}>
+        <div
+          className="card"
+          style={{
+            padding: 'var(--space-4)',
+            background: 'var(--color-info-bg)',
+            borderColor: 'var(--color-info)',
+            textAlign: 'center',
+          }}
+        >
+          <Sparkles size={18} style={{ color: 'var(--color-info)', marginBottom: 'var(--space-2)' }} />
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-1)', fontWeight: 600, marginBottom: 4 }}>
+            Sans engagement
+          </p>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5 }}>
+            Résiliable à tout moment · Aucune carte requise pour la découverte · Paiement 100% sécurisé
+          </p>
+        </div>
       </div>
-      <FeedbackButton context="pricing" />
     </div>
   );
-};
-
-export default PricingPage;
+}
