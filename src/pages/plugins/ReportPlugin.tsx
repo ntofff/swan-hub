@@ -408,7 +408,7 @@ const ReportPlugin = () => {
 
           {/* AI Summary */}
           <button onClick={handleAiSummary} disabled={aiLoading || !notes.trim()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-40">
+            className="btn btn-secondary btn-full" style={{ color: "var(--color-primary)" }}>
             {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
             {aiLoading ? "Génération…" : "Résumé IA"}
           </button>
@@ -427,7 +427,7 @@ const ReportPlugin = () => {
                   { id: "sms", icon: Phone, label: "SMS" },
                 ].map((m) => (
                   <button key={m.id} onClick={() => exportAiSummary(m.id)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                    className="btn btn-secondary btn-sm">
                     <m.icon size={10} /> {m.label}
                   </button>
                 ))}
@@ -484,7 +484,7 @@ const ReportPlugin = () => {
         {/* Submit */}
         <button onClick={() => saveReport.mutate()}
           disabled={!title.trim() || saveReport.isPending}
-          className="w-full btn-primary-glow py-3 text-sm disabled:opacity-50 rounded-xl">
+          className="btn btn-primary btn-full">
           {saveReport.isPending ? "Sauvegarde..." : editingId ? "Modifier" : "Enregistrer le rapport"}
         </button>
 

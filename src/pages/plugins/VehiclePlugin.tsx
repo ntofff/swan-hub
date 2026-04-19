@@ -234,7 +234,7 @@ const VehiclePlugin = () => {
   return (
     <div className="fade-in">
       <PageHeader title="Carnet de véhicule" subtitle="Kilométrage & suivi IK" back
-        action={<button onClick={() => { if (tab === "vehicles") setShowVehicleForm(true); else if (tab === "drivers") setShowDriverForm(true); else if (tab === "routes") setShowRouteForm(true); else setShowTripForm(true); }} className="p-2 rounded-xl bg-primary/10 text-primary"><Plus size={18} /></button>} />
+        action={<button onClick={() => { if (tab === "vehicles") setShowVehicleForm(true); else if (tab === "drivers") setShowDriverForm(true); else if (tab === "routes") setShowRouteForm(true); else setShowTripForm(true); }} className="btn btn-icon-sm btn-ghost"><Plus size={18} /></button>} />
       <div className="px-4 md:px-0">
         <div className="flex gap-1 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
           {tabsDef.map(t => (
@@ -287,8 +287,8 @@ const VehiclePlugin = () => {
               );
             })()}
             <div className="flex gap-2">
-              <button onClick={() => addTrip.mutate()} className="flex-1 btn-primary-glow py-2.5 text-sm">Enregistrer</button>
-              <button onClick={() => setShowTripForm(false)} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground text-sm">Annuler</button>
+              <button onClick={() => addTrip.mutate()} className="btn btn-primary" style={{ flex: 1 }}>Enregistrer</button>
+              <button onClick={() => setShowTripForm(false)} className="btn btn-secondary">Annuler</button>
             </div>
           </div>
         )}
@@ -304,8 +304,8 @@ const VehiclePlugin = () => {
             </div>
             <input value={vehicleData.starting_mileage} onChange={e => setVehicleData(d => ({ ...d, starting_mileage: e.target.value }))} placeholder="Km initial" type="number" className={inputCls} />
             <div className="flex gap-2">
-              <button onClick={() => addVehicle.mutate()} disabled={!vehicleData.name.trim()} className="flex-1 btn-primary-glow py-2.5 text-sm disabled:opacity-40">Ajouter</button>
-              <button onClick={() => setShowVehicleForm(false)} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground text-sm">Annuler</button>
+              <button onClick={() => addVehicle.mutate()} disabled={!vehicleData.name.trim()} className="btn btn-primary" style={{ flex: 1 }}>Ajouter</button>
+              <button onClick={() => setShowVehicleForm(false)} className="btn btn-secondary">Annuler</button>
             </div>
           </div>
         )}
@@ -316,8 +316,8 @@ const VehiclePlugin = () => {
             <input value={driverData.name} onChange={e => setDriverData(d => ({ ...d, name: e.target.value }))} placeholder="Nom du conducteur" className={inputCls} />
             <input value={driverData.role} onChange={e => setDriverData(d => ({ ...d, role: e.target.value }))} placeholder="Rôle (optionnel)" className={inputCls} />
             <div className="flex gap-2">
-              <button onClick={() => addDriver.mutate()} disabled={!driverData.name.trim()} className="flex-1 btn-primary-glow py-2.5 text-sm disabled:opacity-40">Ajouter</button>
-              <button onClick={() => setShowDriverForm(false)} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground text-sm">Annuler</button>
+              <button onClick={() => addDriver.mutate()} disabled={!driverData.name.trim()} className="btn btn-primary" style={{ flex: 1 }}>Ajouter</button>
+              <button onClick={() => setShowDriverForm(false)} className="btn btn-secondary">Annuler</button>
             </div>
           </div>
         )}
@@ -332,8 +332,8 @@ const VehiclePlugin = () => {
             </div>
             <input value={routeData.default_distance} onChange={e => setRouteData(d => ({ ...d, default_distance: e.target.value }))} placeholder="Distance par défaut (km)" type="number" className={inputCls} />
             <div className="flex gap-2">
-              <button onClick={() => addRoute.mutate()} disabled={!routeData.name.trim() || !routeData.start_location.trim() || !routeData.end_location.trim()} className="flex-1 btn-primary-glow py-2.5 text-sm disabled:opacity-40">Ajouter</button>
-              <button onClick={() => setShowRouteForm(false)} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground text-sm">Annuler</button>
+              <button onClick={() => addRoute.mutate()} disabled={!routeData.name.trim() || !routeData.start_location.trim() || !routeData.end_location.trim()} className="btn btn-primary" style={{ flex: 1 }}>Ajouter</button>
+              <button onClick={() => setShowRouteForm(false)} className="btn btn-secondary">Annuler</button>
             </div>
           </div>
         )}
@@ -393,7 +393,7 @@ const VehiclePlugin = () => {
               </>
             )}
 
-            <button onClick={() => { setShowTripForm(true); setTab("trips"); }} className="w-full btn-primary-glow py-3 text-sm">+ Nouveau trajet</button>
+            <button onClick={() => { setShowTripForm(true); setTab("trips"); }} className="btn btn-primary btn-full">+ Nouveau trajet</button>
           </div>
         )}
 
@@ -504,7 +504,7 @@ const VehiclePlugin = () => {
                 <option>Ce mois</option><option>3 derniers mois</option><option>Cette année</option><option>Tout</option>
               </select>
             </div>
-            <button className="w-full btn-primary-glow py-3 text-sm">Exporter vers Excel</button>
+            <button className="btn btn-primary btn-full">Exporter vers Excel</button>
           </div>
         )}
       </div>

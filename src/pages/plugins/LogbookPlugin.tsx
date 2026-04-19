@@ -268,12 +268,12 @@ const LogbookPlugin = () => {
           <div className="flex items-center gap-1.5">
             {allEntries.length > 0 && tab === "active" && (
               <button onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
-                className={`p-2 rounded-xl transition-colors ${selectMode ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"}`}>
+                className={`btn btn-icon-sm ${selectMode ? "btn-ghost" : "btn-ghost"}`}>
                 <CheckSquare size={18} />
               </button>
             )}
             <button onClick={() => setShowForm(!showForm)}
-              className={`p-2 rounded-xl transition-colors ${showForm ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+              className={`btn btn-icon-sm ${showForm ? "btn-danger" : "btn-ghost"}`}>
               {showForm ? <X size={18} /> : <Plus size={18} />}
             </button>
           </div>
@@ -305,11 +305,11 @@ const LogbookPlugin = () => {
             </div>
             <div className="flex gap-2">
               <button onClick={handleExportPdf} disabled={exporting}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 text-primary text-xs font-medium disabled:opacity-40">
+                className="btn btn-primary btn-sm" style={{ flex: 1 }}>
                 <FileDown size={14} /> {exporting ? "Export..." : "Export PDF"}
               </button>
               <button onClick={() => setShowShareMenu(!showShareMenu)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-secondary text-foreground text-xs font-medium">
+                className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
                 <Share2 size={14} /> Partager
               </button>
             </div>
@@ -317,7 +317,7 @@ const LogbookPlugin = () => {
               <div className="flex gap-1.5 pt-1">
                 {shareActions.map(s => (
                   <button key={s.id} onClick={() => handleShare(s.id)}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                    className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
                     <s.icon size={12} /> {s.label}
                   </button>
                 ))}
@@ -368,7 +368,7 @@ const LogbookPlugin = () => {
             <textarea value={newEntry} onChange={e => setNewEntry(e.target.value)} placeholder="Contenu de l'entrée..."
               rows={3} className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary" />
             <button onClick={() => addEntry.mutate()} disabled={!newEntry.trim() || addEntry.isPending}
-              className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40">Ajouter</button>
+              className="btn btn-primary btn-full">Ajouter</button>
           </div>
         )}
 
@@ -435,11 +435,11 @@ const LogbookPlugin = () => {
                         rows={3} className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary" />
                       <div className="flex gap-2">
                         <button onClick={confirmEdit} disabled={!editText.trim()}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium disabled:opacity-40">
+                          className="btn btn-primary btn-sm" style={{ flex: 1 }}>
                           <Check size={12} /> Confirmer
                         </button>
                         <button onClick={() => setEditingId(null)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-secondary text-muted-foreground text-xs">
+                          className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
                           <X size={12} /> Annuler
                         </button>
                       </div>
@@ -462,19 +462,19 @@ const LogbookPlugin = () => {
                           <div className="flex items-center gap-0.5 shrink-0">
                             {tab === "active" ? (
                               <>
-                                <button onClick={() => startEdit(e)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors">
+                                <button onClick={() => startEdit(e)} className="btn btn-icon-sm btn-ghost">
                                   <Pencil size={13} />
                                 </button>
-                                <button onClick={() => archiveEntry.mutate(e.id)} className="p-1.5 text-muted-foreground hover:text-warning transition-colors" title="Archiver">
+                                <button onClick={() => archiveEntry.mutate(e.id)} className="btn btn-icon-sm btn-ghost" title="Archiver">
                                   <Archive size={13} />
                                 </button>
                               </>
                             ) : (
                               <>
-                                <button onClick={() => restoreEntry.mutate(e.id)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Restaurer">
+                                <button onClick={() => restoreEntry.mutate(e.id)} className="btn btn-icon-sm btn-ghost" title="Restaurer">
                                   <RotateCcw size={13} />
                                 </button>
-                                <button onClick={() => setDeleteConfirmId(e.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors" title="Supprimer définitivement">
+                                <button onClick={() => setDeleteConfirmId(e.id)} className="btn btn-icon-sm btn-ghost" title="Supprimer définitivement">
                                   <Trash2 size={13} />
                                 </button>
                               </>
@@ -518,9 +518,9 @@ const LogbookPlugin = () => {
           </DialogHeader>
           <DialogFooter className="flex gap-2">
             <button onClick={() => setDeleteConfirmId(null)}
-              className="flex-1 py-2.5 rounded-xl bg-secondary text-muted-foreground text-sm">Annuler</button>
+              className="btn btn-secondary" style={{ flex: 1 }}>Annuler</button>
             <button onClick={() => deleteConfirmId && deleteEntry.mutate(deleteConfirmId)}
-              className="flex-1 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium">Supprimer</button>
+              className="btn btn-danger" style={{ flex: 1 }}>Supprimer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

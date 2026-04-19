@@ -181,13 +181,13 @@ const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any)
 
       {/* Actions under preview */}
       <div className="flex gap-2">
-        <button onClick={onExportPdf} className="flex-1 btn-primary-glow py-2.5 text-sm flex items-center justify-center gap-2">
+        <button onClick={onExportPdf} className="btn btn-primary" style={{ flex: 1 }}>
           <Download size={14} /> Enregistrer PDF
         </button>
-        <button onClick={() => onShare("email")} className="p-2.5 rounded-xl bg-secondary text-muted-foreground"><Mail size={16} /></button>
-        <button onClick={() => onShare("whatsapp")} className="p-2.5 rounded-xl bg-secondary text-muted-foreground"><Phone size={16} /></button>
-        <button onClick={() => onShare("sms")} className="p-2.5 rounded-xl bg-secondary text-muted-foreground"><MessageSquare size={16} /></button>
-        <button onClick={() => onShare("copy")} className="p-2.5 rounded-xl bg-secondary text-muted-foreground"><Copy size={16} /></button>
+        <button onClick={() => onShare("email")} className="btn btn-icon-sm btn-ghost"><Mail size={16} /></button>
+        <button onClick={() => onShare("whatsapp")} className="btn btn-icon-sm btn-ghost"><Phone size={16} /></button>
+        <button onClick={() => onShare("sms")} className="btn btn-icon-sm btn-ghost"><MessageSquare size={16} /></button>
+        <button onClick={() => onShare("copy")} className="btn btn-icon-sm btn-ghost"><Copy size={16} /></button>
       </div>
     </div>
   );
@@ -873,9 +873,9 @@ const QuotesPlugin = () => {
         <PageHeader title={isQuote ? "Détail devis" : "Détail facture"} back
           action={
             <div className="flex gap-1.5">
-              <button onClick={() => setShowPreview(!showPreview)} className={`p-2 rounded-xl transition-colors ${showPreview ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}><Eye size={18} /></button>
-              <button onClick={() => setEditingItem(!editingItem)} className={`p-2 rounded-xl transition-colors ${editingItem ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}><Edit2 size={18} /></button>
-              <button onClick={() => setSelectedItem(null)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><ChevronLeft size={18} /></button>
+              <button onClick={() => setShowPreview(!showPreview)} className="btn btn-icon-sm btn-ghost"><Eye size={18} /></button>
+              <button onClick={() => setEditingItem(!editingItem)} className="btn btn-icon-sm btn-ghost"><Edit2 size={18} /></button>
+              <button onClick={() => setSelectedItem(null)} className="btn btn-icon-sm btn-ghost"><ChevronLeft size={18} /></button>
             </div>
           } />
         <div className="px-4 md:px-0 space-y-4">
@@ -925,7 +925,7 @@ const QuotesPlugin = () => {
                 <textarea value={eNotes} onChange={e => setENotes(e.target.value)} rows={3} placeholder="Notes libres..." className={inputCls} />
               </div>
               <button onClick={() => { if (window.confirm("Sauvegarder les modifications ?")) updateItem.mutate(); }}
-                className="w-full btn-primary-glow py-2.5 text-sm flex items-center justify-center gap-2">
+                className="btn btn-primary btn-full">
                 <Save size={16} /> Sauvegarder
               </button>
             </div>
@@ -1003,7 +1003,7 @@ const QuotesPlugin = () => {
           <div className="space-y-2">
             {isQuote && !["Accepté", "Payé"].includes(selectedItem.status) && (
               <button onClick={() => { if (window.confirm("Convertir ce devis en facture ?")) convertToInvoice.mutate(selectedItem); }}
-                className="w-full btn-primary-glow py-3 text-sm flex items-center justify-center gap-2">
+                className="btn btn-primary btn-full">
                 <ArrowRightLeft size={16} /> Convertir en facture
               </button>
             )}
@@ -1018,14 +1018,14 @@ const QuotesPlugin = () => {
                 </div>
                 {payMethodPick && (
                   <button onClick={() => { if (window.confirm(`Marquer comme payé par ${payMethodPick} ?`)) addPayment.mutate({ invoice: selectedItem, method: payMethodPick }); }}
-                    className="w-full btn-primary-glow py-3 text-sm flex items-center justify-center gap-2">
+                    className="btn btn-primary btn-full">
                     <CreditCard size={16} /> Payé par {payMethodPick}
                   </button>
                 )}
               </div>
             )}
             <button onClick={() => { if (window.confirm("Supprimer définitivement ?")) deleteItem.mutate({ id: selectedItem.id, type: isQuote ? "quotes" : "invoices" }); }}
-              className="w-full py-2.5 text-sm rounded-xl bg-destructive/10 text-destructive flex items-center justify-center gap-2">
+              className="btn btn-danger btn-full">
               <Trash2 size={16} /> Supprimer
             </button>
           </div>
@@ -1041,10 +1041,10 @@ const QuotesPlugin = () => {
       <PageHeader title="Devis & Factures" subtitle="Facturation complète" back
         action={
           <div className="flex gap-1.5">
-            <button onClick={() => setShowExport(!showExport)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><Download size={18} /></button>
-            <button onClick={() => setShowShare(!showShare)} className="p-2 rounded-xl bg-secondary text-muted-foreground"><Share2 size={18} /></button>
+            <button onClick={() => setShowExport(!showExport)} className="btn btn-icon-sm btn-ghost"><Download size={18} /></button>
+            <button onClick={() => setShowShare(!showShare)} className="btn btn-icon-sm btn-ghost"><Share2 size={18} /></button>
             <button onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (tab === "paiements") setShowPayForm(!showPayForm); else if (!["dashboard", "settings"].includes(tab)) setShowForm(!showForm); }}
-              className="p-2 rounded-xl bg-primary/10 text-primary"><Plus size={18} /></button>
+              className="btn btn-icon-sm btn-ghost"><Plus size={18} /></button>
           </div>
         } />
       <div className="px-4 md:px-0">
@@ -1057,8 +1057,8 @@ const QuotesPlugin = () => {
               <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={exportSections[k]} onChange={e => setExportSections({ ...exportSections, [k]: e.target.checked })} className="rounded" />{k.charAt(0).toUpperCase() + k.slice(1)}</label>
             ))}
             <div className="flex gap-2">
-              <button onClick={() => handleExport("pdf")} className="flex-1 btn-primary-glow py-2 text-sm">PDF</button>
-              <button onClick={() => handleExport("csv")} className="flex-1 py-2 text-sm rounded-xl bg-secondary text-foreground">Excel</button>
+              <button onClick={() => handleExport("pdf")} className="btn btn-primary btn-sm" style={{ flex: 1 }}>PDF</button>
+              <button onClick={() => handleExport("csv")} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>Excel</button>
             </div>
           </div>
         )}
@@ -1151,7 +1151,7 @@ const QuotesPlugin = () => {
               <textarea value={sLegal} onChange={e => setSLegal(e.target.value)} rows={3} placeholder="Mentions légales affichées sur devis/factures..." className={inputCls} />
             </div>
 
-            <button onClick={() => saveSettings.mutate()} className="w-full btn-primary-glow py-3 text-sm flex items-center justify-center gap-2">
+            <button onClick={() => saveSettings.mutate()} className="btn btn-primary btn-full">
               <Check size={16} /> Sauvegarder les réglages
             </button>
           </div>
@@ -1222,8 +1222,8 @@ const QuotesPlugin = () => {
                 <input value={cEmail} onChange={e => setCEmail(e.target.value)} placeholder="Email" type="email" className={inputCls} />
                 <input value={cPhone} onChange={e => setCPhone(e.target.value)} placeholder="Téléphone" type="tel" className={inputCls} />
                 <div className="flex gap-2">
-                  <button onClick={() => addClient.mutate()} disabled={!cName.trim()} className="flex-1 btn-primary-glow py-2.5 text-sm disabled:opacity-40">{editingClient ? "Modifier" : "Ajouter"}</button>
-                  <button onClick={resetClientForm} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground"><X size={16} /></button>
+                  <button onClick={() => addClient.mutate()} disabled={!cName.trim()} className="btn btn-primary" style={{ flex: 1 }}>{editingClient ? "Modifier" : "Ajouter"}</button>
+                  <button onClick={resetClientForm} className="btn btn-icon-sm btn-ghost"><X size={16} /></button>
                 </div>
               </div>
             )}
@@ -1236,8 +1236,8 @@ const QuotesPlugin = () => {
                   <p className="text-[10px] text-muted-foreground">{[c.siret, c.email, c.phone].filter(Boolean).join(" · ") || "—"}</p>
                   {c.address && <p className="text-[10px] text-muted-foreground">{c.address}</p>}
                 </div>
-                <button onClick={() => editClientFn(c)} className="p-1.5 rounded-lg bg-secondary text-muted-foreground"><Edit2 size={14} /></button>
-                <button onClick={() => { if (window.confirm(`Supprimer "${c.name}" ?`)) deleteClient.mutate(c.id); }} className="p-1.5 rounded-lg bg-destructive/10 text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => editClientFn(c)} className="btn btn-icon-sm btn-ghost"><Edit2 size={14} /></button>
+                <button onClick={() => { if (window.confirm(`Supprimer "${c.name}" ?`)) deleteClient.mutate(c.id); }} className="btn btn-icon-sm btn-danger"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -1307,7 +1307,7 @@ const QuotesPlugin = () => {
                   </div>
                 )}
 
-                <button onClick={() => addQuote.mutate()} disabled={!fTitle.trim()} className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40">Créer le devis</button>
+                <button onClick={() => addQuote.mutate()} disabled={!fTitle.trim()} className="btn btn-primary btn-full">Créer le devis</button>
               </div>
             )}
 
@@ -1371,7 +1371,7 @@ const QuotesPlugin = () => {
                   </div>
                 )}
 
-                <button onClick={() => addInvoice.mutate()} disabled={!fTitle.trim()} className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40">Créer la facture</button>
+                <button onClick={() => addInvoice.mutate()} disabled={!fTitle.trim()} className="btn btn-primary btn-full">Créer la facture</button>
               </div>
             )}
 
@@ -1464,7 +1464,7 @@ const QuotesPlugin = () => {
 
                 {!pConfirmStep ? (
                   <button onClick={() => { if (!pTitle.trim() || !pAmountHt) { toast.error("Titre et montant requis"); return; } setPConfirmStep(true); }}
-                    className="w-full py-2.5 text-sm rounded-xl bg-secondary text-foreground flex items-center justify-center gap-2">
+                    className="btn btn-secondary btn-full">
                     <Eye size={16} /> Vérifier avant validation
                   </button>
                 ) : (
@@ -1478,10 +1478,10 @@ const QuotesPlugin = () => {
                       <p className="text-muted-foreground mt-1">Une facture n° {generateNumber("invoice")} sera automatiquement créée.</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => addStandalonePayment.mutate()} className="flex-1 btn-primary-glow py-2.5 text-sm flex items-center justify-center gap-2">
+                      <button onClick={() => addStandalonePayment.mutate()} className="btn btn-primary" style={{ flex: 1 }}>
                         <Check size={16} /> Valider
                       </button>
-                      <button onClick={() => setPConfirmStep(false)} className="px-4 py-2.5 rounded-xl bg-secondary text-muted-foreground"><X size={16} /></button>
+                      <button onClick={() => setPConfirmStep(false)} className="btn btn-icon-sm btn-ghost"><X size={16} /></button>
                     </div>
                   </div>
                 )}

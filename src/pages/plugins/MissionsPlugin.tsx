@@ -213,7 +213,7 @@ const MissionsPlugin = () => {
       <PageHeader title="Missions" subtitle="Gérer les affectations" back
         action={
           <button onClick={() => setShowForm(!showForm)}
-            className={`p-2 rounded-xl transition-colors ${showForm ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+            className={`btn btn-icon-sm ${showForm ? "btn-danger" : "btn-ghost"}`}>
             {showForm ? <X size={18} /> : <Plus size={18} />}
           </button>
         } />
@@ -294,7 +294,7 @@ const MissionsPlugin = () => {
             )}
 
             <button onClick={() => addMission.mutate()} disabled={!title.trim() || addMission.isPending}
-              className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40">Créer la mission</button>
+              className="btn btn-primary btn-full">Créer la mission</button>
           </div>
         )}
 
@@ -385,11 +385,11 @@ const MissionsPlugin = () => {
                       rows={2} className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary" />
                     <div className="flex gap-2">
                       <button onClick={confirmEdit} disabled={!eTitle.trim()}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium disabled:opacity-40">
+                        className="btn btn-primary btn-sm" style={{ flex: 1 }}>
                         <Check size={12} /> Confirmer
                       </button>
                       <button onClick={() => setEditingId(null)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-secondary text-muted-foreground text-xs">
+                        className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
                         <X size={12} /> Annuler
                       </button>
                     </div>
@@ -449,27 +449,27 @@ const MissionsPlugin = () => {
                         {tab === "active" && (
                           <>
                             <button onClick={() => exportToCalendar(m)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                              className="btn btn-secondary btn-sm">
                               <CalendarPlus size={12} /> Calendrier
                             </button>
                             {m.status !== "Terminé" && (
                               <button onClick={() => handleComplete(m)}
-                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-500/10 text-[10px] text-green-500 hover:bg-green-500/20 transition-colors">
+                                className="btn btn-secondary btn-sm">
                                 <Check size={12} /> Terminer
                               </button>
                             )}
                             {m.status === "Terminé" && (
                               <button onClick={() => { if (window.confirm("Archiver cette mission ?")) archiveMission.mutate(m.id); }}
-                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                                className="btn btn-secondary btn-sm">
                                 <Archive size={12} /> Archiver
                               </button>
                             )}
                             <button onClick={() => startEdit(m)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-primary transition-colors">
+                              className="btn btn-secondary btn-sm">
                               <Pencil size={12} /> Modifier
                             </button>
                             <button onClick={() => { if (window.confirm("Supprimer cette mission ?")) deleteMission.mutate(m.id); }}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+                              className="btn btn-icon-sm btn-ghost">
                               <Trash2 size={12} />
                             </button>
                           </>
@@ -477,11 +477,11 @@ const MissionsPlugin = () => {
                         {tab === "archived" && (
                           <>
                             <button onClick={() => unarchiveMission.mutate(m.id)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary/10 text-[10px] text-primary transition-colors">
+                              className="btn btn-secondary btn-sm">
                               <Archive size={12} /> Restaurer
                             </button>
                             <button onClick={() => { if (window.confirm("Supprimer définitivement ?")) deleteMission.mutate(m.id); }}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+                              className="btn btn-icon-sm btn-ghost">
                               <Trash2 size={12} />
                             </button>
                           </>

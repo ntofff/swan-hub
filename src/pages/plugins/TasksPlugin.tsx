@@ -353,11 +353,11 @@ const TasksPlugin = () => {
         action={
           <div className="flex items-center gap-1.5">
             <button onClick={() => setViewMode(viewMode === "list" ? "compact" : "list")}
-              className="p-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+              className="btn btn-icon-sm btn-ghost">
               {viewMode === "list" ? <LayoutGrid size={16} /> : <LayoutList size={16} />}
             </button>
             <button onClick={() => setShowForm(!showForm)}
-              className={`p-2 rounded-xl transition-all ${showForm ? "bg-destructive/10 text-destructive rotate-45" : "bg-primary/10 text-primary"}`}>
+              className={`btn btn-icon-sm ${showForm ? "btn-danger" : "btn-ghost"} ${showForm ? "rotate-45" : ""}`}>
               <Plus size={18} />
             </button>
           </div>
@@ -414,7 +414,7 @@ const TasksPlugin = () => {
             )}
 
             <button type="button" onClick={() => addTask.mutate()} disabled={!input.trim() || addTask.isPending}
-              className="w-full btn-primary-glow py-2.5 text-sm disabled:opacity-40 transition-all active:scale-95">Ajouter</button>
+              className="btn btn-primary btn-full">Ajouter</button>
           </div>
         )}
 
@@ -523,11 +523,11 @@ const TasksPlugin = () => {
                     </div>
                     <div className="flex gap-2">
                       <button onClick={confirmEdit} disabled={!editText.trim()}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium disabled:opacity-40 active:scale-95 transition-all">
+                        className="btn btn-primary btn-sm" style={{ flex: 1 }}>
                         <Check size={12} /> Confirmer
                       </button>
                       <button onClick={() => setEditingId(null)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-secondary text-muted-foreground text-xs active:scale-95 transition-all">
+                        className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
                         <X size={12} /> Annuler
                       </button>
                     </div>
@@ -552,27 +552,27 @@ const TasksPlugin = () => {
                       {tab === "active" && (
                         <>
                           <button onClick={() => moveTask.mutate({ id: t.id, direction: "up" })} disabled={idx === 0}
-                            className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"><ArrowUp size={12} /></button>
+                            className="btn btn-icon-sm btn-ghost"><ArrowUp size={12} /></button>
                           <button onClick={() => moveTask.mutate({ id: t.id, direction: "down" })} disabled={idx === filtered.length - 1}
-                            className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"><ArrowDown size={12} /></button>
-                          <button onClick={() => setShareTask(t)} className="p-1 text-muted-foreground hover:text-primary transition-colors" title="Partager">
+                            className="btn btn-icon-sm btn-ghost"><ArrowDown size={12} /></button>
+                          <button onClick={() => setShareTask(t)} className="btn btn-icon-sm btn-ghost" title="Partager">
                             <Share2 size={13} />
                           </button>
-                          <button onClick={() => startEdit(t)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil size={13} /></button>
-                          <button onClick={() => archiveTask.mutate(t.id)} className="p-1.5 text-muted-foreground hover:text-warning transition-colors" title="Archiver">
+                          <button onClick={() => startEdit(t)} className="btn btn-icon-sm btn-ghost"><Pencil size={13} /></button>
+                          <button onClick={() => archiveTask.mutate(t.id)} className="btn btn-icon-sm btn-ghost" title="Archiver">
                             <Archive size={13} />
                           </button>
                           <button onClick={() => setDeleteConfirm(t.id)}
-                            className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={13} /></button>
+                            className="btn btn-icon-sm btn-ghost"><Trash2 size={13} /></button>
                         </>
                       )}
                       {tab === "archived" && (
                         <>
-                          <button onClick={() => unarchiveTask.mutate(t.id)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Restaurer">
+                          <button onClick={() => unarchiveTask.mutate(t.id)} className="btn btn-icon-sm btn-ghost" title="Restaurer">
                             <Archive size={13} />
                           </button>
                           <button onClick={() => setDeleteConfirm(t.id)}
-                            className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={13} /></button>
+                            className="btn btn-icon-sm btn-ghost"><Trash2 size={13} /></button>
                         </>
                       )}
                     </div>
@@ -604,9 +604,9 @@ const TasksPlugin = () => {
           </DialogHeader>
           <DialogFooter className="flex-row gap-2">
             <button onClick={() => setDeleteConfirm(null)}
-              className="flex-1 py-2.5 rounded-lg bg-secondary text-sm font-medium active:scale-95 transition-all">Annuler</button>
+              className="btn btn-secondary" style={{ flex: 1 }}>Annuler</button>
             <button onClick={() => deleteConfirm && deleteTask.mutate(deleteConfirm)}
-              className="flex-1 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium active:scale-95 transition-all">Supprimer</button>
+              className="btn btn-danger" style={{ flex: 1 }}>Supprimer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -642,7 +642,7 @@ const TasksPlugin = () => {
           </div>
           {navigator.share && (
             <button onClick={() => shareTask && shareCalendar(shareTask, "native")}
-              className="w-full py-2.5 rounded-lg btn-primary-glow text-sm font-medium active:scale-95 transition-all mt-1">
+              className="btn btn-primary btn-full mt-1">
               Partage natif
             </button>
           )}
