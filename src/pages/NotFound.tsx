@@ -8,9 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Bell, ChevronLeft, Home as HomeIcon, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Re-exports pour ResetPassword et UnlockAccount
-export { ResetPassword, UnlockAccount } from './auth/ForgotPassword';
-
 // ════════════════════════════════════════════════════════════
 // 404 NOT FOUND
 // ════════════════════════════════════════════════════════════
