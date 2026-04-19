@@ -24,14 +24,17 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
 
   const createFolder = useMutation({
     mutationFn: async () => {
-      if (!user || !name.trim()) return;
+      if (!user) throw new Error("Session introuvable. Reconnectez-vous.");
+      if (!name.trim()) throw new Error("Le nom du dossier est requis.");
+
+      const nextSortOrder = folders.reduce((max, folder) => Math.max(max, Number(folder.sort_order) || 0), -1) + 1;
       const { error } = await supabase.from("report_folders").insert({
         user_id: user.id,
         name: name.trim(),
         icon,
         color,
-        sort_order: folders.length,
-      });
+        sort_order: nextSortOrder,
+      }).select("id").single();
       if (error) throw error;
     },
     onSuccess: () => {
@@ -41,7 +44,11 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
       setColor("38 50% 58%");
       toast.success("Dossier créé");
     },
-    onError: () => toast.error("Erreur"),
+    onError: (err: any) => {
+      console.error("Erreur création dossier:", err);
+      const message = err?.message || "Impossible de créer le dossier";
+      toast.error(message);
+    },
   });
 
   const deleteFolder = useMutation({
