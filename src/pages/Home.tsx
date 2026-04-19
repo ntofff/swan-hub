@@ -14,8 +14,11 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
 import { FeedbackButton } from '@/components/FeedbackButton';
+import { TutorialButton } from '@/components/TutorialButton';
+import { VoicePlayer } from '@/components/VoicePlayer';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVE_PLUGINS, SWAN_COPY } from '@/config/tokens';
+import { HOME_TUTORIAL } from '@/config/tutorials';
 
 // ── Map des icônes (Lucide) ───────────────────────────────────
 const ICON_MAP: Record<string, any> = {
@@ -196,6 +199,7 @@ export default function HomePage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <TutorialButton {...HOME_TUTORIAL} />
           <button
             className="btn-icon-sm btn btn-ghost"
             onClick={() => navigate('/notifications')}
@@ -224,7 +228,7 @@ export default function HomePage() {
       {/* ── Brief SWAN ─────────────────────────── */}
       <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
         <div className="field-zone-header">
-          <h2 className="field-zone-title">À surveiller</h2>
+          <h2 className="field-zone-title">Votre point du jour</h2>
           <span className="field-zone-help">Aujourd'hui</span>
         </div>
         <SwanBrief
@@ -234,6 +238,7 @@ export default function HomePage() {
           isVip={isVip}
           onActionTasks={() => navigate('/plugins/tasks')}
           onActionQuotes={() => navigate('/plugins/quotes')}
+          onActionMissions={() => navigate('/plugins/missions')}
         />
       </section>
 
@@ -360,9 +365,10 @@ interface SwanBriefProps {
   isVip: boolean;
   onActionTasks: () => void;
   onActionQuotes: () => void;
+  onActionMissions: () => void;
 }
 
-function SwanBrief({ firstName, loading, info, isVip, onActionTasks, onActionQuotes }: SwanBriefProps) {
+function SwanBrief({ firstName, loading, info, isVip, onActionTasks, onActionQuotes, onActionMissions }: SwanBriefProps) {
   if (loading) {
     return (
       <div className="card" style={{ padding: 'var(--space-4)' }}>
@@ -378,50 +384,57 @@ function SwanBrief({ firstName, loading, info, isVip, onActionTasks, onActionQuo
     );
   }
 
-  // Construction du message contextuel
-  const getMessage = (): string => {
-    if (!info || (info.overdueTasks === 0 && info.overdueInvoices === 0 && info.todayTasks === 0 && info.activeMissions === 0)) {
-      return isVip
-        ? `Ravi de vous retrouver${firstName ? ', ' + firstName : ''}. Votre journée s'annonce calme. Profitez-en pour avancer sur un sujet de fond ou prendre un café.`
-        : `Bonne journée${firstName ? ' ' + firstName : ''}. Rien d'urgent à signaler pour le moment. Je reste à votre disposition.`;
-    }
+  const amountStr = (info?.pendingAmount || 0).toLocaleString('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 
-    const parts: string[] = [];
+  const actionItems = [
+    ...(info?.overdueTasks > 0
+      ? [{
+          label: `${info.overdueTasks} tâche${info.overdueTasks > 1 ? 's' : ''} en retard`,
+          detail: 'À traiter en priorité pour éviter l’oubli.',
+          button: 'Ouvrir les tâches',
+          onClick: onActionTasks,
+        }]
+      : info?.todayTasks > 0
+      ? [{
+          label: `${info.todayTasks} tâche${info.todayTasks > 1 ? 's' : ''} prévue${info.todayTasks > 1 ? 's' : ''} aujourd’hui`,
+          detail: 'À faire dans la journée.',
+          button: 'Voir les tâches',
+          onClick: onActionTasks,
+        }]
+      : []),
+    ...(info?.overdueInvoices > 0
+      ? [{
+          label: `${info.overdueInvoices} facture${info.overdueInvoices > 1 ? 's' : ''} à relancer`,
+          detail: `${amountStr} € en attente de paiement.`,
+          button: 'Voir les factures',
+          onClick: onActionQuotes,
+        }]
+      : []),
+    ...(info?.activeMissions > 0
+      ? [{
+          label: `${info.activeMissions} mission${info.activeMissions > 1 ? 's' : ''} en cours`,
+          detail: 'Gardez un oeil sur ce qui est ouvert.',
+          button: 'Voir les missions',
+          onClick: onActionMissions,
+        }]
+      : []),
+  ];
 
-    if (info.overdueTasks > 0) {
-      parts.push(
-        `Vous avez ${info.overdueTasks} tâche${info.overdueTasks > 1 ? 's' : ''} en retard`
-      );
-    } else if (info.todayTasks > 0) {
-      parts.push(
-        `${info.todayTasks} tâche${info.todayTasks > 1 ? 's' : ''} à traiter aujourd'hui`
-      );
-    }
-
-    if (info.overdueInvoices > 0) {
-      const amountStr = info.pendingAmount.toLocaleString('fr-FR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-      parts.push(
-        `${info.overdueInvoices} facture${info.overdueInvoices > 1 ? 's' : ''} en attente de paiement (${amountStr} €)`
-      );
-    }
-
-    if (info.activeMissions > 0 && parts.length < 2) {
-      parts.push(`${info.activeMissions} mission${info.activeMissions > 1 ? 's' : ''} en cours`);
-    }
-
-    const intro = isVip && firstName
-      ? `Bonjour ${firstName}. `
-      : firstName
-      ? `Voici votre point du jour. `
-      : `Voici votre point du jour. `;
-
-    return intro + parts.join(', ') + '.';
-  };
-
+  const hasActions = actionItems.length > 0;
   const hasUrgent = info?.hasUrgent ?? false;
+  const intro = hasActions
+    ? firstName
+      ? `Voici votre point du jour, ${firstName}.`
+      : 'Voici votre point du jour.'
+    : isVip
+    ? `Ravi de vous retrouver${firstName ? ', ' + firstName : ''}. Votre journée s'annonce calme.`
+    : `Bonne journée${firstName ? ' ' + firstName : ''}. Rien d'urgent à signaler pour le moment.`;
+  const voiceText = hasActions
+    ? `${intro} ${actionItems.map((item) => `${item.label}. ${item.detail}`).join(' ')}`
+    : `${intro} Je reste à votre disposition.`;
 
   return (
     <div className={`card ${hasUrgent ? 'card-glow' : ''}`} style={{ padding: 'var(--space-4)' }}>
@@ -446,32 +459,62 @@ function SwanBrief({ firstName, loading, info, isVip, onActionTasks, onActionQuo
             </span>
           </div>
 
+          <div style={{ marginBottom: 'var(--space-3)' }}>
+            <VoicePlayer text={voiceText} label="Écouter" compact />
+          </div>
+
           <p
             style={{
               fontSize: 'var(--text-sm)',
               color: 'var(--color-text-1)',
               lineHeight: 1.6,
-              marginBottom: info?.hasUrgent ? 'var(--space-3)' : 0,
+              marginBottom: hasActions ? 'var(--space-3)' : 0,
             }}
           >
-            {getMessage()}
+            {intro}
           </p>
 
-          {/* Actions rapides si urgence */}
-          {hasUrgent && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-              {info.overdueTasks > 0 && (
-                <button className="btn btn-sm btn-secondary" onClick={onActionTasks}>
-                  Voir les tâches
-                  <ChevronRight size={14} />
-                </button>
-              )}
-              {info.overdueInvoices > 0 && (
-                <button className="btn btn-sm btn-secondary" onClick={onActionQuotes}>
-                  Voir les factures
-                  <ChevronRight size={14} />
-                </button>
-              )}
+          {hasActions && (
+            <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+              {actionItems.map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    display: 'grid',
+                    gap: 'var(--space-2)',
+                    padding: 'var(--space-3)',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start' }}>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: 'var(--radius-full)',
+                        background: 'var(--color-primary)',
+                        marginTop: 7,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-text-1)' }}>
+                        {item.label}
+                      </p>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
+                        {item.detail}
+                      </p>
+                    </div>
+                  </div>
+                  <button className="btn btn-sm btn-secondary btn-full" onClick={item.onClick}>
+                    {item.button}
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -2,6 +2,8 @@ import { useState, useMemo, useCallback, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { TutorialButton } from "@/components/TutorialButton";
+import { TOOL_TUTORIALS } from "@/config/tutorials";
 import {
   Plus, Check, Search, Trash2, Pencil, X, Clock, MapPin,
   AlertTriangle, Calendar, Archive, ChevronDown, ChevronUp,
@@ -355,6 +357,7 @@ const TasksPlugin = () => {
       <PageHeader title="Tâches" subtitle="À faire, priorités et dates limites" back
         action={
           <div className="flex items-center gap-1.5">
+            <TutorialButton {...TOOL_TUTORIALS.tasks} />
             <button onClick={() => setViewMode(viewMode === "list" ? "compact" : "list")}
               className="btn btn-icon-sm btn-ghost">
               {viewMode === "list" ? <LayoutGrid size={16} /> : <LayoutList size={16} />}

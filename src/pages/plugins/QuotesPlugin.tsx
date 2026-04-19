@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { TutorialButton } from "@/components/TutorialButton";
+import { TOOL_TUTORIALS } from "@/config/tutorials";
 import {
   Plus, ChevronRight, ChevronLeft, FileText, Receipt, CreditCard,
   ArrowRightLeft, Users, BarChart3, Download, Share2, Copy, Mail,
@@ -879,6 +881,7 @@ const QuotesPlugin = () => {
         <PageHeader title={isQuote ? "Détail devis" : "Détail facture"} back
           action={
             <div className="flex gap-1.5">
+              <TutorialButton {...TOOL_TUTORIALS.quotes} />
               <button onClick={() => setShowPreview(!showPreview)} className="btn btn-icon-sm btn-ghost"><Eye size={18} /></button>
               <button onClick={() => setEditingItem(!editingItem)} className="btn btn-icon-sm btn-ghost"><Edit2 size={18} /></button>
               <button onClick={() => setSelectedItem(null)} className="btn btn-icon-sm btn-ghost"><ChevronLeft size={18} /></button>
@@ -1050,6 +1053,7 @@ const QuotesPlugin = () => {
       <PageHeader title="Devis & Factures" subtitle="Créer, encaisser, suivre" back
         action={
           <div className="flex gap-1.5">
+            <TutorialButton {...TOOL_TUTORIALS.quotes} />
             <button onClick={() => setShowExport(!showExport)} className="btn btn-icon-sm btn-ghost"><Download size={18} /></button>
             <button onClick={() => setShowShare(!showShare)} className="btn btn-icon-sm btn-ghost"><Share2 size={18} /></button>
             {canCreateForTab && (

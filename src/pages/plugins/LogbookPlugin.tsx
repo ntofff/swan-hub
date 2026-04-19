@@ -1,6 +1,8 @@
 import { useState, useMemo, type CSSProperties } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { TutorialButton } from "@/components/TutorialButton";
+import { TOOL_TUTORIALS } from "@/config/tutorials";
 import {
   Plus, Search, Trash2, Pencil, X, Check, Clock,
   AlertTriangle, CheckSquare, Square, FileDown, Share2,
@@ -266,6 +268,7 @@ const LogbookPlugin = () => {
       <PageHeader title="Journal de bord" subtitle="Notes datées et partageables" back
         action={
           <div className="flex items-center gap-1.5">
+            <TutorialButton {...TOOL_TUTORIALS.logbook} />
             {allEntries.length > 0 && tab === "active" && (
               <button onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
                 className={`btn btn-icon-sm ${selectMode ? "btn-ghost" : "btn-ghost"}`}>

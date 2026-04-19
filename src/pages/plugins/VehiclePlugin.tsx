@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { TutorialButton } from "@/components/TutorialButton";
+import { TOOL_TUTORIALS } from "@/config/tutorials";
 import { Plus, Car, Users, Route, Download, BarChart3, ChevronRight, X, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -247,12 +249,15 @@ const VehiclePlugin = () => {
     <div className="fade-in">
       <PageHeader title="Carnet de véhicule" subtitle="Trajets, véhicules et frais km" back
         action={
-          <button
-            onClick={toggleCreate}
-            className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
-            aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
-            {createOpen ? <X size={22} /> : <Plus size={24} />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <TutorialButton {...TOOL_TUTORIALS.vehicle} />
+            <button
+              onClick={toggleCreate}
+              className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
+              aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
+              {createOpen ? <X size={22} /> : <Plus size={24} />}
+            </button>
+          </div>
         } />
       <div className="field-workspace">
         <div className="field-simple-note">

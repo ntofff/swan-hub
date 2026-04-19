@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { TutorialButton } from "@/components/TutorialButton";
+import { TOOL_TUTORIALS } from "@/config/tutorials";
 import {
   Mic, MicOff, Camera, Clock, MapPin, Sparkles,
   Trash2, Loader2, X, Copy, Mail, MessageSquare, Phone,
@@ -371,7 +373,12 @@ const ReportPlugin = () => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Outil Rapport" subtitle="Créer et consulter vos rapports" back />
+      <PageHeader
+        title="Outil Rapport"
+        subtitle="Créer et consulter vos rapports"
+        back
+        action={<TutorialButton {...TOOL_TUTORIALS.report} />}
+      />
       <div className="field-workspace">
         <div className="field-simple-note">
           Mode simple : titre, lieu, contenu, puis enregistrement. Les dossiers, couleurs et photos restent optionnels.

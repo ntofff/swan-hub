@@ -2,6 +2,8 @@ import { useState, useMemo, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { TutorialButton } from "@/components/TutorialButton";
+import { TOOL_TUTORIALS } from "@/config/tutorials";
 import {
   Plus, Search, Trash2, Pencil, X, Check, Clock, MapPin,
   ChevronDown, ChevronUp, Archive, CalendarPlus, User,
@@ -215,11 +217,14 @@ const MissionsPlugin = () => {
     <div className="fade-in">
       <PageHeader title="Missions" subtitle="Suivi clients, lieux et échéances" back
         action={
-          <button onClick={() => setShowForm(!showForm)}
-            className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
-            aria-label={showForm ? "Fermer le formulaire" : "Ajouter une mission"}>
-            {showForm ? <X size={22} /> : <Plus size={24} />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <TutorialButton {...TOOL_TUTORIALS.missions} />
+            <button onClick={() => setShowForm(!showForm)}
+              className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
+              aria-label={showForm ? "Fermer le formulaire" : "Ajouter une mission"}>
+              {showForm ? <X size={22} /> : <Plus size={24} />}
+            </button>
+          </div>
         } />
 
       <div className="field-workspace">
