@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, type CSSProperties } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import {
@@ -87,8 +88,10 @@ const generateICS = (task: any) => {
 const TasksPlugin = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const openNewTask = searchParams.get("new") === "1";
   const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(openNewTask);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [tab, setTab] = useState<Tab>("active");
   const [shareTask, setShareTask] = useState<any>(null);

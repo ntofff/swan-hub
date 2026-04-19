@@ -4,7 +4,7 @@
 // ============================================================
 
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, BarChart3, User, Shield } from 'lucide-react';
+import { Home, LayoutGrid, BarChart3, User, Shield, FileText, CheckSquare, Receipt } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 // ── Items de navigation ───────────────────────────────────────
@@ -25,6 +25,12 @@ const NAV_ITEMS: NavItem[] = [
 const ADMIN_ITEM: NavItem = {
   path: '/admin', label: 'Admin', icon: Shield, adminOnly: true,
 };
+
+const QUICK_CREATE_ITEMS = [
+  { path: '/plugins/report', label: 'Rapport', icon: FileText },
+  { path: '/plugins/tasks?new=1', label: 'Tâche', icon: CheckSquare },
+  { path: '/plugins/quotes?tab=devis&new=1', label: 'Devis', icon: Receipt },
+];
 
 // ── Composant ─────────────────────────────────────────────────
 export function AppLayout() {
@@ -80,6 +86,20 @@ export function AppLayout() {
           ))}
         </nav>
 
+        <div className="sidebar-quick-create">
+          <div className="sidebar-quick-label">Créer vite</div>
+          {QUICK_CREATE_ITEMS.map((item) => (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className="sidebar-quick-item"
+            >
+              <item.icon size={16} strokeWidth={2.2} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+
         <div style={{ marginTop: 'auto', padding: 'var(--space-4)' }}>
           <div
             style={{
@@ -118,4 +138,3 @@ export function AppLayout() {
     </div>
   );
 }
-

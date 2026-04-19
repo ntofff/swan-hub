@@ -1,4 +1,5 @@
 import { useState, useMemo, type CSSProperties } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import {
@@ -25,9 +26,11 @@ const inputSmCls = "field-input field-input-compact";
 const MissionsPlugin = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const openNewMission = searchParams.get("new") === "1";
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("active");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(openNewMission);
   const [showOptions, setShowOptions] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 

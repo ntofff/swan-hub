@@ -3,13 +3,13 @@
 // Brief SWAN · Plugins rapides · KPIs du jour · Activité récente
 // ============================================================
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   FileText, CheckSquare, Target, Receipt, BookOpen, Car,
   Users, Wallet, Calendar, Banknote, Timer, Package, ShieldCheck,
-  Sparkles, ChevronRight, Sun, Moon, Bell, Crown,
+  Sparkles, ChevronRight, Sun, Moon, Bell, Crown, Plus, Route,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
@@ -176,6 +176,13 @@ export default function HomePage() {
     setTheme(isDark ? 'sun' : 'night-gold');
   };
 
+  const quickActions = [
+    { label: 'Rapport', desc: 'Terrain + photos', icon: FileText, path: '/plugins/report', color: '38 50% 58%' },
+    { label: 'Tâche', desc: 'À faire maintenant', icon: CheckSquare, path: '/plugins/tasks?new=1', color: '142 71% 45%' },
+    { label: 'Devis', desc: 'Client + montant', icon: Receipt, path: '/plugins/quotes?tab=devis&new=1', color: '270 50% 60%' },
+    { label: 'Trajet', desc: 'Km + IK', icon: Route, path: '/plugins/vehicle?tab=trips&new=1', color: '38 92% 50%' },
+  ];
+
   return (
     <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
       {/* ── Header ─────────────────────────────── */}
@@ -222,6 +229,49 @@ export default function HomePage() {
           onActionTasks={() => navigate('/plugins/tasks')}
           onActionQuotes={() => navigate('/plugins/quotes')}
         />
+      </section>
+
+      {/* ── Actions rapides terrain ───────────── */}
+      <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 'var(--space-3)',
+          }}
+        >
+          <h2 className="text-label">Actions rapides</h2>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+            3 touches max
+          </span>
+        </div>
+
+        <div className="field-responsive-grid">
+          {quickActions.map((action) => (
+            <button
+              key={action.label}
+              onClick={() => navigate(action.path)}
+              className="plugin-record flex items-center gap-3 text-left"
+              style={{ '--record-color': `hsl(${action.color})` } as CSSProperties}
+            >
+              <div
+                className="plugin-icon-wrapper"
+                style={{ backgroundColor: `hsl(${action.color} / 0.12)` }}
+              >
+                <action.icon size={22} style={{ color: `hsl(${action.color})` }} strokeWidth={2.2} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="plugin-record-title flex items-center gap-2">
+                  <Plus size={15} />
+                  {action.label}
+                </div>
+                <div className="plugin-record-meta mt-1">{action.desc}</div>
+              </div>
+              <ChevronRight size={18} style={{ color: 'var(--color-text-3)', flexShrink: 0 }} />
+            </button>
+          ))}
+        </div>
       </section>
 
       {/* ── Plugins actifs (grille) ────────────── */}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { Plus, Car, Users, Route, Download, BarChart3, ChevronRight, X, Pencil, Trash2 } from "lucide-react";
@@ -26,10 +27,14 @@ const calcIK = (km: number, cv: number = 5) => {
 const VehiclePlugin = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState("dashboard");
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab = tabsDef.some((t) => t.id === requestedTab) ? requestedTab! : (searchParams.get("new") === "1" ? "trips" : "dashboard");
+  const openNewTrip = searchParams.get("new") === "1";
+  const [tab, setTab] = useState(initialTab);
 
   // Forms
-  const [showTripForm, setShowTripForm] = useState(false);
+  const [showTripForm, setShowTripForm] = useState(openNewTrip);
   const [tripData, setTripData] = useState({ start_location: "", end_location: "", start_mileage: "", end_mileage: "", purpose: "", vehicle_id: "", driver_id: "" });
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [vehicleData, setVehicleData] = useState({ name: "", brand_model: "", license_plate: "", fiscal_power: "", starting_mileage: "" });

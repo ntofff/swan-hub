@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import {
@@ -196,9 +197,14 @@ const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any)
 const QuotesPlugin = () => {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<Tab>("devis");
-  const [showForm, setShowForm] = useState(false);
-  const [showClientForm, setShowClientForm] = useState(false);
+  const [searchParams] = useSearchParams();
+  const initialTab = (["devis", "factures", "paiements", "clients", "dashboard", "settings"].includes(searchParams.get("tab") || "")
+    ? searchParams.get("tab")
+    : "devis") as Tab;
+  const openNewForm = searchParams.get("new") === "1";
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const [showForm, setShowForm] = useState(openNewForm && ["devis", "factures"].includes(initialTab));
+  const [showClientForm, setShowClientForm] = useState(openNewForm && initialTab === "clients");
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -233,7 +239,7 @@ const QuotesPlugin = () => {
   const [editingClient, setEditingClient] = useState<any>(null);
 
   // Standalone payment form
-  const [showPayForm, setShowPayForm] = useState(false);
+  const [showPayForm, setShowPayForm] = useState(openNewForm && initialTab === "paiements");
   const [pTitle, setPTitle] = useState("");
   const [pClientId, setPClientId] = useState("");
   const [pAmountHt, setPAmountHt] = useState("");
