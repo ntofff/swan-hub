@@ -365,10 +365,10 @@ const VehiclePlugin = () => {
             {vehicleStats.length > 0 && (
               <>
                 <h3 className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Par véhicule</h3>
-                <div className="glass-card divide-y divide-border">
+                <div className="space-y-3">
                   {vehicleStats.map((v: any) => (
-                    <div key={v.id} className="px-4 py-2.5 flex items-center gap-3">
-                      <span className="text-sm flex-1">{v.name}</span>
+                    <div key={v.id} className="plugin-record flex items-center gap-3">
+                      <span className="plugin-record-title flex-1 truncate">{v.name}</span>
                       <span className="text-xs text-muted-foreground">{v.tripCount} trajets</span>
                       <span className="text-xs font-semibold">{v.km.toLocaleString("fr-FR")} km</span>
                     </div>
@@ -381,10 +381,10 @@ const VehiclePlugin = () => {
             {driverStats.length > 0 && (
               <>
                 <h3 className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Par conducteur</h3>
-                <div className="glass-card divide-y divide-border">
+                <div className="space-y-3">
                   {driverStats.map((d: any) => (
-                    <div key={d.id} className="px-4 py-2.5 flex items-center gap-3">
-                      <span className="text-sm flex-1">{d.name}</span>
+                    <div key={d.id} className="plugin-record flex items-center gap-3">
+                      <span className="plugin-record-title flex-1 truncate">{d.name}</span>
                       <span className="text-xs text-muted-foreground">{d.tripCount} trajets</span>
                       <span className="text-xs font-semibold">{d.km.toLocaleString("fr-FR")} km</span>
                     </div>
@@ -411,12 +411,12 @@ const VehiclePlugin = () => {
             {filteredTrips.length === 0 ? (
               <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun trajet</p></div>
             ) : (
-              <div className="glass-card divide-y divide-border">
+              <div className="space-y-3">
                 {filteredTrips.map((t: any) => (
-                  <div key={t.id} className="px-4 py-3 flex items-center gap-3">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{t.start_location || "?"} → {t.end_location || "?"}</div>
-                      <div className="text-[10px] text-muted-foreground">
+                  <div key={t.id} className="plugin-record flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="plugin-record-title truncate">{t.start_location || "?"} → {t.end_location || "?"}</div>
+                      <div className="plugin-record-meta mt-1">
                         {new Date(t.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                         {t.vehicles ? ` · ${t.vehicles.name}` : ""}{t.drivers ? ` · ${t.drivers.name}` : ""}
                         {t.purpose ? ` · ${t.purpose}` : ""}
@@ -440,11 +440,11 @@ const VehiclePlugin = () => {
             {vehicles.length === 0 ? (
               <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun véhicule</p></div>
             ) : vehicles.map((v: any) => (
-              <div key={v.id} className="glass-card p-4 flex items-center gap-3">
+              <div key={v.id} className="plugin-record flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Car size={18} className="text-primary" /></div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">{v.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{v.brand_model}{v.license_plate ? ` · ${v.license_plate}` : ""}{v.fiscal_power ? ` · ${v.fiscal_power} CV` : ""}{v.current_mileage ? ` · ${v.current_mileage.toLocaleString("fr-FR")} km` : ""}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="plugin-record-title truncate">{v.name}</div>
+                  <div className="plugin-record-meta mt-1">{v.brand_model}{v.license_plate ? ` · ${v.license_plate}` : ""}{v.fiscal_power ? ` · ${v.fiscal_power} CV` : ""}{v.current_mileage ? ` · ${v.current_mileage.toLocaleString("fr-FR")} km` : ""}</div>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success">{v.status}</span>
                 <button onClick={() => { if (window.confirm("Supprimer ce véhicule ?")) deleteVehicle.mutate(v.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={14} /></button>
@@ -459,11 +459,11 @@ const VehiclePlugin = () => {
             {drivers.length === 0 ? (
               <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun conducteur</p></div>
             ) : drivers.map((d: any) => (
-              <div key={d.id} className="glass-card p-4 flex items-center gap-3">
+              <div key={d.id} className="plugin-record flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center"><Users size={18} className="text-info" /></div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">{d.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{d.role || "—"}{d.vehicles ? ` · ${d.vehicles.name}` : ""}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="plugin-record-title truncate">{d.name}</div>
+                  <div className="plugin-record-meta mt-1">{d.role || "—"}{d.vehicles ? ` · ${d.vehicles.name}` : ""}</div>
                 </div>
                 <button onClick={() => { if (window.confirm("Supprimer ce conducteur ?")) deleteDriver.mutate(d.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={14} /></button>
               </div>
@@ -477,11 +477,11 @@ const VehiclePlugin = () => {
             {frequentRoutes.length === 0 ? (
               <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun itinéraire fréquent</p></div>
             ) : frequentRoutes.map((r: any) => (
-              <div key={r.id} className="glass-card p-4 flex items-center gap-3">
+              <div key={r.id} className="plugin-record flex items-center gap-3">
                 <Route size={16} className="text-muted-foreground" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{r.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{r.start_location} → {r.end_location}{r.default_distance ? ` · ${r.default_distance} km` : ""}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="plugin-record-title truncate">{r.name}</div>
+                  <div className="plugin-record-meta mt-1">{r.start_location} → {r.end_location}{r.default_distance ? ` · ${r.default_distance} km` : ""}</div>
                 </div>
                 <button onClick={() => useRoutePreset(r)} className="btn btn-secondary btn-xs">Utiliser</button>
                 <button onClick={() => { if (window.confirm("Supprimer cet itinéraire ?")) deleteRoute.mutate(r.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={14} /></button>

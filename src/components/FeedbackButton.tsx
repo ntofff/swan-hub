@@ -39,17 +39,17 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="fixed bottom-20 right-4 md:bottom-6 z-40 p-3 rounded-full bg-secondary text-muted-foreground hover:text-foreground border border-border transition-all hover:scale-105">
+      <button onClick={() => setOpen(true)} className="fixed bottom-20 right-4 md:bottom-6 z-40 btn btn-icon btn-secondary rounded-lg shadow-lg" aria-label="Donner un retour">
         <MessageSquare size={18} />
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-20 right-4 md:bottom-6 z-50 w-72 glass-card p-4 fade-in">
+    <div className="fixed bottom-20 right-4 left-4 md:left-auto md:bottom-6 z-50 md:w-80 glass-card p-4 fade-in">
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm font-semibold font-heading">Retour</span>
-        <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
+        <button onClick={() => setOpen(false)} className="btn btn-icon-xs btn-ghost" aria-label="Fermer"><X size={16} /></button>
       </div>
       {sent ? (
         <p className="text-sm text-center py-4 text-primary">Merci ! ✓</p>
@@ -58,7 +58,7 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
           <div className="flex gap-1.5 mb-3">
             {types.map(t => (
               <button key={t.value} onClick={() => setType(t.value)}
-                className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-lg text-[10px] transition-colors ${type === t.value ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary text-muted-foreground'}`}>
+                className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg text-xs transition-colors ${type === t.value ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary text-muted-foreground border border-transparent'}`}>
                 <t.icon size={14} />
                 {t.label}
               </button>

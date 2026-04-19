@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type CSSProperties } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import {
-  Plus, Search, Trash2, Pencil, X, Check, Clock, Hash,
+  Plus, Search, Trash2, Pencil, X, Check, Clock,
   AlertTriangle, CheckSquare, Square, FileDown, Share2,
   Copy, Mail, Phone, MessageSquare, Archive, RotateCcw
 } from "lucide-react";
@@ -395,7 +395,7 @@ const LogbookPlugin = () => {
             {!search && tab === "active" && <p className="text-xs text-muted-foreground mt-1">Cliquez sur + pour ajouter</p>}
           </div>
         ) : (
-          <div className="glass-card divide-y divide-border overflow-hidden">
+          <div className="space-y-3">
             {filtered.map((e: any) => {
               const pInfo = getPriorityInfo(e.priority);
               const date = getEntryDate(e);
@@ -403,7 +403,8 @@ const LogbookPlugin = () => {
               const seqNum = e.seq_number || "—";
               return (
                 <div key={e.id}
-                  className={`px-4 py-3 space-y-1.5 transition-colors ${selectMode ? "cursor-pointer" : ""} ${isSelected ? "bg-primary/5" : ""} ${e.archived ? "opacity-70" : ""}`}
+                  className={`plugin-record space-y-2 ${selectMode ? "cursor-pointer" : ""} ${isSelected ? "ring-1 ring-primary/30" : ""} ${e.archived ? "opacity-70" : ""}`}
+                  style={{ "--record-color": `hsl(${e.color || "38 50% 58%"})` } as CSSProperties}
                   onClick={selectMode ? () => toggleSelect(e.id) : undefined}>
                   {editingId === e.id ? (
                     <div className="space-y-3" onClick={ev => ev.stopPropagation()}>
@@ -446,20 +447,21 @@ const LogbookPlugin = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-2 min-w-0 flex-1">
                           {selectMode ? (
                             <div className="mt-0.5 shrink-0">
                               {isSelected ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} className="text-muted-foreground" />}
                             </div>
                           ) : (
-                            <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5"
-                              style={{ backgroundColor: `hsl(${e.color || "38 50% 58%"})` }} />
+                            <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-1 rounded-md shrink-0">
+                              #{seqNum}
+                            </span>
                           )}
-                          <p className="text-sm leading-relaxed">{e.text}</p>
+                          <p className="plugin-record-title break-words">{e.text}</p>
                         </div>
                         {!selectMode && (
-                          <div className="flex items-center gap-0.5 shrink-0">
+                          <div className="plugin-record-actions">
                             {tab === "active" ? (
                               <>
                                 <button onClick={() => startEdit(e)} className="btn btn-icon-sm btn-ghost">
@@ -482,20 +484,16 @@ const LogbookPlugin = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap ml-4">
-                        <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: `hsl(${e.color || "38 50% 58%"})` }} />
+                      <div className="plugin-record-divider" />
+                      <div className="plugin-record-meta">
                         {pInfo.value !== "normale" && (
                           <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${pInfo.cls}`}>
                             {pInfo.label}
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1">
                           <Clock size={10} />
                           {formatDate(date)} · {new Date(date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] font-mono text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded">
-                          <Hash size={9} />{seqNum}
                         </span>
                       </div>
                     </>

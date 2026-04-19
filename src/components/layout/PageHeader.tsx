@@ -14,7 +14,7 @@ export const PageHeader = ({ title, subtitle, back, action }: PageHeaderProps) =
     <div className="flex items-center justify-between px-4 pt-6 pb-4 md:px-0">
       <div className="flex items-center gap-3">
         {back && (
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={() => navigate(-1)} className="btn btn-icon btn-ghost -ml-2" aria-label="Retour">
             <ArrowLeft size={20} />
           </button>
         )}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type CSSProperties } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import {
@@ -398,16 +398,20 @@ const MissionsPlugin = () => {
               }
 
               return (
-                <div key={m.id} className="glass-card overflow-hidden">
+                <div
+                  key={m.id}
+                  className="plugin-record overflow-hidden p-0"
+                  style={{ "--record-color": `hsl(${sInfo.color})` } as CSSProperties}
+                >
                   {/* Main row */}
                   <button onClick={() => setExpandedId(isExpanded ? null : m.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                    className="w-full flex items-center gap-3 p-3 text-left">
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold truncate">{m.title}</div>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <div className="plugin-record-title truncate">{m.title}</div>
+                      <div className="plugin-record-meta mt-1">
                         {m.client && <span className="text-[10px] text-muted-foreground">{m.client}</span>}
                         {m.start_date && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-0.5">
                             <Calendar size={9} /> {formatDate(m.start_date)}
                           </span>
                         )}
@@ -419,8 +423,9 @@ const MissionsPlugin = () => {
 
                   {/* Expanded details */}
                   {isExpanded && (
-                    <div className="px-4 pb-3 space-y-2 border-t border-border pt-2">
-                      <div className="flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground">
+                    <div className="px-3 pb-3 space-y-2">
+                      <div className="plugin-record-divider" />
+                      <div className="plugin-record-meta">
                         {m.location && <span className="flex items-center gap-0.5"><MapPin size={10} /> {m.location}</span>}
                         {m.start_date && <span className="flex items-center gap-0.5"><Clock size={10} /> {formatDate(m.start_date)}{m.end_date ? ` → ${formatDate(m.end_date)}` : ""}</span>}
                         {(m as any).quote_amount && (

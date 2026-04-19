@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Check, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS } from '@/config/tokens';
+import { PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS, FREE_PLUGIN_ALLOWANCE } from '@/config/tokens';
 import { toast } from 'sonner';
 
 export default function Pricing() {
@@ -15,11 +15,12 @@ export default function Pricing() {
   const { profile } = useAuth();
 
   const [pluginCount, setPluginCount] = useState(
-    profile?.active_plugins?.length || 3
+    Math.max(profile?.active_plugins?.length || FREE_PLUGIN_ALLOWANCE, FREE_PLUGIN_ALLOWANCE)
   );
 
-  // Calcul coût à la carte
-  const carteCost = pluginCount * BUSINESS.PLUGIN_PRICE_TTC;
+  // Calcul coût à la carte : 3 plugins restent gratuits, seuls les plugins supplémentaires sont facturés.
+  const paidPluginCount = Math.max(0, pluginCount - FREE_PLUGIN_ALLOWANCE);
+  const carteCost = paidPluginCount * BUSINESS.PLUGIN_PRICE_TTC;
   const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
 
   return (
@@ -44,7 +45,7 @@ export default function Pricing() {
           <div style={{ marginBottom: 'var(--space-4)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <button
-                onClick={() => setPluginCount(Math.max(1, pluginCount - 1))}
+                onClick={() => setPluginCount(Math.max(FREE_PLUGIN_ALLOWANCE, pluginCount - 1))}
                 className="btn btn-icon btn-secondary"
               >
                 <ChevronLeft size={18} />
@@ -68,8 +69,11 @@ export default function Pricing() {
                 <ChevronRight size={18} />
               </button>
             </div>
-            <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
-              plugin{pluginCount > 1 ? 's' : ''} activé{pluginCount > 1 ? 's' : ''}
+            <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)' }}>
+              {pluginCount} plugin{pluginCount > 1 ? 's' : ''} activé{pluginCount > 1 ? 's' : ''}
+              <span style={{ color: 'var(--color-text-3)' }}>
+                {' '}· {paidPluginCount} facturé{paidPluginCount > 1 ? 's' : ''}
+              </span>
             </p>
           </div>
 
@@ -97,6 +101,9 @@ export default function Pricing() {
                 }}
               >
                 {carteCost.toFixed(2)} €
+              </div>
+              <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-3)', marginTop: 4 }}>
+                3 gratuits inclus
               </div>
             </div>
             <div style={{ textAlign: 'center', borderLeft: '1px solid var(--color-border)' }}>
@@ -126,14 +133,14 @@ export default function Pricing() {
             }}
           >
             {proIsCheaper
-              ? `✓ Le Pro Total est plus avantageux à partir de ${PLAN_BREAKEVEN_PLUGINS} plugins`
-              : `À partir de ${PLAN_BREAKEVEN_PLUGINS} plugins, le Pro Total devient plus avantageux`}
+              ? `✓ Le Pro Total est plus avantageux à partir de ${PLAN_BREAKEVEN_PLUGINS} plugins activés`
+              : `À partir de ${PLAN_BREAKEVEN_PLUGINS} plugins activés, le Pro Total devient plus avantageux`}
           </p>
         </div>
       </section>
 
       {/* ── Plans ── */}
-      <section className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <section className="px-4 field-responsive-grid field-responsive-grid-3">
         {PLANS.map((plan) => {
           const isCurrent = profile?.plan === plan.id;
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import {
@@ -1232,11 +1232,11 @@ const QuotesPlugin = () => {
             {clients.length === 0 ? (
               <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun client</p></div>
             ) : clients.map((c: any) => (
-              <div key={c.id} className="glass-card p-4 flex items-center gap-3">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">{c.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{[c.siret, c.email, c.phone].filter(Boolean).join(" · ") || "—"}</p>
-                  {c.address && <p className="text-[10px] text-muted-foreground">{c.address}</p>}
+              <div key={c.id} className="plugin-record flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="plugin-record-title truncate">{c.name}</p>
+                  <p className="plugin-record-meta mt-1">{[c.siret, c.email, c.phone].filter(Boolean).join(" · ") || "—"}</p>
+                  {c.address && <p className="text-[10px] text-muted-foreground truncate mt-1">{c.address}</p>}
                 </div>
                 <button onClick={() => editClientFn(c)} className="btn btn-icon-sm btn-ghost"><Edit2 size={14} /></button>
                 <button onClick={() => { if (window.confirm(`Supprimer "${c.name}" ?`)) deleteClient.mutate(c.id); }} className="btn btn-icon-sm btn-danger"><Trash2 size={14} /></button>
@@ -1396,15 +1396,18 @@ const QuotesPlugin = () => {
                   const iHt = Number(item.amount_ht) || 0;
                   const { ttc } = calcTtc(iHt, item.discount_type || "", Number(item.discount_value) || 0, iRate);
                   return (
-                    <button key={item.id} onClick={() => setSelectedItem(item)}
-                      className="w-full glass-card p-4 flex items-center gap-3 text-left hover:border-primary/20 transition-all"
-                      style={item.color ? { borderLeft: `3px solid hsl(${item.color})` } : {}}>
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-semibold">{item.title}</span>
-                          <span className="text-[10px] text-muted-foreground">{item.quote_number || item.invoice_number}</span>
+                    <button
+                      key={item.id}
+                      onClick={() => setSelectedItem(item)}
+                      className="w-full plugin-record flex items-center gap-3 text-left"
+                      style={{ "--record-color": `hsl(${item.color || statusColors[item.status] || "38 50% 58%"})` } as CSSProperties}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 min-w-0">
+                          <span className="plugin-record-title truncate">{item.title}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">{item.quote_number || item.invoice_number}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="plugin-record-meta mt-1">
                           {getClientName(item) && `${getClientName(item)} · `}{formatDate(item.issue_date || item.created_at)}
                           {iHt > 0 && ` · HT ${fmtAmount(iHt)}`}
                           {iRate > 0 && ` · TVA ${iRate}%`}
@@ -1493,12 +1496,12 @@ const QuotesPlugin = () => {
             {payments.length === 0 && !showPayForm ? (
               <div className="glass-card p-8 text-center"><p className="text-sm text-muted-foreground">Aucun paiement</p></div>
             ) : payments.length > 0 && (
-              <div className="glass-card divide-y divide-border">
+              <div className="space-y-3">
                 {payments.map((p: any) => (
-                  <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{p.invoices?.title || "—"}</div>
-                      <div className="text-[10px] text-muted-foreground">{p.invoices?.invoice_number} · {p.invoices?.clients?.name || p.invoices?.client || "—"} · {p.method || "—"} · {p.paid_at ? formatDate(p.paid_at) : "—"}</div>
+                  <div key={p.id} className="plugin-record flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="plugin-record-title truncate">{p.invoices?.title || "Paiement"}</div>
+                      <div className="plugin-record-meta mt-1">{p.invoices?.invoice_number} · {p.invoices?.clients?.name || p.invoices?.client || "—"} · {p.method || "—"} · {p.paid_at ? formatDate(p.paid_at) : "—"}</div>
                     </div>
                     <span className="text-sm font-semibold">{fmtAmount(p.amount)}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{p.status}</span>

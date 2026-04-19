@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, type CSSProperties } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import {
@@ -479,7 +479,7 @@ const TasksPlugin = () => {
           </div>
         ) : (
           /* List view */
-          <div className="glass-card divide-y divide-border overflow-hidden">
+          <div className="space-y-3">
             {filtered.map((t: any, idx: number) => {
               const pInfo = getPriorityInfo(t.priority);
               const urgency = getDeadlineUrgency(t);
@@ -536,8 +536,12 @@ const TasksPlugin = () => {
               }
 
               return (
-                <div key={t.id} className={`px-4 py-3 space-y-1.5 transition-colors ${urgency === "overdue" ? "bg-foreground/5" : urgency === "red" ? "bg-destructive/5" : urgency === "orange" ? "bg-orange-500/5" : ""}`}>
-                  <div className="flex items-start justify-between gap-2">
+                <div
+                  key={t.id}
+                  className={`plugin-record space-y-2 ${urgency === "overdue" ? "ring-1 ring-foreground/20" : urgency === "red" ? "ring-1 ring-destructive/25" : urgency === "orange" ? "ring-1 ring-orange-500/25" : ""}`}
+                  style={{ "--record-color": `hsl(${pInfo.color})` } as CSSProperties}
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-2.5 min-w-0 flex-1">
                       {/* Checkbox: only toggles done, no archive/delete */}
                       <button onClick={() => toggleTask.mutate(t)}
@@ -545,10 +549,10 @@ const TasksPlugin = () => {
                         {t.done && <Check size={12} className="text-primary-foreground" />}
                       </button>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm leading-relaxed transition-all ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
+                        <p className={`plugin-record-title transition-all ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-0.5 shrink-0">
+                    <div className="plugin-record-actions">
                       {tab === "active" && (
                         <>
                           <button onClick={() => moveTask.mutate({ id: t.id, direction: "up" })} disabled={idx === 0}
@@ -578,13 +582,14 @@ const TasksPlugin = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap ml-7">
+                  <div className="plugin-record-divider" />
+                  <div className="plugin-record-meta">
                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${pInfo.cls}`}>{pInfo.label}</span>
                     <DeadlineBadge task={t} />
                     {t.location && (
-                      <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground"><MapPin size={9} /> {t.location}</span>
+                      <span className="flex items-center gap-0.5"><MapPin size={9} /> {t.location}</span>
                     )}
-                    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-0.5">
                       <Clock size={9} /> {formatDate(entryDate)} · {new Date(entryDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>

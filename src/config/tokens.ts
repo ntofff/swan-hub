@@ -68,8 +68,8 @@ export const PLANS: Plan[] = [
     priceTTC: null,
     description: '2 mois offerts pour découvrir l\'app',
     features: [
-      '3 plugins au choix pendant 2 mois',
-      'Toutes les fonctionnalités incluses',
+      '3 plugins au choix',
+      '2 mois gratuits pour créer l\'habitude',
       'Sans carte bancaire',
       'Accès au support standard',
     ],
@@ -82,9 +82,10 @@ export const PLANS: Plan[] = [
     name: 'À la carte',
     priceHT: 1,
     priceTTC: 1.20,
-    description: 'Payez uniquement les plugins que vous utilisez',
+    description: '3 plugins gratuits, puis payez uniquement le reste',
     features: [
-      '1,20 € TTC par plugin par mois',
+      '3 plugins gratuits inclus',
+      '1,20 € TTC par plugin supplémentaire par mois',
       'Activez et désactivez à volonté',
       'Accès IA inclus',
       'Support standard',
@@ -111,7 +112,8 @@ export const PLANS: Plan[] = [
   },
 ];
 
-export const PLAN_BREAKEVEN_PLUGINS = 9; // Nombre de plugins où Pro = À la carte
+export const FREE_PLUGIN_ALLOWANCE = 3;
+export const PLAN_BREAKEVEN_PLUGINS = 12; // 3 gratuits + 9 plugins payants = Pro
 
 // ── Catalogue Plugins ─────────────────────────────────────────
 export type PluginId =

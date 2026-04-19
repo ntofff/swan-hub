@@ -46,13 +46,42 @@ export default function Plugins() {
         </div>
       </header>
 
+      <section className="px-4" style={{ marginBottom: 'var(--space-5)' }}>
+        <div
+          className="card card-glow"
+          style={{
+            padding: 'var(--space-5)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-3)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <div className="plugin-icon-wrapper" style={{ background: 'var(--color-primary-glow)' }}>
+              <Crown size={22} style={{ color: 'var(--color-primary)' }} strokeWidth={2.2} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ fontSize: 'var(--text-lg)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
+                3 plugins gratuits, toujours
+              </h2>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.45 }}>
+                Ajoutez les autres à 1,20 € TTC par mois, activez ou désactivez à volonté.
+              </p>
+            </div>
+          </div>
+          <button className="btn btn-primary btn-full" onClick={() => navigate('/pricing')}>
+            Voir les formules
+          </button>
+        </div>
+      </section>
+
       {/* ── Plugins actifs ── */}
       <section className="px-4" style={{ marginBottom: 'var(--space-8)' }}>
         <h2 className="text-label" style={{ marginBottom: 'var(--space-3)' }}>
           Disponibles maintenant
         </h2>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }} className="stagger">
+        <div className="field-responsive-grid stagger">
           {sortedActive.map((plugin) => {
             const Icon = ICON_MAP[plugin.icon] || FileText;
             const hasAccess = hasAccessToPlugin(plugin.id);
@@ -109,7 +138,7 @@ export default function Plugins() {
             Bientôt disponibles
           </h2>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div className="field-responsive-grid">
             {LOCKED_PLUGINS.map((plugin) => {
               const Icon = ICON_MAP[plugin.icon] || FileText;
               return (
