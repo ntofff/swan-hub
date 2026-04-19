@@ -67,7 +67,7 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
           <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Décrivez..." rows={3}
             className="w-full bg-secondary border border-border rounded-lg p-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary mb-2" />
           <div className="text-[10px] text-muted-foreground mb-2">Écran : {location.pathname}</div>
-          <button onClick={handleSubmit} disabled={!message.trim()} className="w-full btn-primary-glow py-2 text-sm disabled:opacity-40">Envoyer</button>
+          <button onClick={handleSubmit} disabled={!message.trim()} className="btn btn-primary btn-full btn-sm">Envoyer</button>
         </>
       )}
     </div>

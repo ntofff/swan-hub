@@ -9,7 +9,7 @@ const AccessDeniedPage = () => (
       </div>
       <h1 className="text-xl font-bold font-heading">Accès refusé</h1>
       <p className="text-sm text-muted-foreground">Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
-      <Link to="/" className="block btn-primary-glow py-3 text-sm text-center">Retour à l'accueil</Link>
+      <Link to="/" className="btn btn-primary btn-full btn-sm">Retour à l'accueil</Link>
     </div>
   </div>
 );

@@ -169,7 +169,7 @@ export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
             <Checkbox checked={dontShow} onCheckedChange={(v) => setDontShow(v === true)} />
             <span className="text-xs text-muted-foreground">Ne plus afficher au lancement</span>
           </label>
-          <button onClick={handleClose} className="w-full btn-primary-glow py-3.5 text-sm font-semibold">
+          <button onClick={handleClose} className="btn btn-primary btn-full">
             {isNewUpdates ? "C'est noté !" : "Commencer"}
           </button>
         </div>

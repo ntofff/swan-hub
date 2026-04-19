@@ -86,7 +86,7 @@ const AboutPage = () => {
           <div className="glass-card p-4 inline-block">
             <p className="text-xs text-muted-foreground">🎉 <span className="text-foreground font-semibold">1 mois gratuit</span> avec 3 plugins au choix à l'inscription</p>
           </div>
-          <button onClick={() => navigate("/pricing")} className="w-full btn-primary-glow py-3 text-sm flex items-center justify-center gap-2">
+          <button onClick={() => navigate("/pricing")} className="btn btn-primary btn-full btn-sm">
             Voir les tarifs <ArrowRight size={16} />
           </button>
         </div>
@@ -138,7 +138,7 @@ const AboutPage = () => {
 
         {/* CTA */}
         <div className="space-y-2.5 mb-8">
-          <button onClick={() => navigate("/signup")} className="w-full btn-primary-glow py-3.5 text-sm flex items-center justify-center gap-2">
+          <button onClick={() => navigate("/signup")} className="btn btn-primary btn-full">
             Commencer gratuitement <ArrowRight size={16} />
           </button>
           <button onClick={() => navigate("/login")} className="w-full py-3.5 text-sm text-center rounded-xl border border-border text-secondary-foreground hover:bg-secondary transition-colors">
