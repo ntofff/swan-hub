@@ -1,2 +1,3 @@
-export { ResetPassword as default } from '../NotFound';
+export { ResetPassword as default } from './ForgotPassword';
 // END
+
