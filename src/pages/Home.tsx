@@ -475,20 +475,10 @@ function SwanBrief({ firstName, loading, info, isVip, onActionTasks, onActionQuo
           </p>
 
           {hasActions && (
-            <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-              {actionItems.map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    display: 'grid',
-                    gap: 'var(--space-2)',
-                    padding: 'var(--space-3)',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid var(--color-border)',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start' }}>
+            <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+              <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+                {actionItems.map((item) => (
+                  <div key={item.label} style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start' }}>
                     <span
                       aria-hidden="true"
                       style={{
@@ -509,12 +499,16 @@ function SwanBrief({ firstName, loading, info, isVip, onActionTasks, onActionQuo
                       </p>
                     </div>
                   </div>
-                  <button className="btn btn-sm btn-secondary btn-full" onClick={item.onClick}>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                {actionItems.map((item) => (
+                  <button key={item.button} className="btn btn-sm btn-secondary" onClick={item.onClick}>
                     {item.button}
                     <ChevronRight size={14} />
                   </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
