@@ -235,11 +235,25 @@ const VehiclePlugin = () => {
   });
 
   const inputCls = "field-input";
+  const createOpen = tab === "vehicles" ? showVehicleForm : tab === "drivers" ? showDriverForm : tab === "routes" ? showRouteForm : showTripForm;
+  const toggleCreate = () => {
+    if (tab === "vehicles") setShowVehicleForm(!showVehicleForm);
+    else if (tab === "drivers") setShowDriverForm(!showDriverForm);
+    else if (tab === "routes") setShowRouteForm(!showRouteForm);
+    else setShowTripForm(!showTripForm);
+  };
 
   return (
     <div className="fade-in">
       <PageHeader title="Carnet de véhicule" subtitle="Kilométrage & suivi IK" back
-        action={<button onClick={() => { if (tab === "vehicles") setShowVehicleForm(true); else if (tab === "drivers") setShowDriverForm(true); else if (tab === "routes") setShowRouteForm(true); else setShowTripForm(true); }} className="btn btn-icon-sm btn-ghost"><Plus size={18} /></button>} />
+        action={
+          <button
+            onClick={toggleCreate}
+            className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
+            aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
+            {createOpen ? <X size={22} /> : <Plus size={24} />}
+          </button>
+        } />
       <div className="px-4 md:px-0">
         <div className="flex gap-1 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
           {tabsDef.map(t => (

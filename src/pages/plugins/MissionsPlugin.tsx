@@ -216,8 +216,9 @@ const MissionsPlugin = () => {
       <PageHeader title="Missions" subtitle="Gérer les affectations" back
         action={
           <button onClick={() => setShowForm(!showForm)}
-            className={`btn btn-icon-sm ${showForm ? "btn-danger" : "btn-ghost"}`}>
-            {showForm ? <X size={18} /> : <Plus size={18} />}
+            className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
+            aria-label={showForm ? "Fermer le formulaire" : "Ajouter une mission"}>
+            {showForm ? <X size={22} /> : <Plus size={24} />}
           </button>
         } />
 

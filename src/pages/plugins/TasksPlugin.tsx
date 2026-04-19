@@ -360,8 +360,9 @@ const TasksPlugin = () => {
               {viewMode === "list" ? <LayoutGrid size={16} /> : <LayoutList size={16} />}
             </button>
             <button onClick={() => setShowForm(!showForm)}
-              className={`btn btn-icon-sm ${showForm ? "btn-danger" : "btn-ghost"} ${showForm ? "rotate-45" : ""}`}>
-              <Plus size={18} />
+              className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
+              aria-label={showForm ? "Fermer le formulaire" : "Ajouter une tâche"}>
+              {showForm ? <X size={22} /> : <Plus size={24} />}
             </button>
           </div>
         } />

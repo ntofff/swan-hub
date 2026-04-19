@@ -47,7 +47,7 @@ function formatRelativeTime(date: string): string {
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { theme, setTheme, isDark } = useTheme();
+  const { setTheme, isDark, toggleTextSize, isLargeText } = useTheme();
 
   const firstName = profile?.full_name?.split(' ')[0] || '';
   const greeting = getGreeting();
@@ -208,6 +208,14 @@ export default function HomePage() {
             aria-label="Notifications"
           >
             <Bell size={18} />
+          </button>
+          <button
+            className={`btn-icon-sm btn ${isLargeText ? 'btn-secondary' : 'btn-ghost'}`}
+            onClick={toggleTextSize}
+            aria-label={isLargeText ? 'Réduire le texte' : 'Grossir le texte'}
+            title={isLargeText ? 'Réduire le texte' : 'Grossir le texte'}
+          >
+            <span className="text-size-toggle" aria-hidden="true">Aa</span>
           </button>
           <button
             className="btn-icon-sm btn btn-ghost"

@@ -1042,6 +1042,9 @@ const QuotesPlugin = () => {
   }
 
   // ══════════════════════ MAIN VIEW ══════════════════════
+  const canCreateForTab = !["dashboard", "settings"].includes(tab);
+  const createOpen = tab === "clients" ? showClientForm : tab === "paiements" ? showPayForm : showForm;
+
   return (
     <div className="fade-in">
       <PageHeader title="Devis & Factures" subtitle="Facturation complète" back
@@ -1049,8 +1052,14 @@ const QuotesPlugin = () => {
           <div className="flex gap-1.5">
             <button onClick={() => setShowExport(!showExport)} className="btn btn-icon-sm btn-ghost"><Download size={18} /></button>
             <button onClick={() => setShowShare(!showShare)} className="btn btn-icon-sm btn-ghost"><Share2 size={18} /></button>
-            <button onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (tab === "paiements") setShowPayForm(!showPayForm); else if (!["dashboard", "settings"].includes(tab)) setShowForm(!showForm); }}
-              className="btn btn-icon-sm btn-ghost"><Plus size={18} /></button>
+            {canCreateForTab && (
+              <button
+                onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (tab === "paiements") setShowPayForm(!showPayForm); else setShowForm(!showForm); }}
+                className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
+                aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
+                {createOpen ? <X size={22} /> : <Plus size={24} />}
+              </button>
+            )}
           </div>
         } />
       <div className="px-4 md:px-0">

@@ -18,9 +18,9 @@
 
   /* Tailles typographiques */
   --text-2xs:  10px;
-  --text-xs:   12px;
-  --text-sm:   14px;
-  --text-base: 16px;   /* MINIMUM absolu */
+  --text-xs:   13px;
+  --text-sm:   15px;
+  --text-base: 17px;   /* MINIMUM terrain mobile */
   --text-lg:   18px;
   --text-xl:   22px;
   --text-2xl:  28px;
@@ -797,6 +797,28 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   border-radius: var(--radius-sm);
 }
 
+.btn-add {
+  min-width: var(--tap-comfort);
+  min-height: var(--tap-comfort);
+  padding: 0;
+  border-radius: var(--radius-full);
+  background: var(--gradient-gold);
+  color: var(--color-primary-text);
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  box-shadow: var(--shadow-glow-sm), var(--shadow-md);
+}
+
+.btn-add:hover {
+  box-shadow: var(--shadow-glow), var(--shadow-md);
+}
+
+.btn-add-active {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-md);
+}
+
 /* ============================================================
    COMPOSANTS DE BASE — Inputs
    ============================================================ */
@@ -1526,3 +1548,61 @@ select.input {
 }
 
 @tailwind utilities;
+
+[data-text-size="large"] {
+  --text-2xs:  12px;
+  --text-xs:   14px;
+  --text-sm:   16px;
+  --text-base: 18px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-2xl:  30px;
+  --text-3xl:  38px;
+  --text-4xl:  50px;
+}
+
+.text-size-toggle {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: var(--text-base);
+  }
+
+  .text-\[9px\],
+  .text-\[10px\] {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .text-xs {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  .text-sm {
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+  }
+
+  .bottom-nav-item {
+    font-size: 12px;
+  }
+
+  [data-text-size="large"] .text-\[9px\],
+  [data-text-size="large"] .text-\[10px\] {
+    font-size: 13px !important;
+  }
+
+  [data-text-size="large"] .text-xs {
+    font-size: 14px !important;
+  }
+
+  [data-text-size="large"] .text-sm {
+    font-size: 16px !important;
+  }
+}

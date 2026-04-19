@@ -7,13 +7,21 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import type { ThemeId } from '@/config/tokens';
 
+export type TextSizeId = 'normal' | 'large';
+
 const STORAGE_KEY = 'swan_theme';
+const TEXT_SIZE_STORAGE_KEY = 'swan_text_size';
 const DEFAULT_THEME: ThemeId = 'night-gold';
+const DEFAULT_TEXT_SIZE: TextSizeId = 'normal';
 
 interface ThemeContextType {
   theme: ThemeId;
   setTheme: (theme: ThemeId) => void;
   isDark: boolean;
+  textSize: TextSizeId;
+  setTextSize: (size: TextSizeId) => void;
+  toggleTextSize: () => void;
+  isLargeText: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -43,6 +51,10 @@ function applyThemeToDOM(theme: ThemeId): void {
   }
 }
 
+function applyTextSizeToDOM(textSize: TextSizeId): void {
+  document.documentElement.setAttribute('data-text-size', textSize);
+}
+
 // ── Récupération du thème initial ─────────────────────────────
 function getInitialTheme(): ThemeId {
   if (typeof window === 'undefined') return DEFAULT_THEME;
@@ -57,14 +69,32 @@ function getInitialTheme(): ThemeId {
   return DEFAULT_THEME;
 }
 
+function getInitialTextSize(): TextSizeId {
+  if (typeof window === 'undefined') return DEFAULT_TEXT_SIZE;
+  try {
+    const stored = localStorage.getItem(TEXT_SIZE_STORAGE_KEY) as TextSizeId | null;
+    if (stored && ['normal', 'large'].includes(stored)) {
+      return stored;
+    }
+  } catch {
+    // localStorage unavailable
+  }
+  return DEFAULT_TEXT_SIZE;
+}
+
 // ── Provider ──────────────────────────────────────────────────
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>(getInitialTheme);
+  const [textSize, setTextSizeState] = useState<TextSizeId>(getInitialTextSize);
 
   // Appliquer le thème dès le premier rendu
   useEffect(() => {
     applyThemeToDOM(theme);
   }, [theme]);
+
+  useEffect(() => {
+    applyTextSizeToDOM(textSize);
+  }, [textSize]);
 
   const setTheme = useCallback((newTheme: ThemeId) => {
     setThemeState(newTheme);
@@ -76,10 +106,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyThemeToDOM(newTheme);
   }, []);
 
+  const setTextSize = useCallback((newTextSize: TextSizeId) => {
+    setTextSizeState(newTextSize);
+    try {
+      localStorage.setItem(TEXT_SIZE_STORAGE_KEY, newTextSize);
+    } catch {
+      // localStorage unavailable
+    }
+    applyTextSizeToDOM(newTextSize);
+  }, []);
+
+  const toggleTextSize = useCallback(() => {
+    setTextSize(textSize === 'large' ? 'normal' : 'large');
+  }, [setTextSize, textSize]);
+
   const value: ThemeContextType = {
     theme,
     setTheme,
     isDark: isDarkTheme(theme),
+    textSize,
+    setTextSize,
+    toggleTextSize,
+    isLargeText: textSize === 'large',
   };
 
   return (
