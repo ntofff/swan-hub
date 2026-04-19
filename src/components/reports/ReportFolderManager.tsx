@@ -100,7 +100,9 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
               <button
                 key={emoji}
                 onClick={() => setIcon(emoji)}
-                className={`w-11 h-11 rounded-lg flex items-center justify-center text-lg transition-all ${icon === emoji ? "bg-primary/15 border border-primary/30 scale-105" : "bg-secondary hover:bg-secondary/80"}`}
+                className={`w-11 h-11 rounded-lg flex items-center justify-center text-lg border-2 transition-all ${icon === emoji ? "bg-primary/15 scale-105 shadow-lg shadow-primary/20" : "bg-secondary hover:bg-secondary/80 border-transparent"}`}
+                style={icon === emoji ? { borderColor: `hsl(${color})`, boxShadow: `0 0 0 3px hsl(${color} / 0.22)` } : undefined}
+                aria-pressed={icon === emoji}
               >
                 {emoji}
               </button>
@@ -116,17 +118,25 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
                 key={option.value}
                 onClick={() => setColor(option.value)}
                 title={option.label}
-                className={`w-11 h-11 rounded-lg border-2 transition-all ${color === option.value ? "border-foreground scale-105" : "border-transparent"}`}
-                style={{ backgroundColor: `hsl(${option.value})` }}
+                className={`w-11 h-11 rounded-lg border-2 transition-all ${color === option.value ? "scale-105 shadow-lg" : "border-transparent"}`}
+                style={{
+                  backgroundColor: `hsl(${option.value})`,
+                  borderColor: color === option.value ? `hsl(${option.value})` : "transparent",
+                  boxShadow: color === option.value ? `0 0 0 3px hsl(${option.value} / 0.28)` : undefined,
+                }}
+                aria-pressed={color === option.value}
               />
             ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background/70">
+        <div
+          className="flex items-center gap-3 p-3 rounded-xl border-2 bg-background/70"
+          style={{ borderColor: `hsl(${color})`, boxShadow: `0 0 0 3px hsl(${color} / 0.12)` }}
+        >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-            style={{ backgroundColor: `hsl(${color} / 0.15)` }}
+            style={{ backgroundColor: `hsl(${color} / 0.18)`, color: `hsl(${color})` }}
           >
             {icon}
           </div>
@@ -149,6 +159,7 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
             <div
               key={folder.id}
               className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/70 gap-2 transition-all"
+              style={{ borderLeft: `4px solid hsl(${folder.color || "38 50% 58%"})` }}
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div

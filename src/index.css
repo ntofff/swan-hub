@@ -642,74 +642,6 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   color: var(--color-text-2);
 }
 
-.field-command-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-3);
-}
-
-@media (min-width: 640px) {
-  .field-command-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.field-command-card {
-  min-height: 112px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: linear-gradient(145deg, var(--color-bg-elevated), var(--color-surface));
-  color: var(--color-text-1);
-  text-align: left;
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-out),
-              border-color var(--duration-fast) var(--ease-out),
-              box-shadow var(--duration-fast) var(--ease-out);
-}
-
-.field-command-card:active {
-  transform: scale(0.98);
-}
-
-.field-command-card.primary {
-  border-color: rgba(201, 169, 97, 0.35);
-  box-shadow: var(--shadow-glow-sm), var(--shadow-sm);
-}
-
-.field-command-icon {
-  width: var(--tap-comfort);
-  height: var(--tap-comfort);
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: var(--color-primary-glow);
-  color: var(--color-primary);
-}
-
-.field-command-title {
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-.field-command-desc {
-  display: block;
-  margin-top: 4px;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--color-text-2);
-}
-
 .field-simple-note {
   padding: var(--space-3);
   border: 1px solid rgba(201, 169, 97, 0.22);
@@ -719,24 +651,6 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   font-size: var(--text-sm);
   font-weight: 700;
   line-height: 1.4;
-}
-
-.field-floating-add {
-  position: fixed;
-  right: max(var(--space-4), env(safe-area-inset-right));
-  bottom: calc(var(--space-16) + var(--space-4) + env(safe-area-inset-bottom));
-  z-index: var(--z-overlay);
-}
-
-@media (min-width: 768px) {
-  .field-floating-add {
-    display: none;
-  }
-}
-
-.field-floating-add .btn-add {
-  width: var(--tap-large);
-  height: var(--tap-large);
 }
 
 .field-label {

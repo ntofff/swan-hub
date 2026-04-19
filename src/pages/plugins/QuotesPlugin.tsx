@@ -1530,17 +1530,6 @@ const QuotesPlugin = () => {
           </div>
         )}
       </div>
-      {canCreateForTab && (
-        <div className="field-floating-add">
-          <button
-            onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (tab === "paiements") setShowPayForm(!showPayForm); else setShowForm(!showForm); }}
-            className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
-            aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
-            {createOpen ? <X size={24} /> : <Plus size={28} />}
-          </button>
-        </div>
-      )}
-
       <FeedbackButton context="quotes" />
     </div>
   );

@@ -9,6 +9,7 @@ interface PhotoItem {
   id: string;
   file?: File;
   url: string;
+  storagePath?: string;
   caption?: string;
   captionPosition: string;
   captionRotation?: number;

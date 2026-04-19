@@ -30,6 +30,24 @@ const shareActions = [
   { id: "whatsapp", icon: MessageSquare, label: "WhatsApp" },
 ];
 
+const getReportPhotoStoragePath = (urlOrPath: string) => {
+  const publicPrefix = "/storage/v1/object/public/report-photos/";
+  const signedPrefix = "/storage/v1/object/sign/report-photos/";
+  if (!urlOrPath.startsWith("http")) return urlOrPath;
+
+  const publicIdx = urlOrPath.indexOf(publicPrefix);
+  if (publicIdx !== -1) {
+    return decodeURIComponent(urlOrPath.substring(publicIdx + publicPrefix.length).split("?")[0]);
+  }
+
+  const signedIdx = urlOrPath.indexOf(signedPrefix);
+  if (signedIdx !== -1) {
+    return decodeURIComponent(urlOrPath.substring(signedIdx + signedPrefix.length).split("?")[0]);
+  }
+
+  return urlOrPath;
+};
+
 interface Props {
   reports: any[];
   folders: any[];
@@ -98,17 +116,9 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
   }, [filtered, showHistory]);
 
   const getSignedUrl = async (path: string): Promise<string> => {
-    // Extract storage path from legacy public URLs
-    let storagePath = path;
-    const publicPrefix = "/storage/v1/object/public/report-photos/";
-    if (path.startsWith("http")) {
-      const idx = path.indexOf(publicPrefix);
-      if (idx !== -1) {
-        storagePath = decodeURIComponent(path.substring(idx + publicPrefix.length));
-      } else {
-        return path; // External URL, return as-is
-      }
-    }
+    const storagePath = getReportPhotoStoragePath(path);
+    if (storagePath.startsWith("http")) return storagePath;
+
     const { data } = await supabase.storage.from("report-photos").createSignedUrl(storagePath, 3600);
     return data?.signedUrl ?? path;
   };

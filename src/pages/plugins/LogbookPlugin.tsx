@@ -527,14 +527,6 @@ const LogbookPlugin = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="field-floating-add">
-        <button onClick={() => setShowForm(!showForm)}
-          className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
-          aria-label={showForm ? "Fermer le formulaire" : "Ajouter une entrée"}>
-          {showForm ? <X size={24} /> : <Plus size={28} />}
-        </button>
-      </div>
-
       <FeedbackButton context="logbook" />
     </div>
   );

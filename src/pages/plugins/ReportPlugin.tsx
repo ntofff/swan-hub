@@ -12,7 +12,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import ReportFolderManager from "@/components/reports/ReportFolderManager";
 import ReportHistory from "@/components/reports/ReportHistory";
-import ReportPhotoGallery, { type PhotoItem } from "@/components/reports/ReportPhotoGallery";
+import ReportPhotoGallery, { renderPhotoToBlob, type PhotoItem } from "@/components/reports/ReportPhotoGallery";
 
 const priorityOptions = [
   { value: "normale", label: "Normale" },
@@ -32,6 +32,19 @@ const colorOptions = [
 ];
 
 const inputCls = "field-input max-w-full box-border [&::-webkit-calendar-picker-indicator]:opacity-60";
+
+const getReportPhotoStoragePath = (urlOrPath: string) => {
+  const publicPrefix = "/storage/v1/object/public/report-photos/";
+  const signedPrefix = "/storage/v1/object/sign/report-photos/";
+  if (!urlOrPath.startsWith("http")) return urlOrPath;
+  const publicIdx = urlOrPath.indexOf(publicPrefix);
+  if (publicIdx !== -1) return decodeURIComponent(urlOrPath.substring(publicIdx + publicPrefix.length).split("?")[0]);
+  const signedIdx = urlOrPath.indexOf(signedPrefix);
+  if (signedIdx !== -1) return decodeURIComponent(urlOrPath.substring(signedIdx + signedPrefix.length).split("?")[0]);
+  return urlOrPath;
+};
+
+const hasPhotoOverlay = (photo: PhotoItem) => Boolean(photo.caption?.trim() || photo.showDate);
 
 const buildLocalSummary = ({
   text,
@@ -128,17 +141,34 @@ const ReportPlugin = () => {
       let photo_url: string | null = null;
       const uploadedPhotos: { url: string; photo: PhotoItem }[] = [];
 
-      for (const photo of photos) {
-        if (photo.file) {
-          const ext = photo.file.name.split(".").pop();
-          const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-          const { error: uploadError } = await supabase.storage.from("report-photos").upload(path, photo.file);
+      for (const [idx, photo] of photos.entries()) {
+        if (photo.file || hasPhotoOverlay(photo)) {
+          const sourceExt = photo.file?.name.split(".").pop() || "jpg";
+          const ext = hasPhotoOverlay(photo) ? "jpg" : sourceExt;
+          const path = `${user.id}/${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const uploadBody = hasPhotoOverlay(photo) ? await renderPhotoToBlob(photo) : photo.file!;
+          const { error: uploadError } = await supabase.storage.from("report-photos").upload(path, uploadBody, {
+            contentType: hasPhotoOverlay(photo) ? "image/jpeg" : photo.file?.type || "image/jpeg",
+          });
           if (uploadError) throw uploadError;
-          // Store the storage path (not a public URL) — we'll generate signed URLs when displaying
-          const storagePath = path;
-          uploadedPhotos.push({ url: storagePath, photo });
+          uploadedPhotos.push({
+            url: path,
+            photo: hasPhotoOverlay(photo)
+              ? {
+                  ...photo,
+                  caption: "",
+                  captionPosition: "bottom-center",
+                  captionRotation: 0,
+                  captionFont: "sans-serif",
+                  captionSize: 24,
+                  captionColor: "#FFFFFF",
+                  captionOpacity: 0.8,
+                  showDate: false,
+                }
+              : photo,
+          });
         } else {
-          uploadedPhotos.push({ url: photo.url, photo });
+          uploadedPhotos.push({ url: photo.storagePath || getReportPhotoStoragePath(photo.url), photo });
         }
       }
 
@@ -217,16 +247,8 @@ const ReportPlugin = () => {
 
     // Helper to resolve signed URLs for private bucket
     const resolveUrl = async (path: string) => {
-      let storagePath = path;
-      const publicPrefix = "/storage/v1/object/public/report-photos/";
-      if (path.startsWith("http")) {
-        const idx = path.indexOf(publicPrefix);
-        if (idx !== -1) {
-          storagePath = decodeURIComponent(path.substring(idx + publicPrefix.length));
-        } else {
-          return path;
-        }
-      }
+      const storagePath = getReportPhotoStoragePath(path);
+      if (storagePath.startsWith("http")) return storagePath;
       const { data } = await supabase.storage.from("report-photos").createSignedUrl(storagePath, 3600);
       return data?.signedUrl ?? path;
     };
@@ -242,6 +264,7 @@ const ReportPlugin = () => {
       const resolved = await Promise.all(reportPhotos.map(async (p: any) => ({
         id: p.id,
         url: await resolveUrl(p.photo_url),
+        storagePath: getReportPhotoStoragePath(p.photo_url),
         caption: p.caption || "",
         captionPosition: p.caption_position || "bottom-center",
         captionFont: p.caption_font || "sans-serif",
@@ -256,6 +279,7 @@ const ReportPlugin = () => {
       setPhotos([{
         id: `legacy-${r.id}`,
         url: resolvedUrl,
+        storagePath: getReportPhotoStoragePath(r.photo_url),
         caption: "",
         captionPosition: "bottom-center",
         captionFont: "sans-serif",
@@ -381,7 +405,12 @@ const ReportPlugin = () => {
                   {folders.map((f: any) => (
                     <button key={f.id} onClick={() => setFolderId(folderId === f.id ? null : f.id)}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 transition-all text-[10px] font-medium ${folderId === f.id ? "border border-primary/20" : "border border-transparent hover:bg-secondary"}`}
-                      style={{ backgroundColor: folderId === f.id ? `hsl(${f.color} / 0.15)` : undefined }}>
+                      style={folderId === f.id ? {
+                        backgroundColor: `hsl(${f.color} / 0.16)`,
+                        borderColor: `hsl(${f.color})`,
+                        color: `hsl(${f.color})`,
+                        boxShadow: `0 0 0 2px hsl(${f.color} / 0.18)`,
+                      } : undefined}>
                       <span className="text-sm">{f.icon}</span>
                       <span className="truncate max-w-[48px]">{f.name}</span>
                     </button>
@@ -398,7 +427,10 @@ const ReportPlugin = () => {
         </div>
 
         {/* Form */}
-        <div className="field-form-panel space-y-4">
+        <div
+          className="field-form-panel space-y-4"
+          style={{ borderLeft: `4px solid hsl(${color})`, boxShadow: `0 0 0 3px hsl(${color} / 0.08), var(--shadow-md)` }}
+        >
           {editingId && (
             <div className="flex items-center justify-between bg-primary/10 px-3 py-2 rounded-lg">
               <span className="text-xs font-medium text-primary">Mode édition</span>
@@ -502,8 +534,13 @@ const ReportPlugin = () => {
                 <div className="flex flex-wrap gap-1.5">
                   {colorOptions.map((c) => (
                     <button key={c.value} onClick={() => setColor(c.value)} title={c.label}
-                      className={`w-11 h-11 rounded-lg border-2 transition-all ${color === c.value ? "border-foreground scale-105" : "border-transparent"}`}
-                      style={{ backgroundColor: `hsl(${c.value})` }} />
+                      className={`w-11 h-11 rounded-lg border-2 transition-all ${color === c.value ? "scale-105 shadow-lg" : "border-transparent"}`}
+                      style={{
+                        backgroundColor: `hsl(${c.value})`,
+                        borderColor: color === c.value ? `hsl(${c.value})` : "transparent",
+                        boxShadow: color === c.value ? `0 0 0 3px hsl(${c.value} / 0.28)` : undefined,
+                      }}
+                      aria-pressed={color === c.value} />
                   ))}
                 </div>
               </div>
@@ -520,7 +557,12 @@ const ReportPlugin = () => {
                     {folders.map((f: any) => (
                       <button key={f.id} onClick={() => setFolderId(f.id)}
                         className={`text-xs px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${folderId === f.id ? "font-medium" : "text-muted-foreground hover:bg-secondary"}`}
-                        style={folderId === f.id ? { backgroundColor: `hsl(${f.color} / 0.15)`, color: `hsl(${f.color})` } : {}}>
+                        style={folderId === f.id ? {
+                          backgroundColor: `hsl(${f.color} / 0.16)`,
+                          color: `hsl(${f.color})`,
+                          border: `1px solid hsl(${f.color})`,
+                          boxShadow: `0 0 0 2px hsl(${f.color} / 0.16)`,
+                        } : {}}>
                         <span className="text-sm">{f.icon}</span> {f.name}
                       </button>
                     ))}

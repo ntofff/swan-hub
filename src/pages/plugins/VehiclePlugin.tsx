@@ -530,15 +530,6 @@ const VehiclePlugin = () => {
           </div>
         )}
       </div>
-      <div className="field-floating-add">
-        <button
-          onClick={toggleCreate}
-          className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
-          aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
-          {createOpen ? <X size={24} /> : <Plus size={28} />}
-        </button>
-      </div>
-
       <FeedbackButton context="vehicle" />
     </div>
   );

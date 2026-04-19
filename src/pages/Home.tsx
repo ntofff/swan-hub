@@ -1,18 +1,19 @@
 // ============================================================
 // SWAN · HUB — Page d'Accueil
-// Brief SWAN · Actions terrain · Bilan · Activité récente
+// Brief SWAN · Outils · Activité récente
 // ============================================================
 
-import { useState, useMemo, type CSSProperties } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   FileText, CheckSquare, Target, Receipt, BookOpen, Car,
   Users, Wallet, Calendar, Banknote, Timer, Package, ShieldCheck,
-  Sparkles, ChevronRight, Sun, Moon, Bell, Crown, Plus, Route, BarChart3,
+  Sparkles, ChevronRight, Sun, Moon, Bell, Crown,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
+import { FeedbackButton } from '@/components/FeedbackButton';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVE_PLUGINS, SWAN_COPY } from '@/config/tokens';
 
@@ -176,37 +177,6 @@ export default function HomePage() {
     setTheme(isDark ? 'sun' : 'night-gold');
   };
 
-  const quickActions = [
-    { label: 'Rapport', desc: 'Terrain + photos', icon: FileText, path: '/plugins/report', color: '38 50% 58%' },
-    { label: 'Tâche', desc: 'À faire maintenant', icon: CheckSquare, path: '/plugins/tasks?new=1', color: '142 71% 45%' },
-    { label: 'Devis', desc: 'Client + montant', icon: Receipt, path: '/plugins/quotes?tab=devis&new=1', color: '270 50% 60%' },
-    { label: 'Trajet', desc: 'Km + IK', icon: Route, path: '/plugins/vehicle?tab=trips&new=1', color: '38 92% 50%' },
-  ];
-
-  const mainDoors = [
-    {
-      label: 'Créer',
-      desc: 'Rapport, tâche, devis ou trajet',
-      icon: Plus,
-      path: '/plugins/report',
-      primary: true,
-    },
-    {
-      label: 'Continuer',
-      desc: activity.length > 0 ? 'Reprendre le dernier élément' : 'Voir vos outils actifs',
-      icon: CheckSquare,
-      path: activity[0]?.path || '/plugins',
-      primary: false,
-    },
-    {
-      label: 'Voir le bilan',
-      desc: 'Chiffres, retards et activité',
-      icon: BarChart3,
-      path: '/dashboard',
-      primary: false,
-    },
-  ];
-
   return (
     <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
       {/* ── Header ─────────────────────────────── */}
@@ -250,68 +220,6 @@ export default function HomePage() {
           </button>
         </div>
       </header>
-
-      {/* ── 3 portes principales ───────────────── */}
-      <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
-        <div className="field-zone">
-          <div className="field-zone-header">
-            <h2 className="field-zone-title">Que voulez-vous faire ?</h2>
-            <span className="field-zone-help">3 touches max</span>
-          </div>
-          <div className="field-command-grid">
-            {mainDoors.map((door) => (
-              <button
-                key={door.label}
-                onClick={() => navigate(door.path)}
-                className={`field-command-card ${door.primary ? 'primary' : ''}`}
-              >
-                <span className="field-command-icon">
-                  <door.icon size={24} strokeWidth={2.3} />
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <span className="field-command-title">{door.label}</span>
-                  <span className="field-command-desc">{door.desc}</span>
-                </span>
-                <ChevronRight size={18} style={{ color: 'var(--color-text-3)', marginLeft: 'auto' }} />
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Actions rapides terrain ───────────── */}
-      <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
-        <div className="field-zone-header">
-          <h2 className="field-zone-title">Créer maintenant</h2>
-          <span className="field-zone-help">Essentiel</span>
-        </div>
-
-        <div className="field-responsive-grid">
-          {quickActions.map((action) => (
-            <button
-              key={action.label}
-              onClick={() => navigate(action.path)}
-              className="plugin-record flex items-center gap-3 text-left"
-              style={{ '--record-color': `hsl(${action.color})` } as CSSProperties}
-            >
-              <div
-                className="plugin-icon-wrapper"
-                style={{ backgroundColor: `hsl(${action.color} / 0.12)` }}
-              >
-                <action.icon size={22} style={{ color: `hsl(${action.color})` }} strokeWidth={2.2} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="plugin-record-title flex items-center gap-2">
-                  <Plus size={15} />
-                  {action.label}
-                </div>
-                <div className="plugin-record-meta mt-1">{action.desc}</div>
-              </div>
-              <ChevronRight size={18} style={{ color: 'var(--color-text-3)', flexShrink: 0 }} />
-            </button>
-          ))}
-        </div>
-      </section>
 
       {/* ── Brief SWAN ─────────────────────────── */}
       <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
@@ -376,7 +284,7 @@ export default function HomePage() {
       {/* ── Activité récente ───────────────────── */}
       <section className="field-workspace">
         <div className="field-zone-header">
-          <h2 className="field-zone-title">Continuer</h2>
+          <h2 className="field-zone-title">Activité récente</h2>
           <span className="field-zone-help">Derniers éléments</span>
         </div>
 
@@ -436,6 +344,8 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      <FeedbackButton context="home" />
     </div>
   );
 }
