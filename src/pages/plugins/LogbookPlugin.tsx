@@ -296,7 +296,7 @@ const LogbookPlugin = () => {
         {selectMode && tab === "active" && (
           <div className="glass-card p-3 space-y-2 slide-up">
             <div className="flex items-center justify-between">
-              <button onClick={selectAll} className="text-xs text-primary font-medium">
+              <button onClick={selectAll} className="btn btn-secondary btn-xs">
                 {selectedIds.size === filtered.length ? "Tout désélectionner" : "Tout sélectionner"}
               </button>
               <span className="text-[10px] text-muted-foreground">

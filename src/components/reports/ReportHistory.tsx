@@ -257,9 +257,9 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                         )}
                       </div>
                       <div className="flex items-center gap-0.5 shrink-0">
-                        <button onClick={() => onEdit(r)} className="p-1.5 text-muted-foreground hover:text-primary"><Pencil size={13} /></button>
-                        <button onClick={() => toggleShareMenu(r)} className="p-1.5 text-muted-foreground hover:text-primary"><Share2 size={13} /></button>
-                        <button onClick={() => { if (window.confirm("Supprimer ce rapport ?")) onDelete(r.id); }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 size={13} /></button>
+                        <button onClick={() => onEdit(r)} className="btn btn-icon-xs btn-ghost"><Pencil size={13} /></button>
+                        <button onClick={() => toggleShareMenu(r)} className="btn btn-icon-xs btn-ghost"><Share2 size={13} /></button>
+                        <button onClick={() => { if (window.confirm("Supprimer ce rapport ?")) onDelete(r.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={13} /></button>
                       </div>
                     </div>
 
@@ -273,7 +273,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                         {shareActions.map((s) => (
                           <button key={s.id} onClick={() => handleShare(r, s.id)}
                             disabled={loadingShareId === r.id}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] transition-colors bg-secondary text-muted-foreground hover:text-foreground disabled:opacity-50">
+                            className="btn btn-secondary btn-xs">
                             <s.icon size={11} /> {s.label}
                           </button>
                         ))}

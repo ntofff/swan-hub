@@ -119,6 +119,31 @@
   --gradient-subtle: linear-gradient(180deg, #1A1A1A, #111111);
   --gradient-glow:   radial-gradient(ellipse at top, rgba(201,169,97,0.08) 0%, transparent 60%);
   --gradient-card:   linear-gradient(145deg, #1C1C1C, #141414);
+
+  /* Compatibilité Tailwind / shadcn */
+  --background: 0 0% 3%;
+  --foreground: 40 23% 95%;
+  --card: 0 0% 10%;
+  --card-foreground: 40 23% 95%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 40 23% 95%;
+  --primary: 42 50% 58%;
+  --primary-foreground: 20 11% 4%;
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 40 23% 95%;
+  --muted: 0 0% 9%;
+  --muted-foreground: 38 6% 64%;
+  --accent: 0 0% 13%;
+  --accent-foreground: 40 23% 95%;
+  --destructive: 6 50% 50%;
+  --destructive-foreground: 40 23% 95%;
+  --border: 0 0% 100% / 0.07;
+  --input: 0 0% 100% / 0.10;
+  --ring: 42 50% 58%;
+  --radius: var(--radius-md);
+  --success: 138 19% 45%;
+  --warning: 28 54% 54%;
+  --info: 209 48% 52%;
 }
 
 /* ============================================================
@@ -162,6 +187,29 @@
   --shadow-md:  0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
   --shadow-lg:  0 10px 30px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1);
   --shadow-glow: 0 0 24px rgba(138, 106, 30, 0.2);
+
+  --background: 42 30% 95%;
+  --foreground: 33 21% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 33 21% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 33 21% 8%;
+  --primary: 43 64% 33%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 39 20% 89%;
+  --secondary-foreground: 33 21% 8%;
+  --muted: 39 20% 89%;
+  --muted-foreground: 40 12% 32%;
+  --accent: 39 20% 89%;
+  --accent-foreground: 33 21% 8%;
+  --destructive: 5 62% 41%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 0% / 0.10;
+  --input: 0 0% 0% / 0.12;
+  --ring: 43 64% 33%;
+  --success: 136 41% 30%;
+  --warning: 36 64% 33%;
+  --info: 202 68% 32%;
 }
 
 /* ============================================================
@@ -205,6 +253,29 @@
   --shadow-md:  0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
   --shadow-lg:  0 10px 30px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08);
   --shadow-glow: 0 0 24px rgba(44, 95, 138, 0.2);
+
+  --background: 240 8% 96%;
+  --foreground: 225 13% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 225 13% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 225 13% 12%;
+  --primary: 204 52% 36%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 225 7% 93%;
+  --secondary-foreground: 225 13% 12%;
+  --muted: 225 7% 93%;
+  --muted-foreground: 225 10% 39%;
+  --accent: 225 7% 93%;
+  --accent-foreground: 225 13% 12%;
+  --destructive: 5 62% 41%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 0% / 0.08;
+  --input: 0 0% 0% / 0.12;
+  --ring: 204 52% 36%;
+  --success: 143 61% 30%;
+  --warning: 43 64% 33%;
+  --info: 204 52% 36%;
 }
 
 /* ============================================================
@@ -243,6 +314,29 @@
   --gradient-subtle: linear-gradient(180deg, #2E2820, #241F19);
   --gradient-glow:   radial-gradient(ellipse at top, rgba(196,168,122,0.07) 0%, transparent 60%);
   --gradient-card:   linear-gradient(145deg, #302A22, #28221C);
+
+  --background: 30 17% 9%;
+  --foreground: 39 47% 86%;
+  --card: 32 20% 15%;
+  --card-foreground: 39 47% 86%;
+  --popover: 32 20% 13%;
+  --popover-foreground: 39 47% 86%;
+  --primary: 37 39% 62%;
+  --primary-foreground: 30 31% 8%;
+  --secondary: 30 14% 18%;
+  --secondary-foreground: 39 47% 86%;
+  --muted: 30 14% 18%;
+  --muted-foreground: 35 18% 58%;
+  --accent: 30 14% 18%;
+  --accent-foreground: 39 47% 86%;
+  --destructive: 7 48% 55%;
+  --destructive-foreground: 39 47% 86%;
+  --border: 40 100% 89% / 0.08;
+  --input: 40 100% 89% / 0.12;
+  --ring: 37 39% 62%;
+  --success: 137 25% 52%;
+  --warning: 32 53% 53%;
+  --info: 213 39% 59%;
 }
 
 /* ============================================================
@@ -274,6 +368,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100dvh;
   overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  background: transparent;
+  color: inherit;
+  border: 0;
 }
 
 /* ============================================================
@@ -397,6 +504,19 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   transition: transform var(--duration-instant) var(--ease-out);
 }
 
+.glass-card,
+.glass-card-glow {
+  background: var(--gradient-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-card-glow {
+  border-color: rgba(201, 169, 97, 0.25);
+  box-shadow: var(--shadow-glow-sm), var(--shadow-md);
+}
+
 /* ============================================================
    COMPOSANTS DE BASE — Boutons
    ============================================================ */
@@ -483,6 +603,14 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   border-radius: var(--radius-sm);
 }
 
+.btn-xs {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
+  gap: var(--space-1);
+}
+
 .btn-lg {
   min-height: var(--tap-large);
   padding: var(--space-4) var(--space-8);
@@ -505,6 +633,13 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   min-width: var(--tap-min);
   min-height: var(--tap-min);
   padding: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.btn-icon-xs {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px;
   border-radius: var(--radius-sm);
 }
 
@@ -1193,3 +1328,5 @@ select.input {
   background: var(--color-primary-glow);
   color: var(--color-text-1);
 }
+
+@tailwind utilities;

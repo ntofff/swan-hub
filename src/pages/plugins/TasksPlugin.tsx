@@ -383,7 +383,7 @@ const TasksPlugin = () => {
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && addTask.mutate()}
               placeholder="Nom de la tâche..." className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" autoFocus />
 
-            <button type="button" onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <button type="button" onClick={() => setShowOptions(!showOptions)} className="btn btn-secondary btn-xs">
               {showOptions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               Plus d'options
             </button>

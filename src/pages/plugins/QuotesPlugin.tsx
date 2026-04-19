@@ -937,7 +937,7 @@ const QuotesPlugin = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold font-heading">{selectedItem.title}</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-1"><Palette size={14} className="text-muted-foreground" /></button>
+                  <button onClick={() => setShowColorPicker(!showColorPicker)} className="btn btn-icon-xs btn-ghost"><Palette size={14} /></button>
                   <span className="text-xs px-2.5 py-1 rounded-full" style={{ backgroundColor: `hsl(${statusColors[selectedItem.status] || "0 0% 50%"} / 0.12)`, color: `hsl(${statusColors[selectedItem.status] || "0 0% 50%"})` }}>
                     {selectedItem.status}
                   </span>
@@ -1072,7 +1072,9 @@ const QuotesPlugin = () => {
             ))}
             <div className="grid grid-cols-4 gap-2">
               {[{ m: "copy" as const, icon: Copy, label: "Copier" }, { m: "email" as const, icon: Mail, label: "Email" }, { m: "sms" as const, icon: MessageSquare, label: "SMS" }, { m: "whatsapp" as const, icon: Phone, label: "WhatsApp" }].map(s => (
-                <button key={s.m} onClick={() => handleShare(s.m)} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-secondary text-xs"><s.icon size={16} />{s.label}</button>
+                <button key={s.m} onClick={() => handleShare(s.m)} className="btn btn-secondary btn-xs flex-col">
+                  <s.icon size={16} />{s.label}
+                </button>
               ))}
             </div>
           </div>
@@ -1281,7 +1283,7 @@ const QuotesPlugin = () => {
                   </div>
                 </div>
 
-                <button onClick={() => setFShowOptions(!fShowOptions)} className="text-xs text-primary">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
+                <button onClick={() => setFShowOptions(!fShowOptions)} className="btn btn-secondary btn-xs">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
 
                 {fShowOptions && (
                   <div className="space-y-3 pt-1">
@@ -1345,7 +1347,7 @@ const QuotesPlugin = () => {
                   </div>
                 </div>
 
-                <button onClick={() => setFShowOptions(!fShowOptions)} className="text-xs text-primary">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
+                <button onClick={() => setFShowOptions(!fShowOptions)} className="btn btn-secondary btn-xs">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
 
                 {fShowOptions && (
                   <div className="space-y-3 pt-1">

@@ -241,7 +241,7 @@ const MissionsPlugin = () => {
               className={inputCls} />
 
             {/* Options */}
-            <button onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={() => setShowOptions(!showOptions)} className="btn btn-secondary btn-xs">
               {showOptions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               Plus d'options
             </button>

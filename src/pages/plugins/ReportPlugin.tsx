@@ -304,12 +304,12 @@ const ReportPlugin = () => {
         <div className="glass-card px-3 py-2">
           <div className="flex items-center justify-between">
             <button onClick={() => setShowFolderStrip(!showFolderStrip)}
-              className="text-[10px] font-medium text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors">
+              className="btn btn-secondary btn-xs">
               {showFolderStrip ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
               <FolderOpen size={11} /> Dossiers
             </button>
             <button onClick={() => setShowFolderManager((prev) => !prev)}
-              className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium">
+              className="btn btn-secondary btn-xs">
               <FolderPlus size={10} /> {showFolderManager ? "Fermer" : "Gérer"}
             </button>
           </div>
@@ -349,7 +349,7 @@ const ReportPlugin = () => {
           {editingId && (
             <div className="flex items-center justify-between bg-primary/10 px-3 py-2 rounded-lg">
               <span className="text-xs font-medium text-primary">Mode édition</span>
-              <button onClick={resetForm} className="text-xs text-muted-foreground hover:text-foreground">Annuler</button>
+              <button onClick={resetForm} className="btn btn-ghost btn-xs">Annuler</button>
             </div>
           )}
 
@@ -396,7 +396,7 @@ const ReportPlugin = () => {
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs text-muted-foreground">Contenu</label>
               <button onClick={toggleDictation}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${isListening ? "bg-destructive/15 text-destructive animate-pulse" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+                className={`btn btn-xs ${isListening ? "btn-danger animate-pulse" : "btn-secondary"}`}>
                 {isListening ? <MicOff size={12} /> : <Mic size={12} />}
                 {isListening ? "Stop" : "Dicter"}
               </button>
@@ -416,7 +416,7 @@ const ReportPlugin = () => {
             <div className="glass-card p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-primary flex items-center gap-1.5"><Sparkles size={12} /> Résumé IA</span>
-                <button onClick={() => setAiSummary("")} className="p-0.5 text-muted-foreground hover:text-destructive"><X size={12} /></button>
+                <button onClick={() => setAiSummary("")} className="btn btn-icon-xs btn-ghost"><X size={12} /></button>
               </div>
               <p className="text-xs text-secondary-foreground leading-relaxed whitespace-pre-line">{aiSummary}</p>
               <div className="flex gap-1.5 pt-1">
@@ -437,7 +437,7 @@ const ReportPlugin = () => {
 
           {/* Collapsible options */}
           <button onClick={() => setShowOptions(!showOptions)}
-            className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground py-1 transition-colors">
+            className="btn btn-secondary btn-full btn-xs">
             {showOptions ? "Masquer les options" : "Plus d'options"}
           </button>
 

@@ -164,13 +164,13 @@ const ReportPhotoGallery = ({ photos, onChange }: Props) => {
 
       <div className="flex items-center justify-between">
         <button onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          className="btn btn-secondary btn-xs">
           {collapsed ? <EyeOff size={12} /> : <Eye size={12} />}
           Photos ({photos.length})
           {collapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
         </button>
         <button onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-secondary text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+          className="btn btn-primary btn-xs">
           <Camera size={12} /> Ajouter
         </button>
       </div>
@@ -436,7 +436,7 @@ const CaptionEditor = ({
     <div className="glass-card p-2.5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-primary flex items-center gap-1"><Pencil size={11} /> Marquage</span>
-        <button onClick={onClose} className="p-0.5 text-muted-foreground hover:text-foreground"><X size={13} /></button>
+        <button onClick={onClose} className="btn btn-icon-xs btn-ghost"><X size={13} /></button>
       </div>
 
       <input

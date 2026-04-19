@@ -72,7 +72,7 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
     <div className="rounded-2xl border border-border bg-secondary/20 p-3 sm:p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Gérer les dossiers</h3>
-        <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
+        <button onClick={onClose} className="btn btn-icon-xs btn-ghost">
           <X size={18} />
         </button>
       </div>
@@ -129,7 +129,7 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
         <button
           onClick={() => createFolder.mutate()}
           disabled={!name.trim() || createFolder.isPending}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
+          className="btn btn-primary btn-full"
         >
           <Plus size={14} /> Créer le dossier
         </button>
@@ -153,15 +153,15 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
                 <span className="text-sm font-medium truncate">{folder.name}</span>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => reorderFolder.mutate({ idx, dir: -1 })} disabled={idx === 0} className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+                <button onClick={() => reorderFolder.mutate({ idx, dir: -1 })} disabled={idx === 0} className="btn btn-icon-xs btn-secondary">
                   <ArrowUp size={14} />
                 </button>
-                <button onClick={() => reorderFolder.mutate({ idx, dir: 1 })} disabled={idx === folders.length - 1} className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+                <button onClick={() => reorderFolder.mutate({ idx, dir: 1 })} disabled={idx === folders.length - 1} className="btn btn-icon-xs btn-secondary">
                   <ArrowDown size={14} />
                 </button>
                 <button
                   onClick={() => { if (window.confirm(`Supprimer le dossier "${folder.name}" ?`)) deleteFolder.mutate(folder.id); }}
-                  className="p-1.5 text-muted-foreground hover:text-destructive"
+                  className="btn btn-icon-xs btn-ghost"
                 >
                   <Trash2 size={14} />
                 </button>
