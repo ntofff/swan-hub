@@ -33,6 +33,41 @@ const colorOptions = [
 
 const inputCls = "w-full max-w-full box-border bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors [&::-webkit-calendar-picker-indicator]:opacity-60";
 
+const buildLocalSummary = ({
+  text,
+  title,
+  location,
+  date,
+  priority,
+  hasPhoto,
+}: {
+  text: string;
+  title: string;
+  location: string;
+  date: string;
+  priority: string;
+  hasPhoto: boolean;
+}) => {
+  const cleanText = text.replace(/\s+/g, " ").trim();
+  const sentences = cleanText
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  const points = sentences.length > 0 ? sentences : [cleanText.slice(0, 180)];
+
+  return [
+    `- Priorité du rapport : ${priority || "normale"}`,
+    `- Lieu : ${location || "non renseigné"}`,
+    `- Date et heure : ${date}`,
+    `- Objet / contexte : ${title || "rapport terrain"}`,
+    ...points.map((point) => `- Point clé : ${point}`),
+    `- Photo jointe : ${hasPhoto ? "oui" : "non"}`,
+    "- Recommandation : vérifier les points relevés et compléter le rapport si nécessaire.",
+  ].join("\n");
+};
+
 const ReportPlugin = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -268,17 +303,32 @@ const ReportPlugin = () => {
   const handleAiSummary = async () => {
     if (!notes.trim()) { toast.error("Rédigez d'abord le contenu"); return; }
     setAiLoading(true);
+    const formattedDate = new Date(reportDate).toLocaleString("fr-FR", {
+      day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+    const fallbackSummary = buildLocalSummary({
+      text: notes,
+      title,
+      location,
+      date: formattedDate,
+      priority,
+      hasPhoto: photos.length > 0,
+    });
+
     try {
-      const formattedDate = new Date(reportDate).toLocaleString("fr-FR", {
-        day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
-      });
       const { data, error } = await supabase.functions.invoke("summarize-report", {
         body: { text: notes, title, location, date: formattedDate, priority, photo_url: photos[0]?.url },
       });
       if (error) throw error;
-      if (data?.error) { toast.error(data.error); return; }
-      setAiSummary(data.summary); toast.success("Résumé IA généré");
-    } catch (e: any) { toast.error("Erreur IA"); } finally { setAiLoading(false); }
+      if (data?.error) throw new Error(data.error);
+      if (!data?.summary) throw new Error("Résumé IA vide");
+      setAiSummary(data.summary);
+      toast.success("Résumé IA généré");
+    } catch (e: any) {
+      console.error("Erreur résumé IA:", e);
+      setAiSummary(fallbackSummary);
+      toast.warning("Service IA indisponible, résumé local généré");
+    } finally { setAiLoading(false); }
   };
 
   const exportAiSummary = async (method: string) => {

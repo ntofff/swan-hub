@@ -171,9 +171,13 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
 
   const getFolderInfo = (folderId: string | null) => folders.find((f: any) => f.id === folderId);
 
-  const formatDate = (r: any) => {
+  const formatDateTime = (r: any) => {
     const d = r.report_date || r.created_at;
-    return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const parsed = new Date(d);
+    return {
+      date: parsed.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }),
+      time: parsed.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    };
   };
 
   return (
@@ -232,7 +236,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
             )}
           </div>
 
-          <div className="divide-y divide-border">
+          <div className="space-y-3 px-4 py-3">
             {filtered.length === 0 ? (
               <div className="p-6 text-center">
                 <AlertCircle size={20} className="mx-auto text-muted-foreground mb-2" />
@@ -243,18 +247,29 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
             ) : (
               filtered.map((r: any) => {
                 const folder = getFolderInfo(r.folder_id);
+                const reportDate = formatDateTime(r);
                 return (
-                  <div key={r.id} className="px-4 py-3 space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: `hsl(${r.color || "38 50% 58%"})` }} />
-                        <span className="text-sm font-medium truncate">{r.title}</span>
-                        {r.priority && r.priority !== "normale" && (
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${r.priority === "urgente" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
-                            {r.priority}
-                          </span>
-                        )}
+                  <article
+                    key={r.id}
+                    className="rounded-xl border border-border bg-background/55 p-3 space-y-2 shadow-sm"
+                    style={{ borderLeft: `3px solid hsl(${r.color || "38 50% 58%"})` }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <h3 className="text-base font-bold font-heading truncate">{r.title}</h3>
+                          {r.priority && r.priority !== "normale" && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${r.priority === "urgente" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
+                              {r.priority}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+                          <Clock size={11} />
+                          <span>{reportDate.date}</span>
+                          <span className="text-muted-foreground">à</span>
+                          <span>{reportDate.time}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-0.5 shrink-0">
                         <button onClick={() => onEdit(r)} className="btn btn-icon-xs btn-ghost"><Pencil size={13} /></button>
@@ -280,11 +295,12 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                       </div>
                     )}
 
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <div className="h-px bg-border/70" />
+
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
                       {r.location && (
                         <span className="flex items-center gap-1"><MapPin size={10} /> {r.location}</span>
                       )}
-                      <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(r)}</span>
                       {folder && (
                         <span className="flex items-center gap-1" style={{ color: `hsl(${folder.color})` }}>
                           <span className="text-xs">{folder.icon}</span> {folder.name}
@@ -300,7 +316,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                         ))}
                       </div>
                     )}
-                  </div>
+                  </article>
                 );
               })
             )}
