@@ -31,7 +31,7 @@ const colorOptions = [
   { value: "330 70% 55%", label: "Rose" },
 ];
 
-const inputCls = "w-full max-w-full box-border bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors [&::-webkit-calendar-picker-indicator]:opacity-60";
+const inputCls = "field-input max-w-full box-border [&::-webkit-calendar-picker-indicator]:opacity-60";
 
 const buildLocalSummary = ({
   text,
@@ -395,7 +395,7 @@ const ReportPlugin = () => {
         </div>
 
         {/* Form */}
-        <div className="glass-card p-4 space-y-3">
+        <div className="field-form-panel space-y-4">
           {editingId && (
             <div className="flex items-center justify-between bg-primary/10 px-3 py-2 rounded-lg">
               <span className="text-xs font-medium text-primary">Mode édition</span>
@@ -409,11 +409,11 @@ const ReportPlugin = () => {
 
           {/* Priority */}
           <div>
-            <label className="text-xs text-muted-foreground mb-1.5 block">Priorité</label>
-            <div className="flex gap-1.5">
+            <label className="field-label">Priorité</label>
+            <div className="field-choice-row">
               {priorityOptions.map((p) => (
                 <button key={p.value} onClick={() => setPriority(p.value)}
-                  className={`flex-1 text-xs py-2 rounded-lg transition-colors font-medium ${
+                  className={`field-choice ${
                     priority === p.value
                       ? p.value === "urgente" ? "bg-destructive/15 text-destructive"
                         : p.value === "haute" ? "bg-warning/15 text-warning"
@@ -444,7 +444,7 @@ const ReportPlugin = () => {
           {/* Notes + Dictation */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs text-muted-foreground">Contenu</label>
+              <label className="field-label mb-0">Contenu</label>
               <button onClick={toggleDictation}
                 className={`btn btn-xs ${isListening ? "btn-danger animate-pulse" : "btn-secondary"}`}>
                 {isListening ? <MicOff size={12} /> : <Mic size={12} />}
@@ -453,7 +453,7 @@ const ReportPlugin = () => {
             </div>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Décrivez le rapport..."
-              rows={4} className={`${inputCls} resize-none`} />
+              rows={4} className={`${inputCls} field-textarea`} />
           </div>
 
           {/* AI Summary */}
@@ -487,7 +487,7 @@ const ReportPlugin = () => {
 
           {/* Collapsible options */}
           <button onClick={() => setShowOptions(!showOptions)}
-            className="btn btn-secondary btn-full btn-xs">
+            className="btn btn-secondary btn-full">
             {showOptions ? "Masquer les options" : "Plus d'options"}
           </button>
 
@@ -495,11 +495,11 @@ const ReportPlugin = () => {
             <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
               {/* Color */}
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">Couleur</label>
+                <label className="field-label">Couleur</label>
                 <div className="flex flex-wrap gap-1.5">
                   {colorOptions.map((c) => (
                     <button key={c.value} onClick={() => setColor(c.value)} title={c.label}
-                      className={`w-6 h-6 rounded-lg border-2 transition-all ${color === c.value ? "border-foreground scale-110" : "border-transparent"}`}
+                      className={`w-11 h-11 rounded-lg border-2 transition-all ${color === c.value ? "border-foreground scale-105" : "border-transparent"}`}
                       style={{ backgroundColor: `hsl(${c.value})` }} />
                   ))}
                 </div>
@@ -508,7 +508,7 @@ const ReportPlugin = () => {
               {/* Folder selector */}
               {folders.length > 0 && (
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Dossier</label>
+                  <label className="field-label">Dossier</label>
                   <div className="flex gap-1.5 flex-wrap">
                     <button onClick={() => setFolderId(null)}
                       className={`text-xs px-2.5 py-1.5 rounded-lg transition-colors ${!folderId ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary"}`}>

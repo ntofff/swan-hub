@@ -201,7 +201,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher un rapport..."
-                className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+                className="field-input field-input-compact pl-9"
               />
             </div>
           </div>

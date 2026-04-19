@@ -13,7 +13,7 @@ interface Props {
   onClose: () => void;
 }
 
-const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
+const inputCls = "field-input";
 
 const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
   const { user } = useAuth();
@@ -94,13 +94,13 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
         />
 
         <div>
-          <label className="text-[10px] text-muted-foreground mb-1 block">Icône</label>
+          <label className="field-label">Icône</label>
           <div className="flex flex-wrap gap-1.5">
             {emojiOptions.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => setIcon(emoji)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition-all ${icon === emoji ? "bg-primary/15 border border-primary/30 scale-110" : "bg-secondary hover:bg-secondary/80"}`}
+                className={`w-11 h-11 rounded-lg flex items-center justify-center text-lg transition-all ${icon === emoji ? "bg-primary/15 border border-primary/30 scale-105" : "bg-secondary hover:bg-secondary/80"}`}
               >
                 {emoji}
               </button>
@@ -109,14 +109,14 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
         </div>
 
         <div>
-          <label className="text-[10px] text-muted-foreground mb-1 block">Couleur</label>
+          <label className="field-label">Couleur</label>
           <div className="flex flex-wrap gap-1.5">
             {colorOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setColor(option.value)}
                 title={option.label}
-                className={`w-7 h-7 rounded-lg border-2 transition-all ${color === option.value ? "border-foreground scale-110" : "border-transparent"}`}
+                className={`w-11 h-11 rounded-lg border-2 transition-all ${color === option.value ? "border-foreground scale-105" : "border-transparent"}`}
                 style={{ backgroundColor: `hsl(${option.value})` }}
               />
             ))}

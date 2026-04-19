@@ -229,7 +229,7 @@ const VehiclePlugin = () => {
     return { ...d, tripCount: dTrips.length, km: dTrips.reduce((s: number, t: any) => s + (t.distance || 0), 0) };
   });
 
-  const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
+  const inputCls = "field-input";
 
   return (
     <div className="fade-in">
@@ -247,13 +247,13 @@ const VehiclePlugin = () => {
 
         {/* Trip form */}
         {showTripForm && (
-          <div className="glass-card p-4 mb-4 space-y-3 slide-up">
+          <div className="field-form-panel mb-4 space-y-4 slide-up">
             {frequentRoutes.length > 0 && (
               <div>
-                <p className="text-[10px] text-muted-foreground mb-1">Presets :</p>
+                <p className="field-label">Presets :</p>
                 <div className="flex gap-1.5 flex-wrap">
                   {frequentRoutes.map((r: any) => (
-                    <button key={r.id} onClick={() => useRoutePreset(r)} className="btn btn-secondary btn-xs">{r.name}</button>
+                    <button key={r.id} onClick={() => useRoutePreset(r)} className="btn btn-secondary btn-sm">{r.name}</button>
                   ))}
                 </div>
               </div>
@@ -295,7 +295,7 @@ const VehiclePlugin = () => {
 
         {/* Vehicle form */}
         {showVehicleForm && (
-          <div className="glass-card p-4 mb-4 space-y-3 slide-up">
+          <div className="field-form-panel mb-4 space-y-4 slide-up">
             <input value={vehicleData.name} onChange={e => setVehicleData(d => ({ ...d, name: e.target.value }))} placeholder="Nom du véhicule" className={inputCls} />
             <input value={vehicleData.brand_model} onChange={e => setVehicleData(d => ({ ...d, brand_model: e.target.value }))} placeholder="Marque / Modèle" className={inputCls} />
             <div className="grid grid-cols-2 gap-2">
@@ -312,7 +312,7 @@ const VehiclePlugin = () => {
 
         {/* Driver form */}
         {showDriverForm && (
-          <div className="glass-card p-4 mb-4 space-y-3 slide-up">
+          <div className="field-form-panel mb-4 space-y-4 slide-up">
             <input value={driverData.name} onChange={e => setDriverData(d => ({ ...d, name: e.target.value }))} placeholder="Nom du conducteur" className={inputCls} />
             <input value={driverData.role} onChange={e => setDriverData(d => ({ ...d, role: e.target.value }))} placeholder="Rôle (optionnel)" className={inputCls} />
             <div className="flex gap-2">
@@ -324,7 +324,7 @@ const VehiclePlugin = () => {
 
         {/* Route form */}
         {showRouteForm && (
-          <div className="glass-card p-4 mb-4 space-y-3 slide-up">
+          <div className="field-form-panel mb-4 space-y-4 slide-up">
             <input value={routeData.name} onChange={e => setRouteData(d => ({ ...d, name: e.target.value }))} placeholder="Nom de l'itinéraire" className={inputCls} />
             <div className="grid grid-cols-2 gap-2">
               <input value={routeData.start_location} onChange={e => setRouteData(d => ({ ...d, start_location: e.target.value }))} placeholder="Départ" className={inputCls} />

@@ -35,8 +35,8 @@ const tvaRateOptions = [{ label: "Sans TVA", value: 0 }, { label: "20%", value: 
 type Tab = "devis" | "factures" | "paiements" | "clients" | "dashboard" | "settings";
 type PeriodType = "week" | "month" | "year" | "custom";
 
-const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
-const labelCls = "text-[11px] font-medium text-muted-foreground uppercase tracking-wider";
+const inputCls = "field-input";
+const labelCls = "field-label";
 
 // ── Helpers ──
 const fmtAmount = (n: number) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
@@ -888,7 +888,7 @@ const QuotesPlugin = () => {
 
           {/* Edit mode */}
           {editingItem && (
-            <div className="glass-card p-4 space-y-3 slide-up">
+            <div className="field-form-panel space-y-4 slide-up">
               <p className="text-sm font-semibold">Modifier les informations</p>
               <div>
                 <p className={labelCls}>Date d'émission</p>
@@ -907,7 +907,7 @@ const QuotesPlugin = () => {
                       {d}j
                     </button>
                   ))}
-                  <input value={ePaymentTerms} onChange={e => setEPaymentTerms(e.target.value)} placeholder="Autre" type="number" className="w-16 bg-secondary border border-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <input value={ePaymentTerms} onChange={e => setEPaymentTerms(e.target.value)} placeholder="Autre" type="number" className="field-input field-input-compact w-20" />
                 </div>
               </div>
               <div>
@@ -1217,7 +1217,7 @@ const QuotesPlugin = () => {
         {tab === "clients" && (
           <div className="space-y-3">
             {showClientForm && (
-              <div className="glass-card p-4 space-y-3 slide-up">
+              <div className="field-form-panel space-y-4 slide-up">
                 <input value={cName} onChange={e => setCName(e.target.value)} placeholder="Nom *" className={inputCls} />
                 <input value={cSiret} onChange={e => setCSiret(e.target.value)} placeholder="SIRET" className={inputCls} />
                 <input value={cAddr} onChange={e => setCAddr(e.target.value)} placeholder="Adresse" className={inputCls} />
@@ -1249,7 +1249,7 @@ const QuotesPlugin = () => {
         {(tab === "devis" || tab === "factures") && (
           <>
             {showForm && tab === "devis" && (
-              <div className="glass-card p-4 mb-4 space-y-3 slide-up">
+              <div className="field-form-panel mb-4 space-y-4 slide-up">
                 <input value={fTitle} onChange={e => setFTitle(e.target.value)} placeholder="Titre *" className={inputCls} />
                 <select value={fClientId} onChange={e => setFClientId(e.target.value)} className={inputCls}>
                   <option value="">-- Client --</option>
@@ -1283,7 +1283,7 @@ const QuotesPlugin = () => {
                   </div>
                 </div>
 
-                <button onClick={() => setFShowOptions(!fShowOptions)} className="btn btn-secondary btn-xs">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
+                <button onClick={() => setFShowOptions(!fShowOptions)} className="btn btn-secondary btn-full">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
 
                 {fShowOptions && (
                   <div className="space-y-3 pt-1">
@@ -1296,7 +1296,7 @@ const QuotesPlugin = () => {
                           <button key={d} onClick={() => setFPaymentTerms(fPaymentTerms === String(d) ? "" : String(d))}
                             className={`text-xs px-3 py-1.5 rounded-full transition-colors ${fPaymentTerms === String(d) ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>{d}j</button>
                         ))}
-                        <input value={fPaymentTerms} onChange={e => setFPaymentTerms(e.target.value)} placeholder="Autre" type="number" className="w-16 bg-secondary border border-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <input value={fPaymentTerms} onChange={e => setFPaymentTerms(e.target.value)} placeholder="Autre" type="number" className="field-input field-input-compact w-20" />
                       </div>
                     </div>
                     <div><p className={labelCls}>Encaissement</p>
@@ -1314,7 +1314,7 @@ const QuotesPlugin = () => {
             )}
 
             {showForm && tab === "factures" && (
-              <div className="glass-card p-4 mb-4 space-y-3 slide-up">
+              <div className="field-form-panel mb-4 space-y-4 slide-up">
                 <input value={fTitle} onChange={e => setFTitle(e.target.value)} placeholder="Titre *" className={inputCls} />
                 <select value={fClientId} onChange={e => setFClientId(e.target.value)} className={inputCls}>
                   <option value="">-- Client --</option>
@@ -1347,7 +1347,7 @@ const QuotesPlugin = () => {
                   </div>
                 </div>
 
-                <button onClick={() => setFShowOptions(!fShowOptions)} className="btn btn-secondary btn-xs">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
+                <button onClick={() => setFShowOptions(!fShowOptions)} className="btn btn-secondary btn-full">{fShowOptions ? "Masquer les options" : "＋ Plus d'options"}</button>
 
                 {fShowOptions && (
                   <div className="space-y-3 pt-1">
@@ -1360,7 +1360,7 @@ const QuotesPlugin = () => {
                           <button key={d} onClick={() => setFPaymentTerms(fPaymentTerms === String(d) ? "" : String(d))}
                             className={`text-xs px-3 py-1.5 rounded-full transition-colors ${fPaymentTerms === String(d) ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'}`}>{d}j</button>
                         ))}
-                        <input value={fPaymentTerms} onChange={e => setFPaymentTerms(e.target.value)} placeholder="Autre" type="number" className="w-16 bg-secondary border border-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <input value={fPaymentTerms} onChange={e => setFPaymentTerms(e.target.value)} placeholder="Autre" type="number" className="field-input field-input-compact w-20" />
                       </div>
                     </div>
                     <div><p className={labelCls}>Encaissement</p>
@@ -1379,7 +1379,7 @@ const QuotesPlugin = () => {
 
             <div className="relative mb-3">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="field-input pl-9" />
             </div>
             <div className="flex gap-1 overflow-x-auto mb-4">
               {["all", ...statuses].map(s => (
@@ -1428,7 +1428,7 @@ const QuotesPlugin = () => {
         {tab === "paiements" && (
           <div className="space-y-3">
             {showPayForm && (
-              <div className="glass-card p-4 mb-3 space-y-3 slide-up">
+              <div className="field-form-panel mb-3 space-y-4 slide-up">
                 <p className="text-sm font-semibold">💳 Nouveau paiement</p>
                 <p className="text-[10px] text-muted-foreground">Une facture sera automatiquement créée et marquée comme payée.</p>
                 <input value={pTitle} onChange={e => setPTitle(e.target.value)} placeholder="Titre / objet *" className={inputCls} />

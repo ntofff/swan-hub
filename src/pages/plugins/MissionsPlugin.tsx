@@ -19,8 +19,8 @@ const statusOptions = [
 
 type Tab = "active" | "archived";
 
-const inputCls = "w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
-const inputSmCls = "w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary";
+const inputCls = "field-input";
+const inputSmCls = "field-input field-input-compact";
 
 const MissionsPlugin = () => {
   const { user } = useAuth();
@@ -221,14 +221,14 @@ const MissionsPlugin = () => {
       <div className="px-4 md:px-0 space-y-3">
         {/* Form */}
         {showForm && (
-          <div className="glass-card p-4 space-y-3 slide-up">
+          <div className="field-form-panel space-y-4 slide-up">
             {/* Status */}
             <div>
-              <label className="text-[10px] text-muted-foreground mb-1.5 block">Statut</label>
-              <div className="flex gap-1.5">
+              <label className="field-label">Statut</label>
+              <div className="field-choice-row">
                 {statusOptions.map(s => (
                   <button key={s.value} onClick={() => setStatus(s.value)}
-                    className={`flex-1 text-[10px] py-2 rounded-lg border transition-all ${status === s.value ? s.cls + " border-transparent font-medium" : "border-border text-muted-foreground"}`}>
+                    className={`field-choice ${status === s.value ? s.cls + " border-transparent field-choice-active" : "border-border text-muted-foreground"}`}>
                     {s.value}
                   </button>
                 ))}
@@ -241,8 +241,8 @@ const MissionsPlugin = () => {
               className={inputCls} />
 
             {/* Options */}
-            <button onClick={() => setShowOptions(!showOptions)} className="btn btn-secondary btn-xs">
-              {showOptions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <button onClick={() => setShowOptions(!showOptions)} className="btn btn-secondary btn-full">
+              {showOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               Plus d'options
             </button>
 
@@ -251,45 +251,45 @@ const MissionsPlugin = () => {
                 <div className="relative">
                   <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Lieu..."
-                    className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                    className="field-input pl-8" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Date début</label>
+                    <label className="field-label">Date début</label>
                     <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputSmCls} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Heure</label>
+                    <label className="field-label">Heure</label>
                     <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={inputSmCls} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-muted-foreground mb-1 block">Date fin</label>
+                  <label className="field-label">Date fin</label>
                   <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputSmCls} />
                 </div>
 
                 <div className="relative">
                   <Euro size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input type="number" step="0.01" value={quoteAmount} onChange={e => setQuoteAmount(e.target.value)}
-                    placeholder="Montant devis (€)" className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                    placeholder="Montant devis (€)" className="field-input pl-8" />
                 </div>
 
                 <div className="relative">
                   <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input value={collaborator} onChange={e => setCollaborator(e.target.value)} placeholder="Collaborateur..."
-                    className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                    className="field-input pl-8" />
                 </div>
 
                 <div className="relative">
                   <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input value={contact} onChange={e => setContact(e.target.value)} placeholder="Contact (tél, email...)"
-                    className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                    className="field-input pl-8" />
                 </div>
 
                 <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Commentaires..."
-                  rows={2} className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary" />
+                  rows={2} className="field-input field-textarea" />
               </div>
             )}
 
@@ -302,7 +302,7 @@ const MissionsPlugin = () => {
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..."
-            className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors" />
+            className="field-input pl-9" />
         </div>
 
         {/* Tabs */}
@@ -340,7 +340,7 @@ const MissionsPlugin = () => {
 
               if (editingId === m.id) {
                 return (
-                  <div key={m.id} className="glass-card p-4 space-y-3">
+                  <div key={m.id} className="field-form-panel space-y-4">
                     <div className="flex gap-1.5">
                       {statusOptions.map(s => (
                         <button key={s.value} onClick={() => setEStatus(s.value)}
@@ -354,35 +354,35 @@ const MissionsPlugin = () => {
                     <div className="relative">
                       <MapPin size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <input value={eLocation} onChange={e => setELocation(e.target.value)} placeholder="Lieu..."
-                        className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="field-input field-input-compact pl-8" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[9px] text-muted-foreground mb-0.5 block">Date début</label>
+                        <label className="field-label">Date début</label>
                         <input type="date" value={eStartDate} onChange={e => setEStartDate(e.target.value)} className={inputSmCls} />
                       </div>
                       <div>
-                        <label className="text-[9px] text-muted-foreground mb-0.5 block">Date fin</label>
+                        <label className="field-label">Date fin</label>
                         <input type="date" value={eEndDate} onChange={e => setEEndDate(e.target.value)} className={inputSmCls} />
                       </div>
                     </div>
                     <div className="relative">
                       <Euro size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <input type="number" step="0.01" value={eQuoteAmount} onChange={e => setEQuoteAmount(e.target.value)}
-                        placeholder="Montant devis (€)" className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        placeholder="Montant devis (€)" className="field-input field-input-compact pl-8" />
                     </div>
                     <div className="relative">
                       <User size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <input value={eCollaborator} onChange={e => setECollaborator(e.target.value)} placeholder="Collaborateur..."
-                        className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="field-input field-input-compact pl-8" />
                     </div>
                     <div className="relative">
                       <Phone size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <input value={eContact} onChange={e => setEContact(e.target.value)} placeholder="Contact..."
-                        className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="field-input field-input-compact pl-8" />
                     </div>
                     <textarea value={eNotes} onChange={e => setENotes(e.target.value)} placeholder="Commentaires..."
-                      rows={2} className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary" />
+                      rows={2} className="field-input field-textarea" />
                     <div className="flex gap-2">
                       <button onClick={confirmEdit} disabled={!eTitle.trim()}
                         className="btn btn-primary btn-sm" style={{ flex: 1 }}>

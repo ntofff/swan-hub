@@ -327,13 +327,13 @@ const LogbookPlugin = () => {
         )}
 
         {showForm && (
-          <div className="glass-card p-4 space-y-3 slide-up">
+          <div className="field-form-panel space-y-4 slide-up">
             <div>
-              <label className="text-[10px] text-muted-foreground mb-1.5 block">Étiquette</label>
-              <div className="flex gap-1.5">
+              <label className="field-label">Étiquette</label>
+              <div className="field-choice-row">
                 {priorityOptions.map(p => (
                   <button key={p.value} onClick={() => setNewPriority(p.value)}
-                    className={`flex-1 text-xs py-2 rounded-lg border transition-all ${newPriority === p.value
+                    className={`field-choice ${newPriority === p.value
                       ? (p.cls || "bg-primary/10 text-primary border-primary/30")
                       : "border-border text-muted-foreground hover:bg-secondary"
                     } ${p.cls && newPriority === p.value ? p.cls + " border-transparent" : ""}`}>
@@ -344,29 +344,29 @@ const LogbookPlugin = () => {
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground mb-1.5 block">Couleur</label>
+              <label className="field-label">Couleur</label>
               <div className="flex gap-2">
                 {colorOptions.map(c => (
                   <button key={c.value} onClick={() => setNewColor(c.value)} title={c.label}
-                    className={`w-7 h-7 rounded-full border-2 transition-all ${newColor === c.value ? "border-foreground scale-110" : "border-transparent"}`}
+                    className={`w-11 h-11 rounded-lg border-2 transition-all ${newColor === c.value ? "border-foreground scale-105" : "border-transparent"}`}
                     style={{ backgroundColor: `hsl(${c.value})` }} />
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-muted-foreground mb-1 block">Date</label>
+                <label className="field-label">Date</label>
                 <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                  className="field-input" />
               </div>
               <div>
-                <label className="text-[10px] text-muted-foreground mb-1 block">Heure</label>
+                <label className="field-label">Heure</label>
                 <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                  className="field-input" />
               </div>
             </div>
             <textarea value={newEntry} onChange={e => setNewEntry(e.target.value)} placeholder="Contenu de l'entrée..."
-              rows={3} className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary" />
+              rows={3} className="field-input field-textarea" />
             <button onClick={() => addEntry.mutate()} disabled={!newEntry.trim() || addEntry.isPending}
               className="btn btn-primary btn-full">Ajouter</button>
           </div>
@@ -375,7 +375,7 @@ const LogbookPlugin = () => {
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par texte ou ID..."
-            className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors" />
+            className="field-input pl-9" />
         </div>
 
         {!isLoading && filtered.length > 0 && (
@@ -428,12 +428,12 @@ const LogbookPlugin = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <input type="date" value={editDate} onChange={ev => setEditDate(ev.target.value)}
-                          className="bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                          className="field-input field-input-compact" />
                         <input type="time" value={editTime} onChange={ev => setEditTime(ev.target.value)}
-                          className="bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                          className="field-input field-input-compact" />
                       </div>
                       <textarea value={editText} onChange={ev => setEditText(ev.target.value)}
-                        rows={3} className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary" />
+                        rows={3} className="field-input field-textarea" />
                       <div className="flex gap-2">
                         <button onClick={confirmEdit} disabled={!editText.trim()}
                           className="btn btn-primary btn-sm" style={{ flex: 1 }}>

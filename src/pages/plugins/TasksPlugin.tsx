@@ -366,13 +366,13 @@ const TasksPlugin = () => {
       <div className="px-4 md:px-0 space-y-3">
         {/* New task form */}
         {showForm && (
-          <div className="glass-card p-4 space-y-3 slide-up">
+          <div className="field-form-panel space-y-4 slide-up">
             <div>
-              <label className="text-[10px] text-muted-foreground mb-1.5 block">Priorité</label>
-              <div className="flex gap-1.5">
+              <label className="field-label">Priorité</label>
+              <div className="field-choice-row">
                 {priorityOptions.map(p => (
                   <button type="button" key={p.value} onClick={() => setNewPriority(p.value)}
-                    className={`flex-1 text-[10px] py-2 rounded-lg border transition-all ${newPriority === p.value ? p.cls + " border-transparent font-medium scale-105" : "border-border text-muted-foreground"}`}>
+                    className={`field-choice ${newPriority === p.value ? p.cls + " border-transparent field-choice-active" : "border-border text-muted-foreground"}`}>
                     {p.value === "urgente" && <AlertTriangle size={9} className="inline mr-0.5" />}
                     {p.label}
                   </button>
@@ -381,33 +381,33 @@ const TasksPlugin = () => {
             </div>
 
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && addTask.mutate()}
-              placeholder="Nom de la tâche..." className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" autoFocus />
+              placeholder="Nom de la tâche..." className="field-input" autoFocus />
 
-            <button type="button" onClick={() => setShowOptions(!showOptions)} className="btn btn-secondary btn-xs">
-              {showOptions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <button type="button" onClick={() => setShowOptions(!showOptions)} className="btn btn-secondary btn-full">
+              {showOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               Plus d'options
             </button>
 
             {showOptions && (
               <div className="space-y-3 pt-1">
                 <div>
-                  <label className="text-[10px] text-muted-foreground mb-1 block">Lieu</label>
+                  <label className="field-label">Lieu</label>
                   <div className="relative">
                     <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input value={newLocation} onChange={e => setNewLocation(e.target.value)} placeholder="Lieu..."
-                      className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                      className="field-input pl-8" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Deadline</label>
+                    <label className="field-label">Deadline</label>
                     <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                      className="field-input" />
                   </div>
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Heure limite</label>
+                    <label className="field-label">Heure limite</label>
                     <input type="time" value={newDeadlineTime} onChange={e => setNewDeadlineTime(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                      className="field-input" />
                   </div>
                 </div>
               </div>
@@ -422,7 +422,7 @@ const TasksPlugin = () => {
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..."
-            className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors" />
+            className="field-input pl-9" />
         </div>
 
         {/* Tabs */}
@@ -497,28 +497,28 @@ const TasksPlugin = () => {
                       ))}
                     </div>
                     <input value={editText} onChange={e => setEditText(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" autoFocus />
+                      className="field-input field-input-compact" autoFocus />
                     <div className="relative">
                       <MapPin size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <input value={editLocation} onChange={e => setEditLocation(e.target.value)} placeholder="Lieu..."
-                        className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="field-input field-input-compact pl-8" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
-                        className="bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="field-input field-input-compact" />
                       <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)}
-                        className="bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="field-input field-input-compact" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[9px] text-muted-foreground mb-0.5 block">Deadline</label>
+                        <label className="field-label">Deadline</label>
                         <input type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)}
-                          className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                          className="field-input field-input-compact" />
                       </div>
                       <div>
-                        <label className="text-[9px] text-muted-foreground mb-0.5 block">Heure limite</label>
+                        <label className="field-label">Heure limite</label>
                         <input type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)}
-                          className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                          className="field-input field-input-compact" />
                       </div>
                     </div>
                     <div className="flex gap-2">
