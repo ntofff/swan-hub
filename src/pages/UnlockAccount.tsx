@@ -1,2 +1,2 @@
-export { UnlockAccount as default } from '../NotFound';
+export { UnlockAccount as default } from './ForgotPassword';
 // END
