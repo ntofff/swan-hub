@@ -158,7 +158,7 @@ RGPD : rgpd@swanhub.fr
 
 ARTICLE 3 — DESCRIPTION DES SERVICES
 
-L'Application SWAN HUB est une plateforme SaaS (Software as a Service) destinée aux artisans, indépendants et petites entreprises, permettant la gestion centralisée de leur activité professionnelle via un système de plugins modulaires.
+L'Application SWAN HUB est une boîte à outils numérique destinée aux artisans, indépendants et petites entreprises, permettant la gestion centralisée de leur activité professionnelle via des outils activables à la carte.
 
 Les services comprennent :
 — Accès à l'Application en mode SaaS via navigateur web et applications mobiles
@@ -173,17 +173,17 @@ Les prix sont indiqués en euros, hors taxes (HT) et toutes taxes comprises (TTC
 
 4.1 — Formule Découverte
 — Gratuit pendant 2 mois
-— Accès à 3 plugins au choix parmi les plugins disponibles
+— Accès à 3 outils au choix parmi les outils disponibles
 — Aucune carte bancaire requise
 
 4.2 — Formule À la carte
-— 1,00 € HT / 1,20 € TTC par plugin actif par mois
-— Activation et désactivation libre des plugins
+— 1,00 € HT / 1,20 € TTC par outil actif par mois
+— Activation et désactivation libre des outils
 — Paiement mensuel par prélèvement automatique
 
 4.3 — Formule Pro Total
 — 9,00 € HT / 10,80 € TTC par mois
-— Accès illimité à tous les plugins actuels et futurs
+— Accès illimité à tous les outils actuels et futurs
 — Accès IA illimité
 — Support prioritaire
 
@@ -476,7 +476,7 @@ ARTICLE 2 — DONNÉES COLLECTÉES
 2.4 — Données d'activité professionnelle
 — Métier/secteur déclaré
 — Contenu créé : rapports, tâches, missions, factures, devis, clients, etc.
-— Données de plugins activés
+— Données des outils activés
 
 2.5 — Données techniques
 — Adresse IP

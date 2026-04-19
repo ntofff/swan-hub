@@ -3,7 +3,7 @@ import { Home, Puzzle, User, Info, Coffee } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: Home, label: "Accueil" },
-  { to: "/plugins", icon: Puzzle, label: "Plugins" },
+  { to: "/plugins", icon: Puzzle, label: "Outils" },
   { to: "/pricing", icon: Coffee, label: "Tarifs" },
   { to: "/profile", icon: User, label: "Profil" },
   { to: "/about", icon: Info, label: "À propos" },

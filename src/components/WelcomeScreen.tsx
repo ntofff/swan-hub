@@ -10,8 +10,8 @@ const WELCOME_SESSION_KEY = "swan_welcome_shown_this_session";
 const plugins = [
   { icon: FileText, name: "Outil Rapport", desc: "Rapports professionnels en quelques secondes" },
   { icon: BookOpen, name: "Journal de bord", desc: "Notes chronologiques horodatées" },
-  { icon: CheckSquare, name: "Tâches", desc: "Gestionnaire de tâches avec priorités et deadlines" },
-  { icon: Target, name: "Missions", desc: "Suivi missions, clients et checklists" },
+  { icon: CheckSquare, name: "Tâches", desc: "Tâches avec priorités et dates limites" },
+  { icon: Target, name: "Missions", desc: "Suivi missions, clients et listes de contrôle" },
   { icon: Receipt, name: "Devis & Factures", desc: "Facturation complète avec export PDF" },
   { icon: Car, name: "Carnet véhicule", desc: "Kilométrage, IK et suivi conducteurs" },
 ];
@@ -19,9 +19,9 @@ const plugins = [
 const recentUpdates = [
   "Connexion biométrique : Face ID, empreinte digitale et passkeys",
   "Partage natif des rapports avec photos (Email, SMS, WhatsApp)",
-  "Tâches : export calendrier, deadlines, archivage intelligent",
+  "Tâches : export calendrier, dates limites, archivage intelligent",
   "Devis & Factures : prévisualisation PDF, filigrane, mentions légales",
-  "Système d'abonnement flexible : 1€/mois par plugin",
+  "Abonnement flexible : 1,20 € TTC/mois par outil",
 ];
 
 export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
@@ -112,10 +112,10 @@ export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
             <div className={`space-y-4 transition-all duration-500 delay-400 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { icon: Rocket, title: "Gain de temps", desc: "3 taps max pour toute action" },
+                  { icon: Rocket, title: "Gain de temps", desc: "3 touches max pour l'essentiel" },
                   { icon: Sparkles, title: "Tout en un", desc: "Hub d'outils pro essentiels" },
                   { icon: Users, title: "Sur mesure", desc: "Modulaire, adapté à vous" },
-                  { icon: Coffee, title: "1€/plugin", desc: "Moins cher qu'un café" },
+                  { icon: Coffee, title: "1,20€/outil", desc: "Moins cher qu'un café" },
                 ].map(b => (
                   <div key={b.title} className="glass-card p-4 space-y-2">
                     <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -128,7 +128,7 @@ export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
               </div>
             </div>
 
-            {/* Plugins */}
+            {/* Outils */}
             <div className={`transition-all duration-500 delay-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
               <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Vos outils</h2>
               <div className="space-y-1.5">
@@ -150,9 +150,9 @@ export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
             <div className={`transition-all duration-500 delay-[600ms] ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
               <div className="glass-card-glow p-5 text-center space-y-3">
                 <Coffee size={28} className="text-primary mx-auto" />
-                <p className="text-sm font-semibold">1 mois gratuit · 3 plugins au choix</p>
+                <p className="text-sm font-semibold">2 mois gratuits · 3 outils au choix</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Ensuite, seulement <span className="text-primary font-bold">1€/mois</span> par plugin.
+                  Ensuite, seulement <span className="text-primary font-bold">1,20 € TTC/mois</span> par outil.
                   C'est moins cher qu'un café — mais ça vous permettra d'en prendre le temps d'en boire plus.
                 </p>
                 <p className="text-[10px] text-muted-foreground italic">

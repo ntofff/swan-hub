@@ -4,22 +4,22 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { Puzzle, Zap, Shield, Layers, Play, FileText, BookOpen, CheckSquare, Target, Receipt, Car, Users, Wallet, Calendar, ArrowRight, Star, Globe, Coffee, Heart, Sparkles } from "lucide-react";
 
 const benefits = [
-  { icon: Puzzle, title: "Modulaire", desc: "Activez uniquement les outils dont vous avez besoin — payez uniquement ce que vous utilisez" },
-  { icon: Zap, title: "Ultra rapide", desc: "3 taps max pour toute action principale, pas de friction inutile" },
-  { icon: Shield, title: "Sécurisé", desc: "Privacy-first, conforme RGPD, données chiffrées, connexion biométrique" },
-  { icon: Layers, title: "Multi-Activité", desc: "Gérez toutes vos activités professionnelles en un seul endroit" },
+  { icon: Puzzle, title: "À la carte", desc: "Activez uniquement les outils utiles — payez uniquement ce que vous utilisez" },
+  { icon: Zap, title: "Ultra rapide", desc: "3 touches max pour chaque action principale" },
+  { icon: Shield, title: "Sécurisé", desc: "Données protégées, conforme RGPD, connexion biométrique" },
+  { icon: Layers, title: "Toutes activités", desc: "Gérez vos activités professionnelles au même endroit" },
   { icon: Globe, title: "Accessible", desc: "Web, mobile, tablette — partout, tout le temps, sans installation" },
-  { icon: Star, title: "Premium", desc: "Une expérience fintech soignée jusque dans les moindres détails" },
+  { icon: Star, title: "Soigné", desc: "Une expérience claire, fiable et agréable au quotidien" },
 ];
 
 const plugins = [
   { name: "Outil Rapport", desc: "Rapports photo professionnels en quelques secondes avec partage intégré", icon: FileText, active: true },
   { name: "Journal de bord", desc: "Notes chronologiques avec horodatage, priorités et code couleur", icon: BookOpen, active: true },
-  { name: "Tâches", desc: "Gestionnaire de tâches avec priorités, deadlines et archivage intelligent", icon: CheckSquare, active: true },
-  { name: "Missions", desc: "Suivi complet : clients, checklists, collaborateurs, montants devis", icon: Target, active: true },
+  { name: "Tâches", desc: "Tâches avec priorités, dates limites et archivage intelligent", icon: CheckSquare, active: true },
+  { name: "Missions", desc: "Suivi complet : clients, listes de contrôle, équipe, montants devis", icon: Target, active: true },
   { name: "Devis & Factures", desc: "Facturation complète : PDF, filigrane, RIB, mentions légales, remises", icon: Receipt, active: true },
   { name: "Carnet véhicule", desc: "Kilométrage, calcul IK automatique, suivi conducteurs et véhicules", icon: Car, active: true },
-  { name: "CRM Lite", desc: "Gestion de la relation clients simplifiée", icon: Users, active: false },
+  { name: "Contacts clients", desc: "Suivi simple des clients et relances", icon: Users, active: false },
   { name: "Suivi budget", desc: "Vue financière complète de vos activités", icon: Wallet, active: false },
   { name: "Réservations", desc: "Prise de rendez-vous intelligente", icon: Calendar, active: false },
 ];
@@ -46,8 +46,8 @@ const AboutPage = () => {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2.5 mb-6">
           {[
-            { label: "Plugins", value: "9" },
-            { label: "Par plugin", value: "1€/mois" },
+            { label: "Outils", value: "9" },
+            { label: "Par outil", value: "1,20€" },
             { label: "Conforme", value: "RGPD" },
           ].map(s => (
             <div key={s.label} className="glass-card p-4 text-center">
@@ -79,12 +79,12 @@ const AboutPage = () => {
           <Coffee size={32} className="text-primary mx-auto" />
           <h2 className="text-lg font-bold font-heading">Moins cher qu'un café</h2>
           <p className="text-sm text-secondary-foreground leading-relaxed max-w-sm mx-auto">
-            <span className="text-primary font-bold">1€/mois par plugin</span>. C'est tout.
+            <span className="text-primary font-bold">1,20 € TTC/mois par outil</span>. C'est tout.
             Pas de frais cachés, pas d'engagement.
             Ça coûte moins qu'un expresso — mais ça vous permettra de prendre le temps d'en savourer davantage.
           </p>
           <div className="glass-card p-4 inline-block">
-            <p className="text-xs text-muted-foreground">🎉 <span className="text-foreground font-semibold">1 mois gratuit</span> avec 3 plugins au choix à l'inscription</p>
+            <p className="text-xs text-muted-foreground">🎉 <span className="text-foreground font-semibold">2 mois gratuits</span> avec 3 outils au choix à l'inscription</p>
           </div>
           <button onClick={() => navigate("/pricing")} className="btn btn-primary btn-full btn-sm">
             Voir les tarifs <ArrowRight size={16} />
@@ -105,8 +105,8 @@ const AboutPage = () => {
           ))}
         </div>
 
-        {/* Plugins */}
-        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Écosystème de plugins</h2>
+        {/* Outils */}
+        <h2 className="text-xs font-semibold text-muted-foreground mb-3 font-heading uppercase tracking-wider">Vos outils</h2>
         <div className="space-y-2 mb-8">
           {plugins.map(p => (
             <div key={p.name} className={`glass-card p-4 flex items-center gap-3 transition-all ${!p.active ? 'opacity-50' : 'hover:border-primary/20'}`}>
@@ -132,7 +132,7 @@ const AboutPage = () => {
           <h2 className="text-sm font-bold font-heading">En constante évolution</h2>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
             Vous faites partie intégrante de cette aventure. Chaque retour, chaque suggestion façonne SWAN · HUB
-            pour le rendre utile à tous. Votre feedback construit l'app de demain.
+            pour le rendre utile à tous. Vos retours construisent l'app de demain.
           </p>
         </div>
 

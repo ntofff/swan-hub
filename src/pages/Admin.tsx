@@ -320,7 +320,7 @@ function AdminBroadcasts() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex: Nouveau plugin CRM disponible"
+            placeholder="Ex: Nouvel outil Contacts disponible"
           />
         </div>
 

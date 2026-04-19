@@ -75,7 +75,7 @@ export const ACTIVE_PLUGINS = [
 
 export const LOCKED_PLUGINS = [
   {
-    name: "CRM Lite",
+    name: "Contacts clients",
     desc: "Gestion clients",
     icon: Users,
     eta: "Q3 2025",

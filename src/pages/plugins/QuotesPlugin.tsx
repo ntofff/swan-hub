@@ -1102,7 +1102,7 @@ const QuotesPlugin = () => {
             { id: "factures" as Tab, label: "Factures", icon: Receipt },
             { id: "paiements" as Tab, label: "Paiements", icon: CreditCard },
             { id: "clients" as Tab, label: "Clients", icon: Users },
-            { id: "dashboard" as Tab, label: "Stats", icon: BarChart3 },
+            { id: "dashboard" as Tab, label: "Bilan", icon: BarChart3 },
             { id: "settings" as Tab, label: "Réglages", icon: Settings },
           ]).map(t => (
             <button key={t.id} onClick={() => { setTab(t.id); setStatusFilter("all"); setSearch(""); }}

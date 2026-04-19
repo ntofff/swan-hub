@@ -18,7 +18,7 @@ export default function Pricing() {
     Math.max(profile?.active_plugins?.length || FREE_PLUGIN_ALLOWANCE, FREE_PLUGIN_ALLOWANCE)
   );
 
-  // Calcul coût à la carte : 3 plugins restent gratuits, seuls les plugins supplémentaires sont facturés.
+  // Calcul coût à la carte : 3 outils restent gratuits, seuls les outils supplémentaires sont facturés.
   const paidPluginCount = Math.max(0, pluginCount - FREE_PLUGIN_ALLOWANCE);
   const carteCost = paidPluginCount * BUSINESS.PLUGIN_PRICE_TTC;
   const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
@@ -39,7 +39,7 @@ export default function Pricing() {
       <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
         <div className="card card-glow" style={{ padding: 'var(--space-5)' }}>
           <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
-            Combien de plugins utilisez-vous ?
+            Combien d'outils utilisez-vous ?
           </h3>
 
           <div style={{ marginBottom: 'var(--space-4)' }}>
@@ -70,7 +70,7 @@ export default function Pricing() {
               </button>
             </div>
             <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)' }}>
-              {pluginCount} plugin{pluginCount > 1 ? 's' : ''} activé{pluginCount > 1 ? 's' : ''}
+              {pluginCount} outil{pluginCount > 1 ? 's' : ''} activé{pluginCount > 1 ? 's' : ''}
               <span style={{ color: 'var(--color-text-3)' }}>
                 {' '}· {paidPluginCount} facturé{paidPluginCount > 1 ? 's' : ''}
               </span>
@@ -133,8 +133,8 @@ export default function Pricing() {
             }}
           >
             {proIsCheaper
-              ? `✓ Le Pro Total est plus avantageux à partir de ${PLAN_BREAKEVEN_PLUGINS} plugins activés`
-              : `À partir de ${PLAN_BREAKEVEN_PLUGINS} plugins activés, le Pro Total devient plus avantageux`}
+              ? `✓ Le Pro Total est plus avantageux à partir de ${PLAN_BREAKEVEN_PLUGINS} outils activés`
+              : `À partir de ${PLAN_BREAKEVEN_PLUGINS} outils activés, le Pro Total devient plus avantageux`}
           </p>
         </div>
       </section>
@@ -218,7 +218,7 @@ export default function Pricing() {
                       {plan.priceTTC.toFixed(2)}
                     </span>
                     <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>
-                      €TTC / {plan.id === 'carte' ? 'plugin · ' : ''}mois
+                      €TTC / {plan.id === 'carte' ? 'outil · ' : ''}mois
                     </span>
                   </>
                 )}

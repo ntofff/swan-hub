@@ -1,6 +1,6 @@
 // ============================================================
-// SWAN · HUB — Page Plugins
-// Catalogue : plugins actifs + plugins à venir avec ETA
+// SWAN · HUB — Page Outils
+// Catalogue : outils actifs + outils à venir
 // ============================================================
 
 import { useMemo } from 'react';
@@ -22,7 +22,7 @@ export default function Plugins() {
   const navigate = useNavigate();
   const { profile, hasAccessToPlugin } = useAuth();
 
-  // Tri : plugins pertinents pour le métier en premier
+  // Tri : outils pertinents pour le métier en premier
   const sortedActive = useMemo(() => {
     if (!profile?.trade) return ACTIVE_PLUGINS;
     const userTrade = TRADES.find(t => t.id === profile.trade);
@@ -39,7 +39,7 @@ export default function Plugins() {
     <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
       <header className="page-header">
         <div>
-          <h1 className="page-header-title">Plugins</h1>
+          <h1 className="page-header-title">Outils</h1>
           <p className="page-header-subtitle">
             {ACTIVE_PLUGINS.length} outils disponibles · {LOCKED_PLUGINS.length} à venir
           </p>
@@ -62,7 +62,7 @@ export default function Plugins() {
             </div>
             <div style={{ minWidth: 0 }}>
               <h2 style={{ fontSize: 'var(--text-lg)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
-                3 plugins gratuits, toujours
+                3 outils gratuits, toujours
               </h2>
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.45 }}>
                 Ajoutez les autres à 1,20 € TTC par mois, activez ou désactivez à volonté.
@@ -75,7 +75,7 @@ export default function Plugins() {
         </div>
       </section>
 
-      {/* ── Plugins actifs ── */}
+      {/* ── Outils actifs ── */}
       <section className="px-4" style={{ marginBottom: 'var(--space-8)' }}>
         <h2 className="text-label" style={{ marginBottom: 'var(--space-3)' }}>
           Disponibles maintenant
@@ -131,7 +131,7 @@ export default function Plugins() {
         </div>
       </section>
 
-      {/* ── Plugins à venir ── */}
+      {/* ── Outils à venir ── */}
       {LOCKED_PLUGINS.length > 0 && (
         <section className="px-4">
           <h2 className="text-label" style={{ marginBottom: 'var(--space-3)' }}>
@@ -195,7 +195,7 @@ export default function Plugins() {
               Un besoin spécifique ?
             </p>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>
-              Proposez un nouveau plugin et votez pour les futures fonctionnalités.
+              Proposez un nouvel outil et votez pour les prochaines fonctions utiles.
             </p>
             <button className="btn btn-primary btn-sm" onClick={() => navigate('/profile')}>
               Donner mon avis

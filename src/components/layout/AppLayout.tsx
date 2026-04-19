@@ -17,7 +17,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/',          label: 'Accueil',    icon: Home },
-  { path: '/plugins',   label: 'Plugins',    icon: LayoutGrid },
+  { path: '/plugins',   label: 'Outils',     icon: LayoutGrid },
   { path: '/dashboard', label: 'Tableau',    icon: BarChart3 },
   { path: '/profile',   label: 'Profil',     icon: User },
 ];

@@ -68,7 +68,7 @@ export const PLANS: Plan[] = [
     priceTTC: null,
     description: '2 mois offerts pour découvrir l\'app',
     features: [
-      '3 plugins au choix',
+      '3 outils au choix',
       '2 mois gratuits pour créer l\'habitude',
       'Sans carte bancaire',
       'Accès au support standard',
@@ -82,10 +82,10 @@ export const PLANS: Plan[] = [
     name: 'À la carte',
     priceHT: 1,
     priceTTC: 1.20,
-    description: '3 plugins gratuits, puis payez uniquement le reste',
+    description: '3 outils gratuits, puis payez uniquement le reste',
     features: [
-      '3 plugins gratuits inclus',
-      '1,20 € TTC par plugin supplémentaire par mois',
+      '3 outils gratuits inclus',
+      '1,20 € TTC par outil supplémentaire par mois',
       'Activez et désactivez à volonté',
       'Accès IA inclus',
       'Support standard',
@@ -100,8 +100,8 @@ export const PLANS: Plan[] = [
     priceTTC: 10.80,
     description: 'Accès illimité à tous les outils',
     features: [
-      'Tous les plugins inclus',
-      'Nouveaux plugins dès leur sortie',
+      'Tous les outils inclus',
+      'Nouveaux outils dès leur sortie',
       'IA illimitée',
       'Support prioritaire',
       'Accès aux fonctions bêta en avant-première',
@@ -113,9 +113,9 @@ export const PLANS: Plan[] = [
 ];
 
 export const FREE_PLUGIN_ALLOWANCE = 3;
-export const PLAN_BREAKEVEN_PLUGINS = 12; // 3 gratuits + 9 plugins payants = Pro
+export const PLAN_BREAKEVEN_PLUGINS = 12; // 3 gratuits + 9 outils payants = Pro
 
-// ── Catalogue Plugins ─────────────────────────────────────────
+// ── Catalogue Outils ─────────────────────────────────────────
 export type PluginId =
   | 'report'
   | 'tasks'
@@ -174,7 +174,7 @@ export const PLUGINS: Plugin[] = [
   {
     id: 'tasks',
     name: 'Tâches',
-    description: 'Gérez vos tâches avec priorités, deadlines et alertes',
+    description: 'Gérez vos tâches avec priorités, dates limites et alertes',
     shortDesc: 'Tâches & priorités',
     icon: 'CheckSquare',
     color: '142 71% 45%',
@@ -257,11 +257,11 @@ export const PLUGINS: Plugin[] = [
       { id: 'next_maintenance',label: 'Prochain entretien',  unit: '',   period: 'total', query: 'kpi_next_maintenance', importance: 2 },
     ],
   },
-  // ── Plugins à venir ─────────────────────────────────────────
+  // ── Outils à venir ─────────────────────────────────────────
   {
     id: 'crm',
-    name: 'CRM Lite',
-    description: 'Gérez vos contacts et suivez votre activité commerciale',
+    name: 'Contacts clients',
+    description: 'Gérez vos contacts et suivez vos relances commerciales',
     shortDesc: 'Gestion clients',
     icon: 'Users',
     color: '199 89% 48%',
@@ -339,7 +339,7 @@ export const PLUGINS: Plugin[] = [
   {
     id: 'checklist',
     name: 'Checklist Sécurité',
-    description: 'EPI, conformité chantier, vérifications quotidiennes',
+    description: 'EPI, sécurité chantier, vérifications quotidiennes',
     shortDesc: 'Sécurité & conformité',
     icon: 'ShieldCheck',
     color: '0 72% 51%',
@@ -468,7 +468,7 @@ export const SWAN_COPY = {
   vipAnnouncement: (firstName: string) =>
     `Au nom de toute l'équipe SWAN HUB, je vous informe que vous venez d'être distingué en tant que membre VIP. Ce statut vous donne accès à l'intégralité de nos outils, sans restriction. Nous vous remercions pour votre confiance et restons à votre entière disposition. Bienvenue dans le cercle.`,
   anniversaryGift: (firstName: string) =>
-    `Voilà un an que nous travaillons ensemble, ${firstName}. J'ai pensé à vous : choisissez un plugin, il sera à vous à vie, avec mes remerciements.`,
+    `Voilà un an que nous travaillons ensemble, ${firstName}. J'ai pensé à vous : choisissez un outil, il sera à vous à vie, avec mes remerciements.`,
   errors: {
     network:   'Une difficulté technique est survenue. Je réessaie automatiquement.',
     auth:      'Vos identifiants ne semblent pas correspondre. Vérifiez et réessayez.',

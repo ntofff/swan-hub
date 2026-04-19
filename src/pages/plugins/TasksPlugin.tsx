@@ -283,7 +283,7 @@ const TasksPlugin = () => {
     URL.revokeObjectURL(url);
 
     const subject = encodeURIComponent(`Tâche: ${task.text}`);
-    const body = encodeURIComponent(`Tâche: ${task.text}\nPriorité: ${task.priority}${task.deadline ? `\nDeadline: ${new Date(task.deadline).toLocaleString("fr-FR")}` : ""}${task.location ? `\nLieu: ${task.location}` : ""}\n\nLe fichier calendrier est en pièce jointe.`);
+    const body = encodeURIComponent(`Tâche: ${task.text}\nPriorité: ${task.priority}${task.deadline ? `\nDate limite: ${new Date(task.deadline).toLocaleString("fr-FR")}` : ""}${task.location ? `\nLieu: ${task.location}` : ""}\n\nLe fichier calendrier est en pièce jointe.`);
 
     if (method === "email") {
       window.open(`mailto:?subject=${subject}&body=${body}`);
@@ -404,7 +404,7 @@ const TasksPlugin = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="field-label">Deadline</label>
+                    <label className="field-label">Date limite</label>
                     <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)}
                       className="field-input" />
                   </div>
@@ -515,7 +515,7 @@ const TasksPlugin = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="field-label">Deadline</label>
+                        <label className="field-label">Date limite</label>
                         <input type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)}
                           className="field-input field-input-compact" />
                       </div>
