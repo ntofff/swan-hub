@@ -122,6 +122,10 @@ export default function Onboarding() {
             subtitle="J'adapterai les outils et suggestions à votre activité"
           />
 
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: 1.6, marginBottom: 'var(--space-4)', padding: '0 var(--space-1)' }}>
+            Ce choix sert uniquement à personnaliser les suggestions — vous aurez accès à tous les outils quelle que soit votre sélection.
+          </p>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-6)' }}>
             {TRADES.map((trade) => (
               <button

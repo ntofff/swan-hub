@@ -403,6 +403,12 @@ export const TRADES: Trade[] = [
     icon: '🩺',
     pluginIds: ['tasks', 'logbook', 'booking', 'missions'],
   },
+  {
+    id: 'autre',
+    label: 'Autre',
+    icon: '✨',
+    pluginIds: ['tasks', 'report', 'quotes'],
+  },
 ];
 
 // ── Rôles utilisateur ─────────────────────────────────────────
