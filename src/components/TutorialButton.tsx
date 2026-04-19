@@ -59,8 +59,7 @@ export const TutorialButton = ({
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[440px] overflow-y-auto rounded-2xl p-0 sm:max-h-[88vh]"
-          style={{ left: "50%", right: "auto", top: "50%", transform: "translate(-50%, -50%)" }}
+          className="tutorial-dialog rounded-2xl p-0"
         >
           <div className="sticky top-0 z-10 border-b border-border bg-background/95 p-4 backdrop-blur">
             <DialogHeader className="pr-10">
@@ -74,7 +73,7 @@ export const TutorialButton = ({
             </DialogHeader>
           </div>
 
-          <div className="space-y-5 p-4">
+          <div className="tutorial-dialog-content space-y-5 p-4">
             <section className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">

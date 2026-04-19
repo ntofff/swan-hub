@@ -1627,6 +1627,33 @@ select.input {
   line-height: 1;
 }
 
+.tutorial-dialog {
+  left: 50% !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+  width: min(440px, calc(100vw - 2rem)) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tutorial-dialog-content {
+  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+}
+
+@media (max-width: 640px) {
+  .tutorial-dialog {
+    top: max(1rem, env(safe-area-inset-top)) !important;
+    bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+    transform: translateX(-50%) !important;
+    max-height: none !important;
+  }
+}
+
 @media (max-width: 640px) {
   :root {
     --text-xs:   14px;

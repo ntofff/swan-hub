@@ -12,9 +12,10 @@ interface VoicePlayerProps {
   text: string;
   label?: string;
   compact?: boolean;
+  variant?: 'default' | 'round';
 }
 
-export function VoicePlayer({ text, label = 'Écouter', compact = false }: VoicePlayerProps) {
+export function VoicePlayer({ text, label = 'Écouter', compact = false, variant = 'default' }: VoicePlayerProps) {
   const { speak, stopSpeaking, isSpeaking, settings, updateSettings, isSupported } = useVoice();
   const [showSpeed, setShowSpeed] = useState(false);
 
@@ -29,6 +30,35 @@ export function VoicePlayer({ text, label = 'Écouter', compact = false }: Voice
   };
 
   const speedOptions: VoiceSpeed[] = [0.75, 1, 1.25, 1.5];
+
+  if (variant === 'round') {
+    return (
+      <button
+        onClick={handleToggle}
+        aria-label={isSpeaking ? 'Arrêter la lecture' : label}
+        title={isSpeaking ? 'Arrêter la lecture' : label}
+        style={{
+          width: 'var(--tap-comfort)',
+          height: 'var(--tap-comfort)',
+          minWidth: 'var(--tap-comfort)',
+          minHeight: 'var(--tap-comfort)',
+          borderRadius: 'var(--radius-full)',
+          border: isSpeaking ? '1px solid var(--color-danger)' : '1px solid rgba(201, 169, 97, 0.45)',
+          background: isSpeaking ? 'var(--color-danger-bg)' : 'var(--gradient-gold)',
+          color: isSpeaking ? 'var(--color-danger)' : 'var(--color-primary-text)',
+          boxShadow: isSpeaking ? 'var(--shadow-md)' : 'var(--shadow-glow-sm), var(--shadow-md)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          flexShrink: 0,
+          transition: 'transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out)',
+        }}
+      >
+        {isSpeaking ? <Pause size={24} /> : <Volume2 size={25} />}
+      </button>
+    );
+  }
 
   // Version compacte (inline dans une carte)
   if (compact) {

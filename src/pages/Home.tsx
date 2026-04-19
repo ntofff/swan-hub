@@ -449,18 +449,18 @@ function SwanBrief({ firstName, loading, info, isVip, onActionTasks, onActionQuo
               alignItems: 'center',
               gap: 'var(--space-2)',
               marginBottom: 'var(--space-2)',
+              justifyContent: 'space-between',
             }}
           >
-            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-1)' }}>
-              SWAN
-            </span>
-            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-3)' }}>
-              Votre brief
-            </span>
-          </div>
-
-          <div style={{ marginBottom: 'var(--space-3)' }}>
-            <VoicePlayer text={voiceText} label="Écouter" compact />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-1)' }}>
+                SWAN
+              </span>
+              <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-3)' }}>
+                Votre brief
+              </span>
+            </div>
+            <VoicePlayer text={voiceText} label="Écouter le brief" variant="round" />
           </div>
 
           <p
