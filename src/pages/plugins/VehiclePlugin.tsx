@@ -245,7 +245,7 @@ const VehiclePlugin = () => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Carnet de véhicule" subtitle="Kilométrage & suivi IK" back
+      <PageHeader title="Carnet de véhicule" subtitle="Trajets, véhicules et frais km" back
         action={
           <button
             onClick={toggleCreate}
@@ -254,7 +254,10 @@ const VehiclePlugin = () => {
             {createOpen ? <X size={22} /> : <Plus size={24} />}
           </button>
         } />
-      <div className="px-4 md:px-0">
+      <div className="field-workspace">
+        <div className="field-simple-note">
+          Mode simple : choisissez l'onglet, puis ajoutez un trajet, un véhicule ou un conducteur.
+        </div>
         <div className="flex gap-1 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
           {tabsDef.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
@@ -527,6 +530,15 @@ const VehiclePlugin = () => {
           </div>
         )}
       </div>
+      <div className="field-floating-add">
+        <button
+          onClick={toggleCreate}
+          className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
+          aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
+          {createOpen ? <X size={24} /> : <Plus size={28} />}
+        </button>
+      </div>
+
       <FeedbackButton context="vehicle" />
     </div>
   );

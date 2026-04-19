@@ -213,7 +213,7 @@ const MissionsPlugin = () => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Missions" subtitle="Gérer les affectations" back
+      <PageHeader title="Missions" subtitle="Suivi clients, lieux et échéances" back
         action={
           <button onClick={() => setShowForm(!showForm)}
             className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
@@ -222,7 +222,10 @@ const MissionsPlugin = () => {
           </button>
         } />
 
-      <div className="px-4 md:px-0 space-y-3">
+      <div className="field-workspace">
+        <div className="field-simple-note">
+          Mode simple : titre et client suffisent pour créer une mission. Les détails se règlent après.
+        </div>
         {/* Form */}
         {showForm && (
           <div className="field-form-panel space-y-4 slide-up">
@@ -504,6 +507,14 @@ const MissionsPlugin = () => {
           </div>
         )}
       </div>
+      <div className="field-floating-add">
+        <button onClick={() => setShowForm(!showForm)}
+          className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
+          aria-label={showForm ? "Fermer le formulaire" : "Ajouter une mission"}>
+          {showForm ? <X size={24} /> : <Plus size={28} />}
+        </button>
+      </div>
+
       <FeedbackButton context="missions" />
     </div>
   );

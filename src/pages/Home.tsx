@@ -1,6 +1,6 @@
 // ============================================================
 // SWAN · HUB — Page d'Accueil
-// Brief SWAN · Plugins rapides · KPIs du jour · Activité récente
+// Brief SWAN · Actions terrain · Bilan · Activité récente
 // ============================================================
 
 import { useState, useMemo, type CSSProperties } from 'react';
@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   FileText, CheckSquare, Target, Receipt, BookOpen, Car,
   Users, Wallet, Calendar, Banknote, Timer, Package, ShieldCheck,
-  Sparkles, ChevronRight, Sun, Moon, Bell, Crown, Plus, Route,
+  Sparkles, ChevronRight, Sun, Moon, Bell, Crown, Plus, Route, BarChart3,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
@@ -183,6 +183,30 @@ export default function HomePage() {
     { label: 'Trajet', desc: 'Km + IK', icon: Route, path: '/plugins/vehicle?tab=trips&new=1', color: '38 92% 50%' },
   ];
 
+  const mainDoors = [
+    {
+      label: 'Créer',
+      desc: 'Rapport, tâche, devis ou trajet',
+      icon: Plus,
+      path: '/plugins/report',
+      primary: true,
+    },
+    {
+      label: 'Continuer',
+      desc: activity.length > 0 ? 'Reprendre le dernier élément' : 'Voir vos outils actifs',
+      icon: CheckSquare,
+      path: activity[0]?.path || '/plugins',
+      primary: false,
+    },
+    {
+      label: 'Voir le bilan',
+      desc: 'Chiffres, retards et activité',
+      icon: BarChart3,
+      path: '/dashboard',
+      primary: false,
+    },
+  ];
+
   return (
     <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
       {/* ── Header ─────────────────────────────── */}
@@ -227,32 +251,39 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ── Brief SWAN ─────────────────────────── */}
-      <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
-        <SwanBrief
-          firstName={firstName}
-          loading={briefLoading}
-          info={briefInfo}
-          isVip={isVip}
-          onActionTasks={() => navigate('/plugins/tasks')}
-          onActionQuotes={() => navigate('/plugins/quotes')}
-        />
+      {/* ── 3 portes principales ───────────────── */}
+      <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
+        <div className="field-zone">
+          <div className="field-zone-header">
+            <h2 className="field-zone-title">Que voulez-vous faire ?</h2>
+            <span className="field-zone-help">3 touches max</span>
+          </div>
+          <div className="field-command-grid">
+            {mainDoors.map((door) => (
+              <button
+                key={door.label}
+                onClick={() => navigate(door.path)}
+                className={`field-command-card ${door.primary ? 'primary' : ''}`}
+              >
+                <span className="field-command-icon">
+                  <door.icon size={24} strokeWidth={2.3} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span className="field-command-title">{door.label}</span>
+                  <span className="field-command-desc">{door.desc}</span>
+                </span>
+                <ChevronRight size={18} style={{ color: 'var(--color-text-3)', marginLeft: 'auto' }} />
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ── Actions rapides terrain ───────────── */}
-      <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 'var(--space-3)',
-          }}
-        >
-          <h2 className="text-label">Actions rapides</h2>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
-            3 touches max
-          </span>
+      <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
+        <div className="field-zone-header">
+          <h2 className="field-zone-title">Créer maintenant</h2>
+          <span className="field-zone-help">Essentiel</span>
         </div>
 
         <div className="field-responsive-grid">
@@ -282,8 +313,24 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Brief SWAN ─────────────────────────── */}
+      <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
+        <div className="field-zone-header">
+          <h2 className="field-zone-title">À surveiller</h2>
+          <span className="field-zone-help">Aujourd'hui</span>
+        </div>
+        <SwanBrief
+          firstName={firstName}
+          loading={briefLoading}
+          info={briefInfo}
+          isVip={isVip}
+          onActionTasks={() => navigate('/plugins/tasks')}
+          onActionQuotes={() => navigate('/plugins/quotes')}
+        />
+      </section>
+
       {/* ── Plugins actifs (grille) ────────────── */}
-      <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
+      <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
         <div
           style={{
             display: 'flex',
@@ -292,7 +339,7 @@ export default function HomePage() {
             marginBottom: 'var(--space-3)',
           }}
         >
-          <h2 className="text-label">Mes outils</h2>
+          <h2 className="field-zone-title">Mes outils</h2>
           <button
             onClick={() => navigate('/plugins')}
             className="btn btn-ghost btn-sm"
@@ -327,10 +374,11 @@ export default function HomePage() {
       </section>
 
       {/* ── Activité récente ───────────────────── */}
-      <section className="px-4">
-        <h2 className="text-label" style={{ marginBottom: 'var(--space-3)' }}>
-          Activité récente
-        </h2>
+      <section className="field-workspace">
+        <div className="field-zone-header">
+          <h2 className="field-zone-title">Continuer</h2>
+          <span className="field-zone-help">Derniers éléments</span>
+        </div>
 
         {activity.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>

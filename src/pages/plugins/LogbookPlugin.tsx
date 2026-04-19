@@ -263,7 +263,7 @@ const LogbookPlugin = () => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Journal de bord" subtitle="Entrées chronologiques" back
+      <PageHeader title="Journal de bord" subtitle="Notes datées et partageables" back
         action={
           <div className="flex items-center gap-1.5">
             {allEntries.length > 0 && tab === "active" && (
@@ -280,7 +280,10 @@ const LogbookPlugin = () => {
           </div>
         } />
 
-      <div className="px-4 md:px-0 space-y-3">
+      <div className="field-workspace">
+        <div className="field-simple-note">
+          Mode simple : notez l'essentiel maintenant, les options restent disponibles ensuite.
+        </div>
         {/* Tabs */}
         <div className="flex gap-1 bg-secondary rounded-xl p-1">
           <button onClick={() => { setTab("active"); exitSelectMode(); }}
@@ -523,6 +526,14 @@ const LogbookPlugin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <div className="field-floating-add">
+        <button onClick={() => setShowForm(!showForm)}
+          className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
+          aria-label={showForm ? "Fermer le formulaire" : "Ajouter une entrée"}>
+          {showForm ? <X size={24} /> : <Plus size={28} />}
+        </button>
+      </div>
 
       <FeedbackButton context="logbook" />
     </div>

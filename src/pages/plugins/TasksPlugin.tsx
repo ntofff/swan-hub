@@ -352,7 +352,7 @@ const TasksPlugin = () => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Tâches" subtitle="Gestionnaire de tâches" back
+      <PageHeader title="Tâches" subtitle="À faire, priorités et dates limites" back
         action={
           <div className="flex items-center gap-1.5">
             <button onClick={() => setViewMode(viewMode === "list" ? "compact" : "list")}
@@ -367,7 +367,10 @@ const TasksPlugin = () => {
           </div>
         } />
 
-      <div className="px-4 md:px-0 space-y-3">
+      <div className="field-workspace">
+        <div className="field-simple-note">
+          Mode simple : ajoutez une tâche, puis ouvrez Plus d'options seulement si besoin.
+        </div>
         {/* New task form */}
         {showForm && (
           <div className="field-form-panel space-y-4 slide-up">
@@ -657,6 +660,14 @@ const TasksPlugin = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <div className="field-floating-add">
+        <button onClick={() => setShowForm(!showForm)}
+          className={`btn btn-add ${showForm ? "btn-add-active" : ""}`}
+          aria-label={showForm ? "Fermer le formulaire" : "Ajouter une tâche"}>
+          {showForm ? <X size={24} /> : <Plus size={28} />}
+        </button>
+      </div>
 
       <FeedbackButton context="tasks" />
     </div>

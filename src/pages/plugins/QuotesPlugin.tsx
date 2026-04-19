@@ -1047,7 +1047,7 @@ const QuotesPlugin = () => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Devis & Factures" subtitle="Facturation complète" back
+      <PageHeader title="Devis & Factures" subtitle="Créer, encaisser, suivre" back
         action={
           <div className="flex gap-1.5">
             <button onClick={() => setShowExport(!showExport)} className="btn btn-icon-sm btn-ghost"><Download size={18} /></button>
@@ -1062,7 +1062,10 @@ const QuotesPlugin = () => {
             )}
           </div>
         } />
-      <div className="px-4 md:px-0">
+      <div className="field-workspace">
+        <div className="field-simple-note">
+          Mode simple : créez un devis ou une facture avec les champs essentiels, puis complétez les options.
+        </div>
 
         {/* Export */}
         {showExport && (
@@ -1527,6 +1530,17 @@ const QuotesPlugin = () => {
           </div>
         )}
       </div>
+      {canCreateForTab && (
+        <div className="field-floating-add">
+          <button
+            onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (tab === "paiements") setShowPayForm(!showPayForm); else setShowForm(!showForm); }}
+            className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
+            aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
+            {createOpen ? <X size={24} /> : <Plus size={28} />}
+          </button>
+        </div>
+      )}
+
       <FeedbackButton context="quotes" />
     </div>
   );

@@ -39,14 +39,14 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="fixed bottom-20 right-4 md:bottom-6 z-40 btn btn-icon btn-secondary rounded-lg shadow-lg" aria-label="Donner un retour">
+      <button onClick={() => setOpen(true)} className="fixed bottom-36 right-4 md:bottom-6 z-40 btn btn-icon btn-secondary rounded-lg shadow-lg" aria-label="Donner un retour">
         <MessageSquare size={18} />
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-20 right-4 left-4 md:left-auto md:bottom-6 z-50 md:w-80 glass-card p-4 fade-in">
+    <div className="fixed bottom-36 right-4 left-4 md:left-auto md:bottom-6 z-50 md:w-80 glass-card p-4 fade-in">
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm font-semibold font-heading">Retour</span>
         <button onClick={() => setOpen(false)} className="btn btn-icon-xs btn-ghost" aria-label="Fermer"><X size={16} /></button>

@@ -348,7 +348,10 @@ const ReportPlugin = () => {
   return (
     <div className="fade-in">
       <PageHeader title="Outil Rapport" subtitle="Créer et consulter vos rapports" back />
-      <div className="px-4 md:px-0 space-y-3">
+      <div className="field-workspace">
+        <div className="field-simple-note">
+          Mode simple : titre, lieu, contenu, puis enregistrement. Les dossiers, couleurs et photos restent optionnels.
+        </div>
 
         {/* Folders strip */}
         <div className="glass-card px-3 py-2">
