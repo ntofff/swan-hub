@@ -220,26 +220,39 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
           <div className="px-4 py-2 border-b border-border space-y-2">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               <button onClick={() => setFilterColor(null)}
-                className={`text-[10px] px-2 py-1 rounded-md whitespace-nowrap shrink-0 ${!filterColor ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary"}`}>
+                className={`text-sm px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 font-semibold min-h-11 ${!filterColor ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
                 Toutes
               </button>
               {colorOptions.map((c) => (
                 <button key={c.value} onClick={() => setFilterColor(filterColor === c.value ? null : c.value)}
-                  className={`w-5 h-5 rounded-full border-2 shrink-0 transition-all ${filterColor === c.value ? "border-foreground scale-110" : "border-transparent"}`}
-                  style={{ backgroundColor: `hsl(${c.value})` }} title={c.label} />
+                  className="w-11 h-11 rounded-full border-2 shrink-0 transition-all"
+                  style={{
+                    backgroundColor: `hsl(${c.value})`,
+                    borderColor: filterColor === c.value ? "var(--color-text-1)" : "transparent",
+                    boxShadow: filterColor === c.value ? `0 0 0 3px hsl(${c.value} / 0.22)` : undefined,
+                    transform: filterColor === c.value ? "scale(1.06)" : undefined,
+                  }}
+                  title={c.label}
+                  aria-label={`Filtrer par couleur ${c.label}`}
+                  aria-pressed={filterColor === c.value}
+                />
               ))}
             </div>
             {folders.length > 0 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
                 <button onClick={() => setFilterFolderId(null)}
-                  className={`text-[10px] px-2 py-1 rounded-md whitespace-nowrap shrink-0 flex items-center gap-1 ${!filterFolderId ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary"}`}>
-                  <FolderOpen size={10} /> Tous
+                  className={`text-sm px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 flex items-center gap-2 min-h-11 font-semibold ${!filterFolderId ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
+                  <FolderOpen size={15} /> Tous
                 </button>
                 {folders.map((f: any) => (
                   <button key={f.id} onClick={() => setFilterFolderId(filterFolderId === f.id ? null : f.id)}
-                    className={`text-[10px] px-2 py-1 rounded-md whitespace-nowrap shrink-0 flex items-center gap-1 transition-colors ${filterFolderId === f.id ? "font-medium" : "text-muted-foreground hover:bg-secondary"}`}
-                    style={filterFolderId === f.id ? { backgroundColor: `hsl(${f.color} / 0.15)`, color: `hsl(${f.color})` } : {}}>
-                    <span className="text-xs">{f.icon}</span> {f.name}
+                    className={`text-sm px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 flex items-center gap-2 min-h-11 font-semibold transition-colors ${filterFolderId === f.id ? "" : "text-muted-foreground hover:bg-secondary"}`}
+                    style={filterFolderId === f.id ? {
+                      backgroundColor: `hsl(${f.color} / 0.15)`,
+                      color: `hsl(${f.color})`,
+                      boxShadow: `0 0 0 2px hsl(${f.color} / 0.18)`,
+                    } : {}}>
+                    <span className="text-lg">{f.icon}</span> {f.name}
                   </button>
                 ))}
               </div>
@@ -261,30 +274,30 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                 return (
                   <article
                     key={r.id}
-                    className="rounded-xl border border-border bg-background/55 p-3 space-y-2 shadow-sm"
-                    style={{ borderLeft: `3px solid hsl(${r.color || "38 50% 58%"})` }}
+                    className="rounded-xl border border-border bg-background/55 p-4 space-y-3 shadow-sm"
+                    style={{ borderLeft: `4px solid hsl(${r.color || "38 50% 58%"})` }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-2 min-w-0">
-                          <h3 className="text-base font-bold font-heading truncate">{r.title}</h3>
+                          <h3 className="text-xl font-bold font-heading truncate">{r.title}</h3>
                           {r.priority && r.priority !== "normale" && (
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${r.priority === "urgente" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
+                            <span className={`text-sm px-3 py-1 rounded-full font-semibold shrink-0 ${r.priority === "urgente" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
                               {r.priority}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
-                          <Clock size={11} />
+                        <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                          <Clock size={15} />
                           <span>{reportDate.date}</span>
                           <span className="text-muted-foreground">à</span>
                           <span>{reportDate.time}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        <button onClick={() => onEdit(r)} className="btn btn-icon-xs btn-ghost"><Pencil size={13} /></button>
-                        <button onClick={() => toggleShareMenu(r)} className="btn btn-icon-xs btn-ghost"><Share2 size={13} /></button>
-                        <button onClick={() => { if (window.confirm("Supprimer ce rapport ?")) onDelete(r.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={13} /></button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => onEdit(r)} className="btn btn-icon-sm btn-secondary rounded-full" aria-label="Modifier"><Pencil size={18} /></button>
+                        <button onClick={() => toggleShareMenu(r)} className="btn btn-icon-sm btn-secondary rounded-full" aria-label="Partager"><Share2 size={18} /></button>
+                        <button onClick={() => { if (window.confirm("Supprimer ce rapport ?")) onDelete(r.id); }} className="btn btn-icon-sm btn-secondary rounded-full" aria-label="Supprimer"><Trash2 size={18} /></button>
                       </div>
                     </div>
 
@@ -307,22 +320,22 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
 
                     <div className="h-px bg-border/70" />
 
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                       {r.location && (
-                        <span className="flex items-center gap-1"><MapPin size={10} /> {r.location}</span>
+                        <span className="flex items-center gap-1.5"><MapPin size={15} /> {r.location}</span>
                       )}
                       {folder && (
-                        <span className="flex items-center gap-1" style={{ color: `hsl(${folder.color})` }}>
-                          <span className="text-xs">{folder.icon}</span> {folder.name}
+                        <span className="flex items-center gap-1.5 font-semibold" style={{ color: `hsl(${folder.color})` }}>
+                          <span className="text-base">{folder.icon}</span> {folder.name}
                         </span>
                       )}
                     </div>
 
-                    {r.notes && <p className="text-xs text-muted-foreground line-clamp-2">{r.notes}</p>}
+                    {r.notes && <p className="text-base leading-relaxed text-muted-foreground line-clamp-3">{r.notes}</p>}
                     {(allPhotos[r.id]?.length ?? 0) > 0 && (
                       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pt-1">
                         {allPhotos[r.id].map((url, i) => (
-                          <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-14 h-14 object-cover rounded-md border border-border shrink-0" />
+                          <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-20 h-20 object-cover rounded-xl border border-border shrink-0" />
                         ))}
                       </div>
                     )}

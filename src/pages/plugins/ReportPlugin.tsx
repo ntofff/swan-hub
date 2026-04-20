@@ -79,7 +79,6 @@ const buildLocalSummary = ({
     `- Objet / contexte : ${title || "rapport terrain"}`,
     ...points.map((point) => `- Point clé : ${point}`),
     `- Photo jointe : ${hasPhoto ? "oui" : "non"}`,
-    "- Recommandation : vérifier les points relevés et compléter le rapport si nécessaire.",
   ].join("\n");
 };
 
@@ -137,7 +136,7 @@ const ReportPlugin = () => {
     mutationFn: async () => {
       if (!user || !title.trim()) return;
 
-      const finalNotes = aiSummary ? `${notes}\n\n── Résumé IA ──\n${aiSummary}` : notes;
+      const finalNotes = aiSummary ? `${notes}\n\n── Résumé ──\n${aiSummary}` : notes;
 
       // Keep first photo as legacy photo_url for backwards compat
       let photo_url: string | null = null;
@@ -236,7 +235,7 @@ const ReportPlugin = () => {
 
   const startEdit = useCallback(async (r: any) => {
     setEditingId(r.id); setTitle(r.title);
-    const rawNotes = (r.notes || "").replace(/\n\n── Résumé IA ──\n[\s\S]*$/, "");
+    const rawNotes = (r.notes || "").replace(/\n\n── Résumé(?: IA)? ──\n[\s\S]*$/, "");
     setNotes(rawNotes); setLocation(r.location || "");
     setColor(r.color || "38 50% 58%"); setPriority(r.priority || "normale");
     setFolderId(r.folder_id || null); setShowOptions(true);
@@ -341,34 +340,62 @@ const ReportPlugin = () => {
       hasPhoto: photos.length > 0,
     });
 
-    try {
-      const { data, error } = await supabase.functions.invoke("summarize-report", {
-        body: { text: notes, title, location, date: formattedDate, priority, photo_url: photos[0]?.url },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (!data?.summary) throw new Error("Résumé IA vide");
-      setAiSummary(data.summary);
-      toast.success("Résumé IA généré");
-    } catch (e: any) {
-      console.error("Erreur résumé IA:", e);
-      setAiSummary(fallbackSummary);
-      toast.warning("Service IA indisponible, résumé local généré");
-    } finally { setAiLoading(false); }
+    setAiSummary(fallbackSummary);
+    setAiLoading(false);
+    toast.success("Résumé généré");
+  };
+
+  const buildSummaryShareText = () => `Résumé — ${title || "Rapport"}\n\n${aiSummary}`;
+
+  const getShareablePhotoFiles = async () => {
+    const files: File[] = [];
+    for (const [idx, photo] of photos.entries()) {
+      try {
+        const blob = await renderPhotoToBlob(photo);
+        files.push(new File([blob], `rapport-photo-${idx + 1}.jpg`, { type: "image/jpeg" }));
+      } catch (error) {
+        console.warn("Photo non joignable au partage", error);
+      }
+    }
+    return files;
   };
 
   const exportAiSummary = async (method: string) => {
     if (!aiSummary) return;
-    const photoUrls = photos.filter(p => p.url && !p.url.startsWith("data:")).map(p => p.url);
-    let text = `Résumé — ${title}\n\n${aiSummary}`;
-    if (photoUrls.length > 0) {
-      text += `\n\n📷 Photos (${photoUrls.length}) :\n`;
-      photoUrls.forEach((url, i) => { text += `${i + 1}. ${url}\n`; });
+    const text = buildSummaryShareText();
+    try {
+      if (method === "copy") {
+        navigator.clipboard.writeText(text);
+        toast.success("Résumé copié");
+        return;
+      }
+
+      const files = await getShareablePhotoFiles();
+      const canShareFiles = files.length > 0 && navigator.canShare?.({ files });
+
+      if (canShareFiles && navigator.share) {
+        await navigator.share({
+          title: `Résumé : ${title || "Rapport"}`,
+          text,
+          files,
+        });
+        toast.success("Partage ouvert avec photos");
+        return;
+      }
+
+      if (method === "email") {
+        window.open(`mailto:?subject=${encodeURIComponent(`Résumé : ${title || "Rapport"}`)}&body=${encodeURIComponent(text)}`);
+        if (files.length > 0) toast.info("Votre navigateur ne permet pas d'ajouter les photos automatiquement à l'email");
+      } else if (method === "whatsapp") {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+        if (files.length > 0) toast.info("WhatsApp Web ne permet pas d'ajouter les photos automatiquement ici");
+      } else if (method === "sms") {
+        window.open(`sms:?body=${encodeURIComponent(text)}`);
+        if (files.length > 0) toast.info("Le navigateur ne permet pas d'ajouter les photos automatiquement au SMS");
+      }
+    } catch (error: any) {
+      if (error?.name !== "AbortError") toast.error("Partage impossible depuis ce navigateur");
     }
-    if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié"); }
-    else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent(`Résumé : ${title}`)}&body=${encodeURIComponent(text)}`);
-    else if (method === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
-    else if (method === "sms") window.open(`sms:?body=${encodeURIComponent(text)}`);
   };
 
   return (
@@ -498,20 +525,20 @@ const ReportPlugin = () => {
               rows={4} className={`${inputCls} field-textarea`} />
           </div>
 
-          {/* AI Summary */}
+          {/* Summary */}
           <button onClick={handleAiSummary} disabled={aiLoading || !notes.trim()}
             className="btn btn-secondary btn-full" style={{ color: "var(--color-primary)" }}>
             {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {aiLoading ? "Génération…" : "Résumé IA"}
+            {aiLoading ? "Génération…" : "Résumé"}
           </button>
           {aiSummary && (
             <div className="glass-card p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-primary flex items-center gap-1.5"><Sparkles size={12} /> Résumé IA</span>
+                <span className="text-xs font-medium text-primary flex items-center gap-1.5"><Sparkles size={12} /> Résumé</span>
                 <button onClick={() => setAiSummary("")} className="btn btn-icon-xs btn-ghost"><X size={12} /></button>
               </div>
               <p className="text-xs text-secondary-foreground leading-relaxed whitespace-pre-line">{aiSummary}</p>
-              <div className="flex gap-1.5 pt-1">
+              <div className="grid grid-cols-2 gap-1.5 pt-1 sm:grid-cols-4">
                 {[
                   { id: "copy", icon: Copy, label: "Copier" },
                   { id: "email", icon: Mail, label: "Email" },
@@ -519,7 +546,7 @@ const ReportPlugin = () => {
                   { id: "sms", icon: Phone, label: "SMS" },
                 ].map((m) => (
                   <button key={m.id} onClick={() => exportAiSummary(m.id)}
-                    className="btn btn-secondary btn-sm">
+                    className="btn btn-secondary btn-sm w-full min-w-0">
                     <m.icon size={10} /> {m.label}
                   </button>
                 ))}
