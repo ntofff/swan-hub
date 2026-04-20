@@ -1636,7 +1636,20 @@ const QuotesPlugin = () => {
         {(tab === "devis" || tab === "factures") && (
           <>
             {showForm && tab === "devis" && (
-              <div className="field-form-panel mb-4 space-y-4 slide-up">
+              <div
+                className="field-form-panel mb-4 space-y-4 slide-up transition-all"
+                style={fColor ? {
+                  borderColor: `hsl(${fColor})`,
+                  boxShadow: `inset 5px 0 0 hsl(${fColor}), 0 0 0 3px hsl(${fColor} / 0.12)`,
+                } : undefined}
+              >
+                {fColor && (
+                  <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold"
+                    style={{ borderColor: `hsl(${fColor})`, backgroundColor: `hsl(${fColor} / 0.12)`, color: `hsl(${fColor})` }}>
+                    <span>Couleur sélectionnée</span>
+                    <span className="h-6 w-6 rounded-md border-2 border-background" style={{ backgroundColor: `hsl(${fColor})` }} />
+                  </div>
+                )}
                 <input value={fTitle} onChange={e => setFTitle(e.target.value)} placeholder="Titre *" className={inputCls} />
                 <select value={fClientId} onChange={e => setFClientId(e.target.value)} className={inputCls}>
                   <option value="">-- Client --</option>
@@ -1712,7 +1725,20 @@ const QuotesPlugin = () => {
             )}
 
             {showForm && tab === "factures" && (
-              <div className="field-form-panel mb-4 space-y-4 slide-up">
+              <div
+                className="field-form-panel mb-4 space-y-4 slide-up transition-all"
+                style={fColor ? {
+                  borderColor: `hsl(${fColor})`,
+                  boxShadow: `inset 5px 0 0 hsl(${fColor}), 0 0 0 3px hsl(${fColor} / 0.12)`,
+                } : undefined}
+              >
+                {fColor && (
+                  <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold"
+                    style={{ borderColor: `hsl(${fColor})`, backgroundColor: `hsl(${fColor} / 0.12)`, color: `hsl(${fColor})` }}>
+                    <span>Couleur sélectionnée</span>
+                    <span className="h-6 w-6 rounded-md border-2 border-background" style={{ backgroundColor: `hsl(${fColor})` }} />
+                  </div>
+                )}
                 <input value={fTitle} onChange={e => setFTitle(e.target.value)} placeholder="Titre *" className={inputCls} />
                 <select value={fClientId} onChange={e => setFClientId(e.target.value)} className={inputCls}>
                   <option value="">-- Client --</option>
