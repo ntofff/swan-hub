@@ -59,6 +59,8 @@ const createEmptyLineItem = (): LineItem => ({ description: "", quantity: "1", u
 const fmtAmount = (n: number) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
 const formatDate = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 const csvEscape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+const parseLocaleNumber = (value: string | number | null | undefined) =>
+  Number(String(value ?? "").replace(",", ".")) || 0;
 
 const isMissingInvoiceSettingsTable = (error: any) => {
   const message = String(error?.message || "");
@@ -100,8 +102,8 @@ const calcTtc = (ht: number, discountType: string, discountValue: number, tvaRat
 const normalizeLineItems = (items: LineItem[]): StoredLineItem[] =>
   items
     .map((item) => {
-      const quantity = Math.max(0, Number(item.quantity) || 0);
-      const unitPriceHt = Math.max(0, Number(item.unitPriceHt) || 0);
+      const quantity = Math.max(0, parseLocaleNumber(item.quantity));
+      const unitPriceHt = Math.max(0, parseLocaleNumber(item.unitPriceHt));
       return {
         description: item.description.trim(),
         quantity: quantity || 1,
@@ -118,8 +120,8 @@ const getStoredLineItems = (item: any): StoredLineItem[] => {
   const raw = Array.isArray(item?.line_items) ? item.line_items : [];
   const normalized = raw
     .map((line: any) => {
-      const quantity = Math.max(0, Number(line.quantity) || 0);
-      const unitPriceHt = Math.max(0, Number(line.unit_price_ht ?? line.unitPriceHt) || 0);
+      const quantity = Math.max(0, parseLocaleNumber(line.quantity));
+      const unitPriceHt = Math.max(0, parseLocaleNumber(line.unit_price_ht ?? line.unitPriceHt));
       return {
         description: String(line.description || "").trim(),
         quantity: quantity || 1,
@@ -544,6 +546,14 @@ const QuotesPlugin = () => {
 
   const removeLineItem = (index: number) => {
     setFLineItems((items) => items.length === 1 ? [createEmptyLineItem()] : items.filter((_, i) => i !== index));
+  };
+
+  const stepLineQuantity = (index: number, delta: number) => {
+    setFLineItems((items) => items.map((item, i) => {
+      if (i !== index) return item;
+      const current = parseLocaleNumber(item.quantity) || 1;
+      return { ...item, quantity: String(Math.max(0, current + delta)) };
+    }));
   };
 
   const updateInvoiceSettingsCounters = async (patch: Record<string, number>) => {
@@ -1124,8 +1134,8 @@ const QuotesPlugin = () => {
 
       <div className="space-y-2">
         {fLineItems.map((line, index) => {
-          const quantity = Number(line.quantity) || 0;
-          const unitPrice = Number(line.unitPriceHt) || 0;
+          const quantity = parseLocaleNumber(line.quantity);
+          const unitPrice = parseLocaleNumber(line.unitPriceHt);
           const lineTotal = (quantity || 1) * unitPrice;
           return (
             <div key={index} className="rounded-lg border border-border bg-background/70 p-2 space-y-2">
@@ -1140,23 +1150,37 @@ const QuotesPlugin = () => {
                   <Trash2 size={14} />
                 </button>
               </div>
-              <div className="grid grid-cols-[minmax(76px,0.7fr)_1fr_minmax(88px,0.9fr)] gap-2 items-center">
-                <input
-                  value={line.quantity}
-                  onChange={e => updateLineItem(index, { quantity: e.target.value })}
-                  placeholder="Qté"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className={inputCls}
-                />
+              <div className="grid grid-cols-[minmax(112px,0.95fr)_1fr_minmax(88px,0.9fr)] gap-2 items-center">
+                <div className="flex items-center rounded-lg border border-border bg-background overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => stepLineQuantity(index, -1)}
+                    className="h-11 w-10 shrink-0 text-lg font-bold text-muted-foreground hover:bg-secondary"
+                    aria-label="Réduire la quantité"
+                  >
+                    -
+                  </button>
+                  <input
+                    value={line.quantity}
+                    onChange={e => updateLineItem(index, { quantity: e.target.value })}
+                    placeholder="Qté"
+                    inputMode="decimal"
+                    className="h-11 min-w-0 flex-1 bg-transparent text-center text-base font-semibold outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => stepLineQuantity(index, 1)}
+                    className="h-11 w-10 shrink-0 text-lg font-bold text-muted-foreground hover:bg-secondary"
+                    aria-label="Augmenter la quantité"
+                  >
+                    +
+                  </button>
+                </div>
                 <input
                   value={line.unitPriceHt}
                   onChange={e => updateLineItem(index, { unitPriceHt: e.target.value })}
                   placeholder="Prix HT"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  inputMode="decimal"
                   className={inputCls}
                 />
                 <p className="text-right text-sm font-semibold text-foreground">{fmtAmount(lineTotal)}</p>
@@ -1260,11 +1284,16 @@ const QuotesPlugin = () => {
               {showColorPicker && (
                 <div className="flex flex-wrap gap-1.5">
                   {colorPalette.map(c => (
-                    <button key={c} onClick={() => { updateColor.mutate({ id: selectedItem.id, color: c, type: isQuote ? "quotes" : "invoices" }); setSelectedItem({ ...selectedItem, color: c }); setShowColorPicker(false); }}
-                      className="w-9 h-9 rounded-lg border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: selectedItem.color === c ? "hsl(var(--primary))" : "transparent" }} />
+                    <button key={c} type="button" onClick={() => { updateColor.mutate({ id: selectedItem.id, color: c, type: isQuote ? "quotes" : "invoices" }); setSelectedItem({ ...selectedItem, color: c }); setShowColorPicker(false); }}
+                      className="w-11 h-11 rounded-lg border-4 transition-all"
+                      style={{
+                        backgroundColor: `hsl(${c})`,
+                        borderColor: selectedItem.color === c ? "hsl(var(--primary))" : "hsl(var(--background))",
+                        boxShadow: selectedItem.color === c ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
+                      }} />
                   ))}
-                  <button onClick={() => { updateColor.mutate({ id: selectedItem.id, color: "", type: isQuote ? "quotes" : "invoices" }); setSelectedItem({ ...selectedItem, color: null }); setShowColorPicker(false); }}
-                    className="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-sm font-semibold text-muted-foreground">✕</button>
+                  <button type="button" onClick={() => { updateColor.mutate({ id: selectedItem.id, color: "", type: isQuote ? "quotes" : "invoices" }); setSelectedItem({ ...selectedItem, color: null }); setShowColorPicker(false); }}
+                    className="w-11 h-11 rounded-lg border border-border flex items-center justify-center text-sm font-semibold text-muted-foreground">✕</button>
                 </div>
               )}
 
@@ -1638,7 +1667,15 @@ const QuotesPlugin = () => {
 
                 <div><p className={`${labelCls} mb-1.5`}>Couleur</p>
                   <div className="flex gap-1.5 flex-wrap">
-                    {colorPalette.map(c => (<button key={c} onClick={() => setFColor(fColor === c ? "" : c)} className="w-9 h-9 rounded-lg border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: fColor === c ? "hsl(var(--primary))" : "transparent" }} />))}
+                    {colorPalette.map(c => (
+                      <button key={c} type="button" onClick={() => setFColor(fColor === c ? "" : c)}
+                        className="w-11 h-11 rounded-lg border-4 transition-all"
+                        style={{
+                          backgroundColor: `hsl(${c})`,
+                          borderColor: fColor === c ? "hsl(var(--primary))" : "hsl(var(--background))",
+                          boxShadow: fColor === c ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
+                        }} />
+                    ))}
                   </div>
                 </div>
 
@@ -1705,7 +1742,15 @@ const QuotesPlugin = () => {
 
                 <div><p className={`${labelCls} mb-1.5`}>Couleur</p>
                   <div className="flex gap-1.5 flex-wrap">
-                    {colorPalette.map(c => (<button key={c} onClick={() => setFColor(fColor === c ? "" : c)} className="w-9 h-9 rounded-lg border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: fColor === c ? "hsl(var(--primary))" : "transparent" }} />))}
+                    {colorPalette.map(c => (
+                      <button key={c} type="button" onClick={() => setFColor(fColor === c ? "" : c)}
+                        className="w-11 h-11 rounded-lg border-4 transition-all"
+                        style={{
+                          backgroundColor: `hsl(${c})`,
+                          borderColor: fColor === c ? "hsl(var(--primary))" : "hsl(var(--background))",
+                          boxShadow: fColor === c ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
+                        }} />
+                    ))}
                   </div>
                 </div>
 
