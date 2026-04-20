@@ -229,7 +229,7 @@ export default function Pricing() {
                       fontFamily: 'var(--font-display)',
                       fontSize: 'var(--text-3xl)',
                       fontWeight: 800,
-                      letterSpacing: '-0.03em',
+                      letterSpacing: 0,
                     }}
                   >
                     Gratuit

@@ -708,7 +708,7 @@ Toute reproduction, représentation, modification, publication, adaptation total
 
 CRÉDITS TECHNIQUES
 
-Typographies : Syne, DM Sans, JetBrains Mono — Google Fonts (SIL Open Font License)
+Typographies : Manrope, DM Sans, JetBrains Mono — Google Fonts (SIL Open Font License)
 Icônes : Lucide Icons (ISC License)
 Framework : React (MIT License), Vite (MIT License)
 Base de données : PostgreSQL (PostgreSQL License)

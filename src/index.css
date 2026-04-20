@@ -4,7 +4,7 @@
    Version 2.0 · Field Pro Design System
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ============================================================
    TOKENS — Variables de base
@@ -12,7 +12,7 @@
 
 :root {
   /* Typographie */
-  --font-display: 'Syne', sans-serif;       /* Titres, headings, logo */
+  --font-display: 'Manrope', sans-serif;    /* Titres, headings, logo */
   --font-body:    'DM Sans', sans-serif;     /* Corps de texte, UI */
   --font-mono:    'JetBrains Mono', monospace; /* Chiffres, codes, KPIs */
 
@@ -391,7 +391,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: var(--color-text-1);
 }
 
@@ -404,7 +404,7 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   font-family: var(--font-display);
   font-size: var(--text-4xl);
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1;
 }
 

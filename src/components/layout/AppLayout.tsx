@@ -60,7 +60,7 @@ export function AppLayout() {
               fontFamily: 'var(--font-display)',
               fontSize: 'var(--text-xl)',
               fontWeight: 800,
-              letterSpacing: '-0.03em',
+              letterSpacing: 0,
             }}
             className="text-gold"
           >

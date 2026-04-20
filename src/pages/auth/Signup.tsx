@@ -123,7 +123,7 @@ export default function Signup() {
             fontFamily: 'var(--font-display)',
             fontSize: 'var(--text-2xl)',
             fontWeight: 800,
-            letterSpacing: '-0.03em',
+            letterSpacing: 0,
           }}
         >
           SWAN · HUB

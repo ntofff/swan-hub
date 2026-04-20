@@ -194,7 +194,7 @@ export default function HomePage() {
       {/* ── Header ─────────────────────────────── */}
       <header className="page-header">
         <div>
-          <h1 className="text-gold" style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: '-0.03em' }}>
+          <h1 className="text-gold" style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: 0 }}>
             SWAN · HUB
           </h1>
           <p className="page-header-subtitle">

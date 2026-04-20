@@ -43,7 +43,7 @@ export function LoadingScreen() {
             fontFamily: 'var(--font-display)',
             fontSize: 'var(--text-lg)',
             fontWeight: 800,
-            letterSpacing: '-0.02em',
+            letterSpacing: 0,
           }}
         >
           SWAN · HUB
