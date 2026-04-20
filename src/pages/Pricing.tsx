@@ -23,6 +23,17 @@ export default function Pricing() {
   const carteCost = paidPluginCount * BUSINESS.PLUGIN_PRICE_TTC;
   const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
 
+  const handlePlanClick = (plan: (typeof PLANS)[number], isCurrent: boolean) => {
+    if (isCurrent) return;
+
+    if (plan.id === 'free') {
+      navigate('/plugins');
+      return;
+    }
+
+    toast.info('Paiement Stripe en préparation. Les offres sont prêtes, le branchement sécurisé arrive à l’étape monétisation.');
+  };
+
   return (
     <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
       <header className="page-header">
@@ -34,6 +45,24 @@ export default function Pricing() {
           <p className="page-header-subtitle">Transparents, flexibles, sans engagement</p>
         </div>
       </header>
+
+      <section className="px-4" style={{ marginBottom: 'var(--space-5)' }}>
+        <div
+          className="card"
+          style={{
+            padding: 'var(--space-4)',
+            background: 'var(--color-surface-2)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-1)', fontWeight: 700, marginBottom: 4 }}>
+            Paiement sécurisé à finaliser
+          </p>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5 }}>
+            La grille tarifaire est posée. Stripe sera branché ensuite pour activer les abonnements sans engagement.
+          </p>
+        </div>
+      </section>
 
       {/* ── Simulateur ── */}
       <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
@@ -250,11 +279,7 @@ export default function Pricing() {
               <button
                 disabled={isCurrent}
                 className={`btn btn-full btn-lg ${plan.id === 'pro' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => {
-                  if (!isCurrent) {
-                    toast.info('Paiement Stripe à venir à l\'étape 1.7');
-                  }
-                }}
+                onClick={() => handlePlanClick(plan, isCurrent)}
               >
                 {isCurrent ? 'Plan actuel' : plan.priceTTC === null ? 'Commencer' : 'Choisir ce plan'}
                 {!isCurrent && <ChevronRight size={16} />}

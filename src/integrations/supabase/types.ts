@@ -47,6 +47,24 @@ export type Database = {
         }
         Relationships: []
       }
+      anti_phishing_history: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null
@@ -80,6 +98,24 @@ export type Database = {
           siret?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      failed_login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
         }
         Relationships: []
       }
@@ -688,34 +724,61 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_plugins: string[]
+          anti_phishing_code: string | null
           avatar_url: string | null
           created_at: string
+          free_export_used: boolean
           full_name: string | null
           id: string
+          is_beta: boolean
+          is_vip: boolean
           plan: string
+          phone: string | null
           theme: string
+          trade: string | null
+          trial_ends_at: string | null
           updated_at: string
           user_id: string
+          vip_granted_at: string | null
         }
         Insert: {
+          active_plugins?: string[]
+          anti_phishing_code?: string | null
           avatar_url?: string | null
           created_at?: string
+          free_export_used?: boolean
           full_name?: string | null
           id?: string
+          is_beta?: boolean
+          is_vip?: boolean
           plan?: string
+          phone?: string | null
           theme?: string
+          trade?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id: string
+          vip_granted_at?: string | null
         }
         Update: {
+          active_plugins?: string[]
+          anti_phishing_code?: string | null
           avatar_url?: string | null
           created_at?: string
+          free_export_used?: boolean
           full_name?: string | null
           id?: string
+          is_beta?: boolean
+          is_vip?: boolean
           plan?: string
+          phone?: string | null
           theme?: string
+          trade?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
+          vip_granted_at?: string | null
         }
         Relationships: []
       }
@@ -1342,6 +1405,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_login_block: {
+        Args: { check_email: string }
+        Returns: {
+          is_blocked: boolean
+          retry_after_seconds: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1356,6 +1426,10 @@ export type Database = {
           _record_id?: string
           _table_name?: string
         }
+        Returns: undefined
+      }
+      log_failed_login: {
+        Args: { login_email: string }
         Returns: undefined
       }
       next_logbook_seq: { Args: { p_user_id: string }; Returns: string }

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, BarChart3, User, Shield, FileText, CheckSquare, Receipt } from 'lucide-react';
+import { Home, LayoutGrid, BarChart3, User, Shield, FileText, CheckSquare, Receipt, Coffee } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 // ── Items de navigation ───────────────────────────────────────
@@ -26,6 +26,10 @@ const ADMIN_ITEM: NavItem = {
   path: '/admin', label: 'Admin', icon: Shield, adminOnly: true,
 };
 
+const PRICING_ITEM: NavItem = {
+  path: '/pricing', label: 'Tarifs', icon: Coffee,
+};
+
 const QUICK_CREATE_ITEMS = [
   { path: '/plugins/report', label: 'Rapport', icon: FileText },
   { path: '/plugins/tasks?new=1', label: 'Tâche', icon: CheckSquare },
@@ -38,7 +42,8 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
 
-  const items = isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS;
+  const sidebarItems = isAdmin ? [...NAV_ITEMS, PRICING_ITEM, ADMIN_ITEM] : [...NAV_ITEMS, PRICING_ITEM];
+  const bottomItems = NAV_ITEMS;
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -74,7 +79,7 @@ export function AppLayout() {
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-          {items.map((item) => (
+          {sidebarItems.map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
@@ -121,7 +126,7 @@ export function AppLayout() {
 
       {/* ── Bottom Nav Mobile ───────────────────── */}
       <nav className="bottom-nav" role="navigation" aria-label="Navigation principale">
-        {items.map((item) => (
+        {bottomItems.map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}

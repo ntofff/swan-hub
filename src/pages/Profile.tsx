@@ -3,10 +3,10 @@
 // Infos perso · Sécurité · Thème · Voix · Plan · Données
 // ============================================================
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Shield, Palette, Volume2, CreditCard, Download,
+  User, Shield, Palette, Volume2, CreditCard, Download, Briefcase, Phone, Save,
   LogOut, ChevronRight, Crown, Star, Check, X, Eye, EyeOff,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +15,7 @@ import { useVoice } from '@/hooks/useVoice';
 import { THEMES } from '@/config/tokens';
 import { toast } from 'sonner';
 
-type Section = 'main' | 'security' | 'theme' | 'voice' | 'plan' | 'data';
+type Section = 'main' | 'account' | 'security' | 'theme' | 'voice' | 'plan' | 'data';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -27,6 +27,17 @@ export default function Profile() {
   const [editingPhishing, setEditingPhishing] = useState(false);
   const [newPhishingCode, setNewPhishingCode] = useState('');
   const [showPhishing, setShowPhishing] = useState(false);
+  const [accountName, setAccountName] = useState('');
+  const [accountPhone, setAccountPhone] = useState('');
+  const [accountTrade, setAccountTrade] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
+
+  useEffect(() => {
+    if (!profile) return;
+    setAccountName(profile.full_name || '');
+    setAccountPhone(profile.phone || '');
+    setAccountTrade(profile.trade || '');
+  }, [profile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -42,6 +53,24 @@ export default function Profile() {
     toast.success('Code anti-phishing mis à jour');
     setEditingPhishing(false);
     setNewPhishingCode('');
+  };
+
+  const handleUpdateAccount = async () => {
+    setSavingAccount(true);
+    const { error } = await updateProfile({
+      full_name: accountName.trim() || null,
+      phone: accountPhone.trim() || null,
+      trade: accountTrade || null,
+    });
+    setSavingAccount(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success('Profil mis à jour');
+    setSection('main');
   };
 
   if (!profile) return null;
@@ -127,6 +156,12 @@ export default function Profile() {
         {/* ── Sections ── */}
         <div className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <MenuItem
+            icon={<User size={20} />}
+            title="Informations personnelles"
+            subtitle="Nom, téléphone, métier"
+            onClick={() => setSection('account')}
+          />
+          <MenuItem
             icon={<Shield size={20} />}
             title="Sécurité & anti-phishing"
             subtitle="Code personnel, MFA, sessions"
@@ -167,6 +202,83 @@ export default function Profile() {
           >
             <LogOut size={18} />
             Se déconnecter
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // SECTION INFORMATIONS PERSONNELLES
+  // ════════════════════════════════════════════════════════
+
+  if (section === 'account') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 'var(--space-8)' }}>
+        <SectionHeader title="Informations personnelles" onBack={() => setSection('main')} />
+
+        <div className="px-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="card" style={{ padding: 'var(--space-4)' }}>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.6, marginBottom: 'var(--space-4)' }}>
+              Ces infos servent à personnaliser vos outils et à préparer les prochains exports pro.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <label>
+                <span className="field-label">
+                  <User size={16} /> Nom affiché
+                </span>
+                <input
+                  className="input"
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                  placeholder="Votre nom ou entreprise"
+                />
+              </label>
+
+              <label>
+                <span className="field-label">
+                  <Phone size={16} /> Téléphone
+                </span>
+                <input
+                  className="input"
+                  value={accountPhone}
+                  onChange={(e) => setAccountPhone(e.target.value)}
+                  placeholder="06 00 00 00 00"
+                  type="tel"
+                />
+              </label>
+
+              <label>
+                <span className="field-label">
+                  <Briefcase size={16} /> Métier principal
+                </span>
+                <select
+                  className="input"
+                  value={accountTrade}
+                  onChange={(e) => setAccountTrade(e.target.value)}
+                >
+                  <option value="">Non renseigné</option>
+                  <option value="btp">Artisan / BTP</option>
+                  <option value="services">Services</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="immobilier">Immobilier</option>
+                  <option value="transport">Transport / logistique</option>
+                  <option value="freelance">Indépendant / freelance</option>
+                  <option value="sante">Santé / accompagnement</option>
+                  <option value="autre">Autre activité</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <button
+            onClick={handleUpdateAccount}
+            disabled={savingAccount}
+            className="btn btn-primary btn-full btn-lg"
+          >
+            <Save size={18} />
+            {savingAccount ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </div>
       </div>
