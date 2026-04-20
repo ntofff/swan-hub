@@ -1628,6 +1628,7 @@ select.input {
 }
 
 .tutorial-dialog {
+  z-index: var(--z-modal) !important;
   left: 50% !important;
   right: auto !important;
   top: 50% !important;
@@ -1642,7 +1643,11 @@ select.input {
 }
 
 .tutorial-dialog-content {
-  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  padding-bottom: max(calc(var(--tap-comfort) + var(--space-5)), calc(env(safe-area-inset-bottom) + var(--tap-comfort) + var(--space-4)));
+}
+
+.tutorial-dialog > button:last-child {
+  display: none;
 }
 
 @media (max-width: 640px) {

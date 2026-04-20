@@ -1,6 +1,7 @@
-import { HelpCircle, Sparkles } from "lucide-react";
+import { HelpCircle, Sparkles, X } from "lucide-react";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -22,14 +23,14 @@ interface TutorialButtonProps {
   tips?: string[];
 }
 
-const StepCard = ({ step, index }: { step: TutorialStep; index: number }) => (
-  <div className="flex gap-3 rounded-xl border border-border bg-secondary/45 p-3">
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-base font-bold text-primary">
+const StepRow = ({ step, index }: { step: TutorialStep; index: number }) => (
+  <div className="flex gap-3 py-2">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
       {step.icon || index + 1}
     </div>
     <div className="min-w-0">
       <p className="text-sm font-semibold text-foreground">{step.title}</p>
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
+      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{step.text}</p>
     </div>
   </div>
 );
@@ -71,35 +72,48 @@ export const TutorialButton = ({
                 {intro}
               </DialogDescription>
             </DialogHeader>
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="btn absolute right-3 top-3 h-9 w-9 min-h-9 min-w-9 rounded-full border border-primary/45 bg-primary text-primary-foreground p-0 shadow-md"
+                aria-label="Fermer l'aide"
+                title="Fermer"
+              >
+                <X size={17} strokeWidth={2.4} />
+              </button>
+            </DialogClose>
           </div>
 
-          <div className="tutorial-dialog-content space-y-5 p-4">
-            <section className="space-y-2">
+          <div className="tutorial-dialog-content space-y-4 p-4">
+            <section>
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Sparkles size={15} />
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Mode simple</h3>
-                  <p className="text-xs text-muted-foreground">Le chemin le plus rapide sur le terrain.</p>
+                  <h3 className="text-base font-bold text-foreground">Le plus simple</h3>
+                  <p className="text-xs text-muted-foreground">Ce qu'il faut retenir pour utiliser l'outil vite.</p>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="mt-2 divide-y divide-border/70">
                 {simpleSteps.map((step, index) => (
-                  <StepCard key={`${step.title}-${index}`} step={step} index={index} />
+                  <StepRow key={`${step.title}-${index}`} step={step} index={index} />
                 ))}
               </div>
             </section>
 
             {hasCompleteMode && (
-              <section className="space-y-2">
+              <section className="rounded-xl border border-border bg-secondary/35 p-3">
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Mode complet</h3>
-                  <p className="text-xs text-muted-foreground">À ouvrir seulement quand vous voulez aller plus loin.</p>
+                  <h3 className="text-sm font-bold text-foreground">Fonctions utiles</h3>
+                  <p className="text-xs text-muted-foreground">À utiliser seulement si vous en avez besoin.</p>
                 </div>
-                <div className="space-y-2">
+                <div className="mt-2 grid gap-2">
                   {completeSteps!.map((step, index) => (
-                    <StepCard key={`${step.title}-${index}`} step={step} index={index} />
+                    <div key={`${step.title}-${index}`} className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-bold text-primary">{step.icon || index + 1}</span>
+                      <span><strong className="text-foreground">{step.title}</strong> : {step.text}</span>
+                    </div>
                   ))}
                 </div>
               </section>
