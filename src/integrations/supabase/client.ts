@@ -15,5 +15,3 @@ export const supabase = createClient<Database>(
     },
   }
 );
-
-// END
