@@ -206,18 +206,6 @@ export default function HomePage() {
               </span>
             )}
           </p>
-          <p
-            title={`Commit ${APP_COMMIT}`}
-            style={{
-              marginTop: 4,
-              fontSize: 'var(--text-2xs)',
-              color: 'var(--color-text-3)',
-              fontWeight: 600,
-              letterSpacing: '0.01em',
-            }}
-          >
-            {APP_BUILD_LABEL}
-          </p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
           <TutorialButton {...HOME_TUTORIAL} />
@@ -390,6 +378,22 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      <div
+        title={`Commit ${APP_COMMIT}`}
+        style={{
+          textAlign: 'center',
+          fontSize: 'var(--text-2xs)',
+          color: 'var(--color-text-3)',
+          opacity: 0.28,
+          fontWeight: 600,
+          letterSpacing: '0.01em',
+          margin: 'var(--space-5) 0 var(--space-2)',
+          userSelect: 'none',
+        }}
+      >
+        {APP_BUILD_LABEL}
+      </div>
 
       <Dialog open={activityOpen} onOpenChange={setActivityOpen}>
         <DialogContent

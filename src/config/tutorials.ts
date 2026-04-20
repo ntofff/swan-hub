@@ -9,21 +9,21 @@ export interface TutorialContent {
 }
 
 export const HOME_TUTORIAL: TutorialContent = {
-  title: "Aide page principale",
-  intro: "Cette page sert de tableau de bord. Elle vous montre ce qui mérite votre attention, puis vous laisse ouvrir l'outil utile.",
+  title: "Aide - Page principale",
+  intro: "Cette page est votre tableau de bord. Elle affiche l'essentiel et vous permet d'accéder rapidement aux outils.",
   simpleSteps: [
-    { icon: "1", title: "Regardez le brief", text: "La zone À surveiller résume les tâches, factures et missions importantes du moment." },
-    { icon: "2", title: "Ouvrez un outil", text: "Touchez Rapport, Tâches, Devis ou un autre outil pour travailler directement." },
-    { icon: "3", title: "Reprenez où vous étiez", text: "L'activité récente permet de retrouver les derniers éléments sans chercher." },
+    { icon: "1", title: "Consultez le brief", text: "La zone À surveiller regroupe les tâches, factures et missions importantes." },
+    { icon: "2", title: "Ouvrez un outil", text: "Cliquez sur Rapport, Tâches, Devis ou autre pour travailler directement." },
+    { icon: "3", title: "Reprenez facilement", text: "L'activité récente vous permet de retrouver vos derniers éléments sans chercher." },
   ],
   completeSteps: [
-    { icon: "Aa", title: "Ajustez le confort", text: "Le bouton Aa grossit ou réduit le texte dans toute l'app." },
-    { icon: "☀", title: "Changez l'affichage", text: "Le bouton soleil/lune passe du mode clair au mode sombre selon votre environnement." },
-    { icon: "!", title: "Signalez un souci", text: "Le bouton Feedback en bas à droite sert à envoyer une idée ou un problème d'app." },
+    { icon: "Aa", title: "Taille du texte", text: "Ajuste la taille du texte dans toute l'app." },
+    { icon: "☀", title: "Clair / sombre", text: "Change le mode clair ou sombre selon votre environnement." },
+    { icon: "!", title: "Feedback", text: "Signalez un problème ou une idée depuis le bouton en bas à droite." },
   ],
   tips: [
-    "Sur mobile, commencez toujours par le brief puis ouvrez un seul outil à la fois.",
-    "Si le texte est trop petit sur iPhone, utilisez Aa avant d'aller plus loin.",
+    "Sur mobile : commencez par le brief, puis ouvrez un seul outil à la fois.",
+    "Si le texte est trop petit sur iPhone, utilisez Aa.",
   ],
 };
 
