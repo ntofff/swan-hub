@@ -818,6 +818,32 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
   border: 1px solid var(--color-danger);
 }
 
+.btn-delete {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.btn-delete:hover {
+  border-color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.btn-archive {
+  background: rgba(59, 130, 246, 0.12);
+  color: rgb(37, 99, 235);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+
+.btn-archive:hover {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.dark .btn-archive {
+  color: rgb(147, 197, 253);
+}
+
 /* Tailles */
 .btn-sm {
   min-height: var(--tap-min);

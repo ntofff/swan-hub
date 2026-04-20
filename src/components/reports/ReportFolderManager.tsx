@@ -179,7 +179,7 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
                 </button>
                 <button
                   onClick={() => { if (window.confirm(`Supprimer le dossier "${folder.name}" ?`)) deleteFolder.mutate(folder.id); }}
-                  className="btn btn-icon-xs btn-ghost"
+                  className="btn btn-icon-sm btn-delete rounded-full"
                 >
                   <Trash2 size={14} />
                 </button>

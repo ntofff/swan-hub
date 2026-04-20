@@ -453,7 +453,7 @@ const VehiclePlugin = () => {
                       <div className="text-sm font-semibold">{t.distance ?? "–"} km</div>
                       {t.ik_amount && <div className="text-xs font-semibold text-primary">{Number(t.ik_amount).toFixed(2)} €</div>}
                     </div>
-                    <button onClick={() => { if (window.confirm("Supprimer ce trajet ?")) deleteTrip.mutate(t.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
+                    <button onClick={() => { if (window.confirm("Supprimer ce trajet ?")) deleteTrip.mutate(t.id); }} className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -474,7 +474,7 @@ const VehiclePlugin = () => {
                   <div className="plugin-record-meta mt-1">{v.brand_model}{v.license_plate ? ` · ${v.license_plate}` : ""}{v.fiscal_power ? ` · ${v.fiscal_power} CV` : ""}{v.current_mileage ? ` · ${v.current_mileage.toLocaleString("fr-FR")} km` : ""}</div>
                 </div>
                 <span className="text-xs px-2 py-1 rounded-full font-semibold bg-success/10 text-success">{v.status}</span>
-                <button onClick={() => { if (window.confirm("Supprimer ce véhicule ?")) deleteVehicle.mutate(v.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer ce véhicule ?")) deleteVehicle.mutate(v.id); }} className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -492,7 +492,7 @@ const VehiclePlugin = () => {
                   <div className="plugin-record-title truncate">{d.name}</div>
                   <div className="plugin-record-meta mt-1">{d.role || "—"}{d.vehicles ? ` · ${d.vehicles.name}` : ""}</div>
                 </div>
-                <button onClick={() => { if (window.confirm("Supprimer ce conducteur ?")) deleteDriver.mutate(d.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer ce conducteur ?")) deleteDriver.mutate(d.id); }} className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -511,7 +511,7 @@ const VehiclePlugin = () => {
                   <div className="plugin-record-meta mt-1">{r.start_location} → {r.end_location}{r.default_distance ? ` · ${r.default_distance} km` : ""}</div>
                 </div>
                 <button onClick={() => useRoutePreset(r)} className="btn btn-secondary btn-xs">Utiliser</button>
-                <button onClick={() => { if (window.confirm("Supprimer cet itinéraire ?")) deleteRoute.mutate(r.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer cet itinéraire ?")) deleteRoute.mutate(r.id); }} className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>

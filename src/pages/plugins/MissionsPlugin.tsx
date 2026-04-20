@@ -477,7 +477,7 @@ const MissionsPlugin = () => {
                             )}
                             {m.status === "Terminé" && (
                               <button onClick={() => { if (window.confirm("Archiver cette mission ?")) archiveMission.mutate(m.id); }}
-                                className="btn btn-secondary btn-sm">
+                                className="btn btn-archive btn-sm">
                                 <Archive size={12} /> Archiver
                               </button>
                             )}
@@ -486,7 +486,7 @@ const MissionsPlugin = () => {
                               <Pencil size={12} /> Modifier
                             </button>
                             <button onClick={() => { if (window.confirm("Supprimer cette mission ?")) deleteMission.mutate(m.id); }}
-                              className="btn btn-icon-sm btn-secondary rounded-full">
+                              className="btn btn-icon-sm btn-delete rounded-full">
                               <Trash2 size={12} />
                             </button>
                           </>
@@ -494,11 +494,11 @@ const MissionsPlugin = () => {
                         {tab === "archived" && (
                           <>
                             <button onClick={() => unarchiveMission.mutate(m.id)}
-                              className="btn btn-secondary btn-sm">
+                              className="btn btn-archive btn-sm">
                               <Archive size={12} /> Restaurer
                             </button>
                             <button onClick={() => { if (window.confirm("Supprimer définitivement ?")) deleteMission.mutate(m.id); }}
-                              className="btn btn-icon-sm btn-secondary rounded-full">
+                              className="btn btn-icon-sm btn-delete rounded-full">
                               <Trash2 size={12} />
                             </button>
                           </>

@@ -474,7 +474,7 @@ const LogbookPlugin = () => {
                                 <button onClick={() => startEdit(e)} className="btn btn-icon-sm btn-ghost">
                                   <Pencil size={13} />
                                 </button>
-                                <button onClick={() => archiveEntry.mutate(e.id)} className="btn btn-icon-sm btn-ghost" title="Archiver">
+                                <button onClick={() => archiveEntry.mutate(e.id)} className="btn btn-icon-sm btn-archive rounded-full" title="Archiver">
                                   <Archive size={13} />
                                 </button>
                               </>
@@ -483,7 +483,7 @@ const LogbookPlugin = () => {
                                 <button onClick={() => restoreEntry.mutate(e.id)} className="btn btn-icon-sm btn-ghost" title="Restaurer">
                                   <RotateCcw size={13} />
                                 </button>
-                                <button onClick={() => setDeleteConfirmId(e.id)} className="btn btn-icon-sm btn-ghost" title="Supprimer définitivement">
+                                <button onClick={() => setDeleteConfirmId(e.id)} className="btn btn-icon-sm btn-delete rounded-full" title="Supprimer définitivement">
                                   <Trash2 size={13} />
                                 </button>
                               </>

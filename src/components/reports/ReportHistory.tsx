@@ -297,7 +297,7 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
                       <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => onEdit(r)} className="btn btn-icon-sm btn-secondary rounded-full" aria-label="Modifier"><Pencil size={18} /></button>
                         <button onClick={() => toggleShareMenu(r)} className="btn btn-icon-sm btn-secondary rounded-full" aria-label="Partager"><Share2 size={18} /></button>
-                        <button onClick={() => { if (window.confirm("Supprimer ce rapport ?")) onDelete(r.id); }} className="btn btn-icon-sm btn-secondary rounded-full" aria-label="Supprimer"><Trash2 size={18} /></button>
+                        <button onClick={() => { if (window.confirm("Supprimer ce rapport ?")) onDelete(r.id); }} className="btn btn-icon-sm btn-delete rounded-full" aria-label="Supprimer"><Trash2 size={18} /></button>
                       </div>
                     </div>
 

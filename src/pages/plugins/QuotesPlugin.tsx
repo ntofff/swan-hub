@@ -1034,7 +1034,7 @@ const QuotesPlugin = () => {
               </div>
             )}
             <button onClick={() => { if (window.confirm("Supprimer définitivement ?")) deleteItem.mutate({ id: selectedItem.id, type: isQuote ? "quotes" : "invoices" }); }}
-              className="btn btn-danger btn-full">
+              className="btn btn-delete btn-full">
               <Trash2 size={16} /> Supprimer
             </button>
           </div>
@@ -1261,7 +1261,7 @@ const QuotesPlugin = () => {
                   {c.address && <p className="text-sm text-muted-foreground truncate mt-1">{c.address}</p>}
                 </div>
                 <button onClick={() => editClientFn(c)} className="btn btn-icon-sm btn-secondary rounded-full"><Edit2 size={14} /></button>
-                <button onClick={() => { if (window.confirm(`Supprimer "${c.name}" ?`)) deleteClient.mutate(c.id); }} className="btn btn-icon-sm btn-danger rounded-full"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm(`Supprimer "${c.name}" ?`)) deleteClient.mutate(c.id); }} className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>

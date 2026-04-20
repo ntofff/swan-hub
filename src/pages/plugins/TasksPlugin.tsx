@@ -24,9 +24,20 @@ const priorityOptions = [
 ];
 
 const getPriorityInfo = (p: string) => priorityOptions.find(o => o.value === p) || priorityOptions[1];
+const priorityRank: Record<string, number> = { urgente: 0, haute: 1, moyenne: 2, basse: 3 };
 
 type ViewMode = "list" | "compact";
 type Tab = "active" | "archived";
+type SortMode = "manual" | "created_desc" | "created_asc" | "priority" | "deadline" | "location";
+
+const sortOptions: Array<{ value: SortMode; label: string }> = [
+  { value: "manual", label: "Sans tri" },
+  { value: "created_desc", label: "Ajout récent" },
+  { value: "created_asc", label: "Ajout ancien" },
+  { value: "priority", label: "Urgence" },
+  { value: "deadline", label: "Date limite" },
+  { value: "location", label: "Lieu" },
+];
 
 /** Deadline urgency: "overdue" (past), "red" (<12h), "orange" (<24h), "green" (>24h), or null */
 const getDeadlineUrgency = (task: any): "overdue" | "red" | "orange" | "green" | null => {
@@ -96,8 +107,10 @@ const TasksPlugin = () => {
   const [showForm, setShowForm] = useState(openNewTask);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [tab, setTab] = useState<Tab>("active");
+  const [sortMode, setSortMode] = useState<SortMode>("manual");
   const [shareTask, setShareTask] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [archiveConfirm, setArchiveConfirm] = useState<string | null>(null);
 
   // New task state
   const [input, setInput] = useState("");
@@ -128,24 +141,36 @@ const TasksPlugin = () => {
 
   const activeTasks = useMemo(() => {
     const active = tasks.filter((t: any) => !t.archived);
-    // Sort by deadline (soonest first), then by entry_date
-    return active.sort((a: any, b: any) => {
+    return [...active].sort((a: any, b: any) => {
       const aSort = a.sort_order ?? 0;
       const bSort = b.sort_order ?? 0;
       if (aSort !== bSort) return aSort - bSort;
-      const aDate = new Date(a.deadline || a.entry_date || a.created_at).getTime();
-      const bDate = new Date(b.deadline || b.entry_date || b.created_at).getTime();
-      return aDate - bDate;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     });
   }, [tasks]);
-  const archivedTasks = useMemo(() => tasks.filter((t: any) => t.archived), [tasks]);
+  const sortedActiveTasks = useMemo(() => {
+    const list = [...activeTasks];
+    if (sortMode === "manual") return list;
+    if (sortMode === "created_desc") return list.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    if (sortMode === "created_asc") return list.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    if (sortMode === "priority") return list.sort((a: any, b: any) => (priorityRank[a.priority] ?? 2) - (priorityRank[b.priority] ?? 2));
+    if (sortMode === "deadline") {
+      return list.sort((a: any, b: any) => {
+        const aTime = a.deadline ? new Date(a.deadline).getTime() : Number.POSITIVE_INFINITY;
+        const bTime = b.deadline ? new Date(b.deadline).getTime() : Number.POSITIVE_INFINITY;
+        return aTime - bTime;
+      });
+    }
+    return list.sort((a: any, b: any) => (a.location || "zzzz").localeCompare(b.location || "zzzz", "fr"));
+  }, [activeTasks, sortMode]);
+  const archivedTasks = useMemo(() => [...tasks].filter((t: any) => t.archived), [tasks]);
 
   const filtered = useMemo(() => {
-    const source = tab === "active" ? activeTasks : archivedTasks;
+    const source = tab === "active" ? sortedActiveTasks : archivedTasks;
     const q = search.toLowerCase().trim();
     if (!q) return source;
     return source.filter((t: any) => t.text.toLowerCase().includes(q) || (t.location || "").toLowerCase().includes(q));
-  }, [activeTasks, archivedTasks, tab, search]);
+  }, [sortedActiveTasks, archivedTasks, tab, search]);
 
   const addTask = useMutation({
     mutationFn: async () => {
@@ -164,7 +189,7 @@ const TasksPlugin = () => {
         entry_date: entryDate,
         deadline,
         location: newLocation.trim() || null,
-        sort_order: 0,
+        sort_order: activeTasks.length,
       };
       const { error } = await supabase.from("tasks").insert(insertData as any);
       if (error) throw error;
@@ -203,7 +228,7 @@ const TasksPlugin = () => {
       const { error } = await supabase.from("tasks").update({ archived: true } as any).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tasks"] }); toast.success("Tâche archivée"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tasks"] }); setArchiveConfirm(null); toast.success("Tâche archivée"); },
   });
 
   const unarchiveTask = useMutation({
@@ -225,14 +250,21 @@ const TasksPlugin = () => {
 
   const moveTask = useMutation({
     mutationFn: async ({ id, direction }: { id: string; direction: "up" | "down" }) => {
-      const idx = filtered.findIndex((t: any) => t.id === id);
+      const manualList = activeTasks;
+      const idx = manualList.findIndex((t: any) => t.id === id);
       if (idx < 0) return;
       const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= filtered.length) return;
-      const a = filtered[idx] as any;
-      const b = filtered[swapIdx] as any;
-      await supabase.from("tasks").update({ sort_order: b.sort_order ?? swapIdx } as any).eq("id", a.id);
-      await supabase.from("tasks").update({ sort_order: a.sort_order ?? idx } as any).eq("id", b.id);
+      if (swapIdx < 0 || swapIdx >= manualList.length) return;
+      const reordered = [...manualList];
+      const [moved] = reordered.splice(idx, 1);
+      reordered.splice(swapIdx, 0, moved);
+      const results = await Promise.all(
+        reordered.map((task: any, order) =>
+          supabase.from("tasks").update({ sort_order: order } as any).eq("id", task.id)
+        )
+      );
+      const firstError = results.find(result => result.error)?.error;
+      if (firstError) throw firstError;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
   });
@@ -437,7 +469,7 @@ const TasksPlugin = () => {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-secondary/50 rounded-xl p-1">
-          <button onClick={() => setTab("active")}
+          <button onClick={() => { setTab("active"); }}
             className={`flex-1 text-xs py-2 rounded-lg transition-all font-medium ${tab === "active" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
             Actives ({activeTasks.length})
           </button>
@@ -446,6 +478,26 @@ const TasksPlugin = () => {
             <Archive size={12} /> Archives ({archivedTasks.length})
           </button>
         </div>
+
+        {tab === "active" && (
+          <div className="field-form-panel py-3 space-y-2">
+            <label className="field-label mb-0">Trier les tâches</label>
+            <select
+              value={sortMode}
+              onChange={e => setSortMode(e.target.value as SortMode)}
+              className="field-input field-input-compact"
+            >
+              {sortOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            {sortMode !== "manual" && (
+              <p className="text-xs font-semibold text-muted-foreground">
+                Les flèches de déplacement sont disponibles avec “Sans tri”.
+              </p>
+            )}
+          </div>
+        )}
 
         {!isLoading && filtered.length > 0 && (
           <div className="text-sm font-semibold text-muted-foreground px-1">
@@ -476,7 +528,8 @@ const TasksPlugin = () => {
                 <div key={t.id} className={`glass-card p-3 space-y-2 transition-all ${urgency === "overdue" ? "border-foreground/30" : urgency === "red" ? "border-destructive/30" : urgency === "orange" ? "border-orange-500/30" : ""}`}>
                   <div className="flex items-start justify-between gap-1">
                     <button onClick={() => toggleTask.mutate(t)}
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${t.done ? "bg-primary border-primary" : "border-border hover:border-primary/50"}`}>
+                      className={`w-11 h-11 rounded-full border-2 flex items-center justify-center shrink-0 transition-all active:scale-95 ${t.done ? "bg-primary border-primary shadow-sm" : "bg-background border-border hover:border-primary/50"}`}
+                      aria-label={t.done ? "Réactiver la tâche" : "Valider la tâche"}>
                       {t.done && <Check size={11} className="text-primary-foreground" />}
                     </button>
                     <span className={`text-xs px-2 py-1 rounded-full font-semibold ${pInfo.cls}`}>{pInfo.label}</span>
@@ -551,48 +604,55 @@ const TasksPlugin = () => {
                   className={`plugin-record space-y-2 ${urgency === "overdue" ? "ring-1 ring-foreground/20" : urgency === "red" ? "ring-1 ring-destructive/25" : urgency === "orange" ? "ring-1 ring-orange-500/25" : ""}`}
                   style={{ "--record-color": `hsl(${pInfo.color})` } as CSSProperties}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                      {/* Checkbox: only toggles done, no archive/delete */}
-                      <button onClick={() => toggleTask.mutate(t)}
-                        className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all active:scale-90 ${t.done ? "bg-primary border-primary" : "border-border hover:border-primary/50"}`}>
-                        {t.done && <Check size={12} className="text-primary-foreground" />}
-                      </button>
-                      <div className="min-w-0 flex-1">
-                        <p className={`plugin-record-title transition-all ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
-                      </div>
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox: only toggles done, no archive/delete */}
+                    <button onClick={() => toggleTask.mutate(t)}
+                      className={`w-11 h-11 rounded-full border-2 flex items-center justify-center shrink-0 transition-all active:scale-95 ${t.done ? "bg-primary border-primary shadow-sm" : "bg-background border-border hover:border-primary/50"}`}
+                      aria-label={t.done ? "Réactiver la tâche" : "Valider la tâche"}>
+                      {t.done && <Check size={16} className="text-primary-foreground" />}
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <p className={`plugin-record-title break-words transition-all ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
                     </div>
-                    <div className="plugin-record-actions">
+                  </div>
+
+                  <div className="plugin-record-divider" />
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="plugin-record-actions justify-start">
                       {tab === "active" && (
                         <>
-                          <button onClick={() => moveTask.mutate({ id: t.id, direction: "up" })} disabled={idx === 0}
-                            className="btn btn-icon-sm btn-ghost"><ArrowUp size={12} /></button>
-                          <button onClick={() => moveTask.mutate({ id: t.id, direction: "down" })} disabled={idx === filtered.length - 1}
-                            className="btn btn-icon-sm btn-ghost"><ArrowDown size={12} /></button>
+                          {sortMode === "manual" && !search.trim() && (
+                            <>
+                              <button onClick={() => moveTask.mutate({ id: t.id, direction: "up" })} disabled={idx === 0}
+                                className="btn btn-icon-sm btn-secondary rounded-full"><ArrowUp size={14} /></button>
+                              <button onClick={() => moveTask.mutate({ id: t.id, direction: "down" })} disabled={idx === filtered.length - 1}
+                                className="btn btn-icon-sm btn-secondary rounded-full"><ArrowDown size={14} /></button>
+                            </>
+                          )}
                           <button onClick={() => setShareTask(t)} className="btn btn-icon-sm btn-ghost" title="Partager">
                             <Share2 size={13} />
                           </button>
                           <button onClick={() => startEdit(t)} className="btn btn-icon-sm btn-ghost"><Pencil size={13} /></button>
-                          <button onClick={() => archiveTask.mutate(t.id)} className="btn btn-icon-sm btn-ghost" title="Archiver">
-                            <Archive size={13} />
+                          <button onClick={() => setArchiveConfirm(t.id)} className="btn btn-icon-sm btn-archive rounded-full" title="Archiver">
+                            <Archive size={14} />
                           </button>
                           <button onClick={() => setDeleteConfirm(t.id)}
-                            className="btn btn-icon-sm btn-ghost"><Trash2 size={13} /></button>
+                            className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
                         </>
                       )}
                       {tab === "archived" && (
                         <>
-                          <button onClick={() => unarchiveTask.mutate(t.id)} className="btn btn-icon-sm btn-ghost" title="Restaurer">
-                            <Archive size={13} />
+                          <button onClick={() => unarchiveTask.mutate(t.id)} className="btn btn-icon-sm btn-archive rounded-full" title="Restaurer">
+                            <Archive size={14} />
                           </button>
                           <button onClick={() => setDeleteConfirm(t.id)}
-                            className="btn btn-icon-sm btn-ghost"><Trash2 size={13} /></button>
+                            className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
                         </>
                       )}
                     </div>
                   </div>
 
-                  <div className="plugin-record-divider" />
                   <div className="plugin-record-meta">
                     <span className={`text-xs px-2 py-1 rounded-full font-semibold ${pInfo.cls}`}>{pInfo.label}</span>
                     <DeadlineBadge task={t} />
@@ -609,6 +669,22 @@ const TasksPlugin = () => {
           </div>
         )}
       </div>
+
+      {/* Archive confirmation dialog */}
+      <Dialog open={!!archiveConfirm} onOpenChange={() => setArchiveConfirm(null)}>
+        <DialogContent className="max-w-[340px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base">Archiver la tâche ?</DialogTitle>
+            <DialogDescription className="text-xs">Elle quittera la liste active et restera disponible dans Archives.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-2">
+            <button onClick={() => setArchiveConfirm(null)}
+              className="btn btn-secondary" style={{ flex: 1 }}>Annuler</button>
+            <button onClick={() => archiveConfirm && archiveTask.mutate(archiveConfirm)}
+              className="btn btn-archive" style={{ flex: 1 }}>Archiver</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
