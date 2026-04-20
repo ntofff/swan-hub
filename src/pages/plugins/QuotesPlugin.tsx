@@ -946,7 +946,7 @@ const QuotesPlugin = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold font-heading">{selectedItem.title}</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setShowColorPicker(!showColorPicker)} className="btn btn-icon-xs btn-ghost"><Palette size={14} /></button>
+                  <button onClick={() => setShowColorPicker(!showColorPicker)} className="btn btn-icon-sm btn-secondary rounded-full"><Palette size={14} /></button>
                   <span className="text-xs px-2.5 py-1 rounded-full" style={{ backgroundColor: `hsl(${statusColors[selectedItem.status] || "0 0% 50%"} / 0.12)`, color: `hsl(${statusColors[selectedItem.status] || "0 0% 50%"})` }}>
                     {selectedItem.status}
                   </span>
@@ -957,10 +957,10 @@ const QuotesPlugin = () => {
                 <div className="flex flex-wrap gap-1.5">
                   {colorPalette.map(c => (
                     <button key={c} onClick={() => { updateColor.mutate({ id: selectedItem.id, color: c, type: isQuote ? "quotes" : "invoices" }); setSelectedItem({ ...selectedItem, color: c }); setShowColorPicker(false); }}
-                      className="w-6 h-6 rounded-full border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: selectedItem.color === c ? "hsl(var(--primary))" : "transparent" }} />
+                      className="w-9 h-9 rounded-lg border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: selectedItem.color === c ? "hsl(var(--primary))" : "transparent" }} />
                   ))}
                   <button onClick={() => { updateColor.mutate({ id: selectedItem.id, color: "", type: isQuote ? "quotes" : "invoices" }); setSelectedItem({ ...selectedItem, color: null }); setShowColorPicker(false); }}
-                    className="w-6 h-6 rounded-full border border-border flex items-center justify-center text-[10px] text-muted-foreground">✕</button>
+                    className="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-sm font-semibold text-muted-foreground">✕</button>
                 </div>
               )}
 
@@ -1068,7 +1068,7 @@ const QuotesPlugin = () => {
         } />
       <div className="field-workspace">
         <div className="field-simple-note">
-          Mode simple : créez un devis ou une facture avec les champs essentiels, puis complétez les options.
+          Rapide : client, titre, montant, statut. Les détails restent accessibles ensuite.
         </div>
 
         {/* Export */}
@@ -1200,12 +1200,12 @@ const QuotesPlugin = () => {
             )}
             <div className="grid grid-cols-2 gap-2.5">
               {[{ l: "Envoyées", v: stats.sent, c: "217 91% 60%" }, { l: "En attente", v: stats.pending, c: "38 92% 50%" }, { l: "Payées", v: stats.paid, c: "142 71% 45%" }, { l: "Total", v: stats.total, c: "0 0% 70%" }].map(s => (
-                <div key={s.l} className="glass-card p-3"><p className="text-[10px] text-muted-foreground uppercase">{s.l}</p><p className="text-xl font-bold font-heading" style={{ color: `hsl(${s.c})` }}>{s.v}</p></div>
+                <div key={s.l} className="glass-card p-3"><p className="text-xs font-semibold text-muted-foreground uppercase">{s.l}</p><p className="text-xl font-bold font-heading" style={{ color: `hsl(${s.c})` }}>{s.v}</p></div>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="glass-card p-3"><p className="text-[10px] text-muted-foreground uppercase">Encaissé</p><p className="text-lg font-bold text-primary">{fmtAmount(stats.totalPaid)}</p></div>
-              <div className="glass-card p-3"><p className="text-[10px] text-muted-foreground uppercase">À encaisser</p><p className="text-lg font-bold" style={{ color: "hsl(38 92% 50%)" }}>{fmtAmount(stats.totalPending)}</p></div>
+              <div className="glass-card p-3"><p className="text-xs font-semibold text-muted-foreground uppercase">Encaissé</p><p className="text-lg font-bold text-primary">{fmtAmount(stats.totalPaid)}</p></div>
+              <div className="glass-card p-3"><p className="text-xs font-semibold text-muted-foreground uppercase">À encaisser</p><p className="text-lg font-bold" style={{ color: "hsl(38 92% 50%)" }}>{fmtAmount(stats.totalPending)}</p></div>
             </div>
 
             {/* TVA stats */}
@@ -1258,10 +1258,10 @@ const QuotesPlugin = () => {
                 <div className="flex-1 min-w-0">
                   <p className="plugin-record-title truncate">{c.name}</p>
                   <p className="plugin-record-meta mt-1">{[c.siret, c.email, c.phone].filter(Boolean).join(" · ") || "—"}</p>
-                  {c.address && <p className="text-[10px] text-muted-foreground truncate mt-1">{c.address}</p>}
+                  {c.address && <p className="text-sm text-muted-foreground truncate mt-1">{c.address}</p>}
                 </div>
-                <button onClick={() => editClientFn(c)} className="btn btn-icon-sm btn-ghost"><Edit2 size={14} /></button>
-                <button onClick={() => { if (window.confirm(`Supprimer "${c.name}" ?`)) deleteClient.mutate(c.id); }} className="btn btn-icon-sm btn-danger"><Trash2 size={14} /></button>
+                <button onClick={() => editClientFn(c)} className="btn btn-icon-sm btn-secondary rounded-full"><Edit2 size={14} /></button>
+                <button onClick={() => { if (window.confirm(`Supprimer "${c.name}" ?`)) deleteClient.mutate(c.id); }} className="btn btn-icon-sm btn-danger rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -1301,7 +1301,7 @@ const QuotesPlugin = () => {
 
                 <div><p className={`${labelCls} mb-1.5`}>Couleur</p>
                   <div className="flex gap-1.5 flex-wrap">
-                    {colorPalette.map(c => (<button key={c} onClick={() => setFColor(fColor === c ? "" : c)} className="w-6 h-6 rounded-full border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: fColor === c ? "hsl(var(--primary))" : "transparent" }} />))}
+                    {colorPalette.map(c => (<button key={c} onClick={() => setFColor(fColor === c ? "" : c)} className="w-9 h-9 rounded-lg border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: fColor === c ? "hsl(var(--primary))" : "transparent" }} />))}
                   </div>
                 </div>
 
@@ -1365,7 +1365,7 @@ const QuotesPlugin = () => {
 
                 <div><p className={`${labelCls} mb-1.5`}>Couleur</p>
                   <div className="flex gap-1.5 flex-wrap">
-                    {colorPalette.map(c => (<button key={c} onClick={() => setFColor(fColor === c ? "" : c)} className="w-6 h-6 rounded-full border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: fColor === c ? "hsl(var(--primary))" : "transparent" }} />))}
+                    {colorPalette.map(c => (<button key={c} onClick={() => setFColor(fColor === c ? "" : c)} className="w-9 h-9 rounded-lg border-2 transition-all" style={{ backgroundColor: `hsl(${c})`, borderColor: fColor === c ? "hsl(var(--primary))" : "transparent" }} />))}
                   </div>
                 </div>
 
@@ -1405,7 +1405,7 @@ const QuotesPlugin = () => {
             </div>
             <div className="flex gap-1 overflow-x-auto mb-4">
               {["all", ...statuses].map(s => (
-                <button key={s} onClick={() => setStatusFilter(s)} className={`px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors ${statusFilter === s ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{s === "all" ? "Tout" : s}</button>
+                <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${statusFilter === s ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{s === "all" ? "Tout" : s}</button>
               ))}
             </div>
 
@@ -1427,7 +1427,7 @@ const QuotesPlugin = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 min-w-0">
                           <span className="plugin-record-title truncate">{item.title}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0">{item.quote_number || item.invoice_number}</span>
+                          <span className="text-xs font-semibold text-muted-foreground shrink-0">{item.quote_number || item.invoice_number}</span>
                         </div>
                         <div className="plugin-record-meta mt-1">
                           {getClientName(item) && `${getClientName(item)} · `}{formatDate(item.issue_date || item.created_at)}
@@ -1436,7 +1436,7 @@ const QuotesPlugin = () => {
                         </div>
                       </div>
                       <span className="text-sm font-semibold">{fmtAmount(ttc)}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: `hsl(${statusColors[item.status] || "0 0% 50%"} / 0.12)`, color: `hsl(${statusColors[item.status] || "0 0% 50%"})` }}>{item.status}</span>
+                      <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ backgroundColor: `hsl(${statusColors[item.status] || "0 0% 50%"} / 0.12)`, color: `hsl(${statusColors[item.status] || "0 0% 50%"})` }}>{item.status}</span>
                       <ChevronRight size={16} className="text-muted-foreground" />
                     </button>
                   );
@@ -1452,7 +1452,7 @@ const QuotesPlugin = () => {
             {showPayForm && (
               <div className="field-form-panel mb-3 space-y-4 slide-up">
                 <p className="text-sm font-semibold">💳 Nouveau paiement</p>
-                <p className="text-[10px] text-muted-foreground">Une facture sera automatiquement créée et marquée comme payée.</p>
+                <p className="text-sm text-muted-foreground">Une facture sera automatiquement créée et marquée comme payée.</p>
                 <input value={pTitle} onChange={e => setPTitle(e.target.value)} placeholder="Titre / objet *" className={inputCls} />
                 <select value={pClientId} onChange={e => setPClientId(e.target.value)} className={inputCls}>
                   <option value="">-- Client --</option>
@@ -1526,7 +1526,7 @@ const QuotesPlugin = () => {
                       <div className="plugin-record-meta mt-1">{p.invoices?.invoice_number} · {p.invoices?.clients?.name || p.invoices?.client || "—"} · {p.method || "—"} · {p.paid_at ? formatDate(p.paid_at) : "—"}</div>
                     </div>
                     <span className="text-sm font-semibold">{fmtAmount(p.amount)}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{p.status}</span>
+                    <span className="text-xs px-2 py-1 rounded-full font-semibold bg-primary/10 text-primary">{p.status}</span>
                   </div>
                 ))}
               </div>

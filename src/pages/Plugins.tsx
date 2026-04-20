@@ -110,10 +110,10 @@ export default function Plugins() {
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
-                    <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>{plugin.name}</h3>
+                    <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 800 }}>{plugin.name}</h3>
                     {!hasAccess && <Lock size={12} style={{ color: 'var(--color-text-3)' }} />}
                   </div>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.45, fontWeight: 600 }}>
                     {plugin.description}
                   </p>
                 </div>
@@ -162,11 +162,11 @@ export default function Plugins() {
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
-                      <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text-2)' }}>
+                      <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 800, color: 'var(--color-text-2)' }}>
                         {plugin.name}
                       </h3>
                     </div>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: 1.4 }}>
+                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.45, fontWeight: 600 }}>
                       {plugin.description}
                     </p>
                   </div>

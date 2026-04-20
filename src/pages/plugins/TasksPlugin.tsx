@@ -334,7 +334,7 @@ const TasksPlugin = () => {
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   };
 
-  // Deadline badge component
+  // Date limite visible dans les cartes terrain.
   const DeadlineBadge = ({ task }: { task: any }) => {
     if (!task.deadline || task.done) return null;
     const urgency = getDeadlineUrgency(task);
@@ -342,10 +342,10 @@ const TasksPlugin = () => {
     const label = formatDeadlineLabel(task.deadline, urgency);
     const cls = deadlineBadgeClasses[urgency];
     return (
-      <span className={`inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full border transition-colors ${cls}`}>
-        <Calendar size={8} className={urgency === "red" || urgency === "overdue" ? "animate-pulse" : ""} />
+      <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border font-semibold transition-colors ${cls}`}>
+        <Calendar size={12} className={urgency === "red" || urgency === "overdue" ? "animate-pulse" : ""} />
         {label}
-        <span className="text-[8px]">
+        <span className="text-xs">
           {new Date(task.deadline).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
         </span>
       </span>
@@ -372,7 +372,7 @@ const TasksPlugin = () => {
 
       <div className="field-workspace">
         <div className="field-simple-note">
-          Mode simple : ajoutez une tâche, puis ouvrez Plus d'options seulement si besoin.
+          Rapide : notez l'action, choisissez la priorité, puis validez.
         </div>
         {/* New task form */}
         {showForm && (
@@ -448,7 +448,7 @@ const TasksPlugin = () => {
         </div>
 
         {!isLoading && filtered.length > 0 && (
-          <div className="text-[10px] text-muted-foreground px-1">
+          <div className="text-sm font-semibold text-muted-foreground px-1">
             {filtered.length} tâche{filtered.length > 1 ? "s" : ""}
             {search && ` pour "${search}"`}
           </div>
@@ -479,7 +479,7 @@ const TasksPlugin = () => {
                       className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${t.done ? "bg-primary border-primary" : "border-border hover:border-primary/50"}`}>
                       {t.done && <Check size={11} className="text-primary-foreground" />}
                     </button>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${pInfo.cls}`}>{pInfo.label}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${pInfo.cls}`}>{pInfo.label}</span>
                   </div>
                   <p className={`text-xs leading-snug ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
                   <DeadlineBadge task={t} />
@@ -594,13 +594,13 @@ const TasksPlugin = () => {
 
                   <div className="plugin-record-divider" />
                   <div className="plugin-record-meta">
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${pInfo.cls}`}>{pInfo.label}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${pInfo.cls}`}>{pInfo.label}</span>
                     <DeadlineBadge task={t} />
                     {t.location && (
-                      <span className="flex items-center gap-0.5"><MapPin size={9} /> {t.location}</span>
+                      <span className="flex items-center gap-1"><MapPin size={12} /> {t.location}</span>
                     )}
-                    <span className="flex items-center gap-0.5">
-                      <Clock size={9} /> {formatDate(entryDate)} · {new Date(entryDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                    <span className="flex items-center gap-1">
+                      <Clock size={12} /> {formatDate(entryDate)} · {new Date(entryDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                 </div>

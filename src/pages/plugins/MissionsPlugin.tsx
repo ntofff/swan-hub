@@ -229,7 +229,7 @@ const MissionsPlugin = () => {
 
       <div className="field-workspace">
         <div className="field-simple-note">
-          Mode simple : titre et client suffisent pour créer une mission. Les détails se règlent après.
+          Rapide : nommez la mission, ajoutez le client, puis suivez l'avancement.
         </div>
         {/* Form */}
         {showForm && (
@@ -330,7 +330,7 @@ const MissionsPlugin = () => {
         </div>
 
         {!isLoading && filtered.length > 0 && (
-          <div className="text-[10px] text-muted-foreground px-1">
+          <div className="text-sm font-semibold text-muted-foreground px-1">
             {filtered.length} mission{filtered.length > 1 ? "s" : ""}
           </div>
         )}
@@ -421,15 +421,15 @@ const MissionsPlugin = () => {
                     <div className="flex-1 min-w-0">
                       <div className="plugin-record-title truncate">{m.title}</div>
                       <div className="plugin-record-meta mt-1">
-                        {m.client && <span className="text-[10px] text-muted-foreground">{m.client}</span>}
+                        {m.client && <span>{m.client}</span>}
                         {m.start_date && (
-                          <span className="flex items-center gap-0.5">
-                            <Calendar size={9} /> {formatDate(m.start_date)}
+                          <span className="flex items-center gap-1">
+                            <Calendar size={12} /> {formatDate(m.start_date)}
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${sInfo.cls}`}>{m.status}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold shrink-0 ${sInfo.cls}`}>{m.status}</span>
                     {isExpanded ? <ChevronUp size={14} className="text-muted-foreground shrink-0" /> : <ChevronDown size={14} className="text-muted-foreground shrink-0" />}
                   </button>
 
@@ -438,26 +438,26 @@ const MissionsPlugin = () => {
                     <div className="px-3 pb-3 space-y-2">
                       <div className="plugin-record-divider" />
                       <div className="plugin-record-meta">
-                        {m.location && <span className="flex items-center gap-0.5"><MapPin size={10} /> {m.location}</span>}
-                        {m.start_date && <span className="flex items-center gap-0.5"><Clock size={10} /> {formatDate(m.start_date)}{m.end_date ? ` → ${formatDate(m.end_date)}` : ""}</span>}
+                        {m.location && <span className="flex items-center gap-1"><MapPin size={12} /> {m.location}</span>}
+                        {m.start_date && <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(m.start_date)}{m.end_date ? ` → ${formatDate(m.end_date)}` : ""}</span>}
                         {(m as any).quote_amount && (
-                          <span className="flex items-center gap-0.5 text-primary font-medium"><Euro size={10} /> {Number((m as any).quote_amount).toLocaleString("fr-FR")} €</span>
+                          <span className="flex items-center gap-1 text-primary font-semibold"><Euro size={12} /> {Number((m as any).quote_amount).toLocaleString("fr-FR")} €</span>
                         )}
                       </div>
 
                       {(m as any).collaborator && (
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                          <User size={10} /> {(m as any).collaborator}
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <User size={12} /> {(m as any).collaborator}
                         </div>
                       )}
                       {(m as any).contact && (
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                          <Phone size={10} /> {(m as any).contact}
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <Phone size={12} /> {(m as any).contact}
                         </div>
                       )}
                       {m.notes && (
-                        <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
-                          <MessageSquare size={10} className="mt-0.5 shrink-0" /> <span className="line-clamp-3">{m.notes}</span>
+                        <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                          <MessageSquare size={12} className="mt-0.5 shrink-0" /> <span className="line-clamp-3">{m.notes}</span>
                         </div>
                       )}
 
@@ -486,7 +486,7 @@ const MissionsPlugin = () => {
                               <Pencil size={12} /> Modifier
                             </button>
                             <button onClick={() => { if (window.confirm("Supprimer cette mission ?")) deleteMission.mutate(m.id); }}
-                              className="btn btn-icon-sm btn-ghost">
+                              className="btn btn-icon-sm btn-secondary rounded-full">
                               <Trash2 size={12} />
                             </button>
                           </>
@@ -498,7 +498,7 @@ const MissionsPlugin = () => {
                               <Archive size={12} /> Restaurer
                             </button>
                             <button onClick={() => { if (window.confirm("Supprimer définitivement ?")) deleteMission.mutate(m.id); }}
-                              className="btn btn-icon-sm btn-ghost">
+                              className="btn btn-icon-sm btn-secondary rounded-full">
                               <Trash2 size={12} />
                             </button>
                           </>

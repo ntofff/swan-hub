@@ -285,7 +285,7 @@ const LogbookPlugin = () => {
 
       <div className="field-workspace">
         <div className="field-simple-note">
-          Mode simple : notez l'essentiel maintenant, les options restent disponibles ensuite.
+          Rapide : notez l'essentiel, choisissez une couleur, puis enregistrez.
         </div>
         {/* Tabs */}
         <div className="flex gap-1 bg-secondary rounded-xl p-1">
@@ -306,7 +306,7 @@ const LogbookPlugin = () => {
               <button onClick={selectAll} className="btn btn-secondary btn-xs">
                 {selectedIds.size === filtered.length ? "Tout désélectionner" : "Tout sélectionner"}
               </button>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-sm font-semibold text-muted-foreground">
                 {selectedIds.size === 0 ? `${filtered.length} entrées (toutes)` : `${selectedIds.size} sélectionnée${selectedIds.size > 1 ? "s" : ""}`}
               </span>
             </div>
@@ -386,7 +386,7 @@ const LogbookPlugin = () => {
         </div>
 
         {!isLoading && filtered.length > 0 && (
-          <div className="text-[10px] text-muted-foreground px-1">
+          <div className="text-sm font-semibold text-muted-foreground px-1">
             {filtered.length} entrée{filtered.length > 1 ? "s" : ""}
             {search && ` pour "${search}"`}
           </div>
@@ -429,7 +429,7 @@ const LogbookPlugin = () => {
                       <div className="flex gap-1.5">
                         {colorOptions.map(c => (
                           <button key={c.value} onClick={() => setEditColor(c.value)}
-                            className={`w-6 h-6 rounded-full border-2 transition-all ${editColor === c.value ? "border-foreground scale-110" : "border-transparent"}`}
+                            className={`w-9 h-9 rounded-lg border-2 transition-all ${editColor === c.value ? "border-foreground scale-105 shadow-sm" : "border-transparent"}`}
                             style={{ backgroundColor: `hsl(${c.value})` }} />
                         ))}
                       </div>
@@ -461,7 +461,7 @@ const LogbookPlugin = () => {
                               {isSelected ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} className="text-muted-foreground" />}
                             </div>
                           ) : (
-                            <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-1 rounded-md shrink-0">
+                            <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded-md shrink-0">
                               #{seqNum}
                             </span>
                           )}
@@ -494,12 +494,12 @@ const LogbookPlugin = () => {
                       <div className="plugin-record-divider" />
                       <div className="plugin-record-meta">
                         {pInfo.value !== "normale" && (
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${pInfo.cls}`}>
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${pInfo.cls}`}>
                             {pInfo.label}
                           </span>
                         )}
                         <span className="flex items-center gap-1">
-                          <Clock size={10} />
+                          <Clock size={12} />
                           {formatDate(date)} · {new Date(date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>

@@ -261,7 +261,7 @@ const VehiclePlugin = () => {
         } />
       <div className="field-workspace">
         <div className="field-simple-note">
-          Mode simple : choisissez l'onglet, puis ajoutez un trajet, un véhicule ou un conducteur.
+          Rapide : choisissez la rubrique, ajoutez l'info utile, puis enregistrez.
         </div>
         <div className="flex gap-1 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
           {tabsDef.map(t => (
@@ -372,7 +372,7 @@ const VehiclePlugin = () => {
             <div className="flex gap-1.5 flex-wrap">
               {[{ id: "all", label: "Tout" }, { id: "month", label: "Ce mois" }, { id: "quarter", label: "Trimestre" }, { id: "year", label: "Année" }].map(p => (
                 <button key={p.id} onClick={() => setPeriodFilter(p.id)}
-                  className={`px-3 py-1 rounded-full text-[10px] font-medium ${periodFilter === p.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{p.label}</button>
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold ${periodFilter === p.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{p.label}</button>
               ))}
             </div>
             <div className="grid grid-cols-3 gap-2.5">
@@ -383,7 +383,7 @@ const VehiclePlugin = () => {
               ].map(s => (
                 <div key={s.label} className="glass-card p-3 text-center">
                   <div className="text-lg font-bold font-heading">{s.value}</div>
-                  <div className="text-[10px] text-muted-foreground">{s.label}</div>
+                  <div className="text-xs font-semibold text-muted-foreground">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -396,8 +396,8 @@ const VehiclePlugin = () => {
                   {vehicleStats.map((v: any) => (
                     <div key={v.id} className="plugin-record flex items-center gap-3">
                       <span className="plugin-record-title flex-1 truncate">{v.name}</span>
-                      <span className="text-xs text-muted-foreground">{v.tripCount} trajets</span>
-                      <span className="text-xs font-semibold">{v.km.toLocaleString("fr-FR")} km</span>
+                      <span className="text-sm text-muted-foreground">{v.tripCount} trajets</span>
+                      <span className="text-sm font-semibold">{v.km.toLocaleString("fr-FR")} km</span>
                     </div>
                   ))}
                 </div>
@@ -412,8 +412,8 @@ const VehiclePlugin = () => {
                   {driverStats.map((d: any) => (
                     <div key={d.id} className="plugin-record flex items-center gap-3">
                       <span className="plugin-record-title flex-1 truncate">{d.name}</span>
-                      <span className="text-xs text-muted-foreground">{d.tripCount} trajets</span>
-                      <span className="text-xs font-semibold">{d.km.toLocaleString("fr-FR")} km</span>
+                      <span className="text-sm text-muted-foreground">{d.tripCount} trajets</span>
+                      <span className="text-sm font-semibold">{d.km.toLocaleString("fr-FR")} km</span>
                     </div>
                   ))}
                 </div>
@@ -429,9 +429,9 @@ const VehiclePlugin = () => {
           <div className="slide-up space-y-3">
             {vehicles.length > 0 && (
               <div className="flex gap-1.5 flex-wrap">
-                <button onClick={() => setVehicleFilter("all")} className={`px-2.5 py-1 rounded-full text-[10px] font-medium ${vehicleFilter === "all" ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>Tout</button>
+                <button onClick={() => setVehicleFilter("all")} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${vehicleFilter === "all" ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>Tout</button>
                 {vehicles.map((v: any) => (
-                  <button key={v.id} onClick={() => setVehicleFilter(v.id)} className={`px-2.5 py-1 rounded-full text-[10px] font-medium ${vehicleFilter === v.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{v.name}</button>
+                  <button key={v.id} onClick={() => setVehicleFilter(v.id)} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${vehicleFilter === v.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{v.name}</button>
                 ))}
               </div>
             )}
@@ -451,9 +451,9 @@ const VehiclePlugin = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold">{t.distance ?? "–"} km</div>
-                      {t.ik_amount && <div className="text-[10px] text-primary">{Number(t.ik_amount).toFixed(2)} €</div>}
+                      {t.ik_amount && <div className="text-xs font-semibold text-primary">{Number(t.ik_amount).toFixed(2)} €</div>}
                     </div>
-                    <button onClick={() => { if (window.confirm("Supprimer ce trajet ?")) deleteTrip.mutate(t.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={14} /></button>
+                    <button onClick={() => { if (window.confirm("Supprimer ce trajet ?")) deleteTrip.mutate(t.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -473,8 +473,8 @@ const VehiclePlugin = () => {
                   <div className="plugin-record-title truncate">{v.name}</div>
                   <div className="plugin-record-meta mt-1">{v.brand_model}{v.license_plate ? ` · ${v.license_plate}` : ""}{v.fiscal_power ? ` · ${v.fiscal_power} CV` : ""}{v.current_mileage ? ` · ${v.current_mileage.toLocaleString("fr-FR")} km` : ""}</div>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success">{v.status}</span>
-                <button onClick={() => { if (window.confirm("Supprimer ce véhicule ?")) deleteVehicle.mutate(v.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={14} /></button>
+                <span className="text-xs px-2 py-1 rounded-full font-semibold bg-success/10 text-success">{v.status}</span>
+                <button onClick={() => { if (window.confirm("Supprimer ce véhicule ?")) deleteVehicle.mutate(v.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -492,7 +492,7 @@ const VehiclePlugin = () => {
                   <div className="plugin-record-title truncate">{d.name}</div>
                   <div className="plugin-record-meta mt-1">{d.role || "—"}{d.vehicles ? ` · ${d.vehicles.name}` : ""}</div>
                 </div>
-                <button onClick={() => { if (window.confirm("Supprimer ce conducteur ?")) deleteDriver.mutate(d.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer ce conducteur ?")) deleteDriver.mutate(d.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -511,7 +511,7 @@ const VehiclePlugin = () => {
                   <div className="plugin-record-meta mt-1">{r.start_location} → {r.end_location}{r.default_distance ? ` · ${r.default_distance} km` : ""}</div>
                 </div>
                 <button onClick={() => useRoutePreset(r)} className="btn btn-secondary btn-xs">Utiliser</button>
-                <button onClick={() => { if (window.confirm("Supprimer cet itinéraire ?")) deleteRoute.mutate(r.id); }} className="btn btn-icon-xs btn-ghost"><Trash2 size={14} /></button>
+                <button onClick={() => { if (window.confirm("Supprimer cet itinéraire ?")) deleteRoute.mutate(r.id); }} className="btn btn-icon-sm btn-secondary rounded-full"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
