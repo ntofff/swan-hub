@@ -462,7 +462,7 @@ const MissionsPlugin = () => {
                       )}
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 pt-1 border-t border-border/50">
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
                         {tab === "active" && (
                           <>
                             <button onClick={() => exportToCalendar(m)}

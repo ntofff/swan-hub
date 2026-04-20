@@ -534,7 +534,7 @@ const TasksPlugin = () => {
                     </button>
                     <span className={`text-xs px-2 py-1 rounded-full font-semibold ${pInfo.cls}`}>{pInfo.label}</span>
                   </div>
-                  <p className={`text-xs leading-snug ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
+                  <p className={`text-sm font-medium leading-snug ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
                   <DeadlineBadge task={t} />
                 </div>
               );
@@ -612,7 +612,7 @@ const TasksPlugin = () => {
                       {t.done && <Check size={16} className="text-primary-foreground" />}
                     </button>
                     <div className="min-w-0 flex-1">
-                      <p className={`plugin-record-title break-words transition-all ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
+                      <p className={`text-lg font-medium leading-snug break-words transition-all ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.text}</p>
                     </div>
                   </div>
 

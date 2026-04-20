@@ -84,9 +84,9 @@ const LogbookPlugin = () => {
   const [editTime, setEditTime] = useState("");
 
   const { data: allEntries = [], isLoading } = useQuery({
-    queryKey: ["log_entries"],
+    queryKey: ["log_entries", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("log_entries").select("*").order("entry_date", { ascending: true });
+      const { data } = await supabase.from("log_entries").select("*").eq("user_id", user!.id).order("entry_date", { ascending: true });
       return data ?? [];
     },
     enabled: !!user,
@@ -103,8 +103,9 @@ const LogbookPlugin = () => {
         ? new Date(`${newDate}T${newTime}`).toISOString()
         : newDate ? new Date(`${newDate}T${new Date().toTimeString().slice(0, 5)}`).toISOString()
         : new Date().toISOString();
+      const nextSeq = String(allEntries.length + 1).padStart(3, "0");
       const { error } = await supabase.from("log_entries").insert({
-        user_id: user.id, text: newEntry.trim(), color: newColor, priority: newPriority, entry_date: entryDate,
+        user_id: user.id, text: newEntry.trim(), color: newColor, priority: newPriority, entry_date: entryDate, seq_number: nextSeq,
       } as any);
       if (error) throw error;
     },

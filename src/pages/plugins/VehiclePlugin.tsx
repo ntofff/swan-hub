@@ -49,36 +49,36 @@ const VehiclePlugin = () => {
 
   // Queries
   const { data: trips = [] } = useQuery({
-    queryKey: ["trips"],
+    queryKey: ["trips", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("trips").select("*, vehicles(name), drivers(name)").order("date", { ascending: false });
+      const { data } = await supabase.from("trips").select("*, vehicles(name), drivers(name)").eq("user_id", user!.id).order("date", { ascending: false });
       return data ?? [];
     },
     enabled: !!user,
   });
 
   const { data: vehicles = [] } = useQuery({
-    queryKey: ["vehicles"],
+    queryKey: ["vehicles", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("vehicles").select("*").order("created_at");
+      const { data } = await supabase.from("vehicles").select("*").eq("user_id", user!.id).order("created_at");
       return data ?? [];
     },
     enabled: !!user,
   });
 
   const { data: drivers = [] } = useQuery({
-    queryKey: ["drivers"],
+    queryKey: ["drivers", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("drivers").select("*, vehicles(name)").order("created_at");
+      const { data } = await supabase.from("drivers").select("*, vehicles(name)").eq("user_id", user!.id).order("created_at");
       return data ?? [];
     },
     enabled: !!user,
   });
 
   const { data: frequentRoutes = [] } = useQuery({
-    queryKey: ["frequent_routes"],
+    queryKey: ["frequent_routes", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("frequent_routes").select("*").order("created_at");
+      const { data } = await supabase.from("frequent_routes").select("*").eq("user_id", user!.id).order("created_at");
       return data ?? [];
     },
     enabled: !!user,
@@ -205,6 +205,7 @@ const VehiclePlugin = () => {
       start_mileage: "",
       end_mileage: route.default_distance ? "" : "",
     }));
+    closeAllForms();
     setShowTripForm(true);
     setTab("trips");
   };
@@ -238,11 +239,62 @@ const VehiclePlugin = () => {
 
   const inputCls = "field-input";
   const createOpen = tab === "vehicles" ? showVehicleForm : tab === "drivers" ? showDriverForm : tab === "routes" ? showRouteForm : showTripForm;
+
+  function closeAllForms() {
+    setShowTripForm(false);
+    setShowVehicleForm(false);
+    setShowDriverForm(false);
+    setShowRouteForm(false);
+  }
+
+  const openFormForTab = (targetTab = tab) => {
+    closeAllForms();
+    if (targetTab === "vehicles") setShowVehicleForm(true);
+    else if (targetTab === "drivers") setShowDriverForm(true);
+    else if (targetTab === "routes") setShowRouteForm(true);
+    else {
+      setTab("trips");
+      setShowTripForm(true);
+    }
+  };
+
+  const handleTabChange = (nextTab: string) => {
+    setTab(nextTab);
+    closeAllForms();
+  };
+
   const toggleCreate = () => {
-    if (tab === "vehicles") setShowVehicleForm(!showVehicleForm);
-    else if (tab === "drivers") setShowDriverForm(!showDriverForm);
-    else if (tab === "routes") setShowRouteForm(!showRouteForm);
-    else setShowTripForm(!showTripForm);
+    if (createOpen) closeAllForms();
+    else openFormForTab(tab);
+  };
+
+  const handleExportTrips = () => {
+    if (filteredTrips.length === 0) {
+      toast.error("Aucun trajet à exporter");
+      return;
+    }
+    const headers = ["Date", "Véhicule", "Conducteur", "Départ", "Arrivée", "Distance km", "IK", "Objet"];
+    const rows = filteredTrips.map((t: any) => [
+      t.date ? new Date(t.date).toLocaleDateString("fr-FR") : "",
+      t.vehicles?.name || "",
+      t.drivers?.name || "",
+      t.start_location || "",
+      t.end_location || "",
+      t.distance ?? "",
+      t.ik_amount ?? "",
+      t.purpose || "",
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `carnet-vehicule-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Export téléchargé");
   };
 
   return (
@@ -265,7 +317,7 @@ const VehiclePlugin = () => {
         </div>
         <div className="flex gap-1 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
           {tabsDef.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+            <button key={t.id} onClick={() => handleTabChange(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${tab === t.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
               <t.icon size={12} /> {t.label}
             </button>
@@ -273,7 +325,7 @@ const VehiclePlugin = () => {
         </div>
 
         {/* Trip form */}
-        {showTripForm && (
+        {tab === "trips" && showTripForm && (
           <div className="field-form-panel mb-4 space-y-4 slide-up">
             {frequentRoutes.length > 0 && (
               <div>
@@ -321,7 +373,7 @@ const VehiclePlugin = () => {
         )}
 
         {/* Vehicle form */}
-        {showVehicleForm && (
+        {tab === "vehicles" && showVehicleForm && (
           <div className="field-form-panel mb-4 space-y-4 slide-up">
             <input value={vehicleData.name} onChange={e => setVehicleData(d => ({ ...d, name: e.target.value }))} placeholder="Nom du véhicule" className={inputCls} />
             <input value={vehicleData.brand_model} onChange={e => setVehicleData(d => ({ ...d, brand_model: e.target.value }))} placeholder="Marque / Modèle" className={inputCls} />
@@ -338,7 +390,7 @@ const VehiclePlugin = () => {
         )}
 
         {/* Driver form */}
-        {showDriverForm && (
+        {tab === "drivers" && showDriverForm && (
           <div className="field-form-panel mb-4 space-y-4 slide-up">
             <input value={driverData.name} onChange={e => setDriverData(d => ({ ...d, name: e.target.value }))} placeholder="Nom du conducteur" className={inputCls} />
             <input value={driverData.role} onChange={e => setDriverData(d => ({ ...d, role: e.target.value }))} placeholder="Rôle (optionnel)" className={inputCls} />
@@ -350,7 +402,7 @@ const VehiclePlugin = () => {
         )}
 
         {/* Route form */}
-        {showRouteForm && (
+        {tab === "routes" && showRouteForm && (
           <div className="field-form-panel mb-4 space-y-4 slide-up">
             <input value={routeData.name} onChange={e => setRouteData(d => ({ ...d, name: e.target.value }))} placeholder="Nom de l'itinéraire" className={inputCls} />
             <div className="grid grid-cols-2 gap-2">
@@ -420,7 +472,7 @@ const VehiclePlugin = () => {
               </>
             )}
 
-            <button onClick={() => { setShowTripForm(true); setTab("trips"); }} className="btn btn-primary btn-full">+ Nouveau trajet</button>
+            <button onClick={() => openFormForTab("trips")} className="btn btn-primary btn-full">+ Nouveau trajet</button>
           </div>
         )}
 
@@ -531,7 +583,7 @@ const VehiclePlugin = () => {
                 <option>Ce mois</option><option>3 derniers mois</option><option>Cette année</option><option>Tout</option>
               </select>
             </div>
-            <button className="btn btn-primary btn-full">Exporter vers Excel</button>
+            <button onClick={handleExportTrips} className="btn btn-primary btn-full">Exporter vers Excel</button>
           </div>
         )}
       </div>

@@ -392,14 +392,17 @@ export default function HomePage() {
       </section>
 
       <Dialog open={activityOpen} onOpenChange={setActivityOpen}>
-        <DialogContent className="rounded-2xl" style={{ width: 'min(92vw, 520px)', maxHeight: 'min(78dvh, 680px)', padding: 'var(--space-4)' }}>
+        <DialogContent
+          className="w-[92vw] max-w-[520px] max-h-[78dvh] overflow-hidden rounded-2xl p-4"
+          style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+        >
           <DialogHeader>
             <DialogTitle>Fil d'activité</DialogTitle>
             <DialogDescription>
               Vos derniers rapports et tâches, du plus récent au plus ancien.
             </DialogDescription>
           </DialogHeader>
-          <div style={{ overflowY: 'auto', paddingRight: 4, display: 'grid', gap: 'var(--space-2)', maxHeight: 'calc(min(78dvh, 680px) - 140px)' }}>
+          <div style={{ overflowY: 'auto', paddingRight: 4, display: 'grid', gap: 'var(--space-2)', maxHeight: 'calc(78dvh - 140px)' }}>
             {activity.length === 0 ? (
               <div className="card" style={{ padding: 'var(--space-5)', textAlign: 'center' }}>
                 <Sparkles size={22} style={{ color: 'var(--color-primary)', margin: '0 auto var(--space-2)' }} />

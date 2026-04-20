@@ -292,36 +292,36 @@ const QuotesPlugin = () => {
 
   // ── Queries ──
   const { data: settings } = useQuery({
-    queryKey: ["invoice_settings"], queryFn: async () => {
-      const { data } = await supabase.from("invoice_settings").select("*").maybeSingle();
+    queryKey: ["invoice_settings", user?.id], queryFn: async () => {
+      const { data } = await supabase.from("invoice_settings").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
       return data;
     }, enabled: !!user,
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients"], queryFn: async () => {
-      const { data } = await supabase.from("clients").select("*").order("name");
+    queryKey: ["clients", user?.id], queryFn: async () => {
+      const { data } = await supabase.from("clients").select("*").eq("user_id", user!.id).order("name");
       return data ?? [];
     }, enabled: !!user,
   });
 
   const { data: quotes = [] } = useQuery({
-    queryKey: ["quotes"], queryFn: async () => {
-      const { data } = await supabase.from("quotes").select("*, clients(name, siret, address)").order("created_at", { ascending: false });
+    queryKey: ["quotes", user?.id], queryFn: async () => {
+      const { data } = await supabase.from("quotes").select("*, clients(name, siret, address)").eq("user_id", user!.id).order("created_at", { ascending: false });
       return data ?? [];
     }, enabled: !!user,
   });
 
   const { data: invoices = [] } = useQuery({
-    queryKey: ["invoices"], queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("*, clients(name, siret, address)").order("created_at", { ascending: false });
+    queryKey: ["invoices", user?.id], queryFn: async () => {
+      const { data } = await supabase.from("invoices").select("*, clients(name, siret, address)").eq("user_id", user!.id).order("created_at", { ascending: false });
       return data ?? [];
     }, enabled: !!user,
   });
 
   const { data: payments = [] } = useQuery({
-    queryKey: ["payments"], queryFn: async () => {
-      const { data } = await supabase.from("payments").select("*, invoices(title, invoice_number, client, client_id, clients(name))").order("created_at", { ascending: false });
+    queryKey: ["payments", user?.id], queryFn: async () => {
+      const { data } = await supabase.from("payments").select("*, invoices(title, invoice_number, client, client_id, clients(name))").eq("user_id", user!.id).order("created_at", { ascending: false });
       return data ?? [];
     }, enabled: !!user,
   });
@@ -640,6 +640,8 @@ const QuotesPlugin = () => {
   // ── Helpers ──
   const resetForm = () => { setFTitle(""); setFClientId(""); setFAmountHt(""); setFPayment(""); setFTva(""); setFTvaRate(0); setFTvaCustom(""); setFColor(""); setFDiscountType(""); setFDiscountValue(""); setFShowRib(false); setFShowOptions(false); setFNotes(""); setFIssueDate(new Date().toISOString().slice(0, 10)); setFPaymentTerms(""); setFPeriod(""); setShowForm(false); };
   const resetClientForm = () => { setCName(""); setCSiret(""); setCAddr(""); setCEmail(""); setCPhone(""); setEditingClient(null); setShowClientForm(false); };
+  const closeCreateForms = () => { setShowForm(false); setShowClientForm(false); setShowPayForm(false); };
+  const closePanels = () => { setShowExport(false); setShowShare(false); };
   const editClientFn = (c: any) => { setCName(c.name); setCSiret(c.siret || ""); setCAddr(c.address || ""); setCEmail(c.email || ""); setCPhone(c.phone || ""); setEditingClient(c); setShowClientForm(true); };
   const getClientName = (item: any) => item.clients?.name || item.client || "";
   const profileName = profile?.full_name || [sFirstName, sLastName].filter(Boolean).join(" ") || "SWAN";
@@ -1047,6 +1049,24 @@ const QuotesPlugin = () => {
   // ══════════════════════ MAIN VIEW ══════════════════════
   const canCreateForTab = !["dashboard", "settings"].includes(tab);
   const createOpen = tab === "clients" ? showClientForm : tab === "paiements" ? showPayForm : showForm;
+  const handleTabChange = (nextTab: Tab) => {
+    setTab(nextTab);
+    setStatusFilter("all");
+    setSearch("");
+    closePanels();
+    closeCreateForms();
+  };
+  const toggleCreate = () => {
+    closePanels();
+    if (createOpen) {
+      closeCreateForms();
+      return;
+    }
+    closeCreateForms();
+    if (tab === "clients") setShowClientForm(true);
+    else if (tab === "paiements") setShowPayForm(true);
+    else setShowForm(true);
+  };
 
   return (
     <div className="fade-in">
@@ -1054,11 +1074,11 @@ const QuotesPlugin = () => {
         action={
           <div className="flex gap-1.5">
             <TutorialButton {...TOOL_TUTORIALS.quotes} />
-            <button onClick={() => setShowExport(!showExport)} className="btn btn-icon-sm btn-ghost"><Download size={18} /></button>
-            <button onClick={() => setShowShare(!showShare)} className="btn btn-icon-sm btn-ghost"><Share2 size={18} /></button>
+            <button onClick={() => { setShowExport(v => !v); setShowShare(false); closeCreateForms(); }} className="btn btn-icon-sm btn-ghost"><Download size={18} /></button>
+            <button onClick={() => { setShowShare(v => !v); setShowExport(false); closeCreateForms(); }} className="btn btn-icon-sm btn-ghost"><Share2 size={18} /></button>
             {canCreateForTab && (
               <button
-                onClick={() => { if (tab === "clients") setShowClientForm(!showClientForm); else if (tab === "paiements") setShowPayForm(!showPayForm); else setShowForm(!showForm); }}
+                onClick={toggleCreate}
                 className={`btn btn-add ${createOpen ? "btn-add-active" : ""}`}
                 aria-label={createOpen ? "Fermer le formulaire" : "Ajouter"}>
                 {createOpen ? <X size={22} /> : <Plus size={24} />}
@@ -1112,7 +1132,7 @@ const QuotesPlugin = () => {
             { id: "dashboard" as Tab, label: "Bilan", icon: BarChart3 },
             { id: "settings" as Tab, label: "Réglages", icon: Settings },
           ]).map(t => (
-            <button key={t.id} onClick={() => { setTab(t.id); setStatusFilter("all"); setSearch(""); }}
+            <button key={t.id} onClick={() => handleTabChange(t.id)}
               className={`flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${tab === t.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
               <t.icon size={13} /> {t.label}
             </button>

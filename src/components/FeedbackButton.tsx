@@ -46,7 +46,7 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
   }
 
   return (
-    <div className="fixed bottom-20 right-4 left-4 md:left-auto md:bottom-6 z-50 md:w-80 glass-card p-4 fade-in">
+    <div className="fixed bottom-20 right-4 left-4 md:left-auto md:bottom-6 z-50 md:w-80 field-form-panel p-4 fade-in" style={{ borderColor: 'rgba(201, 169, 97, 0.35)' }}>
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm font-semibold font-heading">Retour</span>
         <button onClick={() => setOpen(false)} className="btn btn-icon-xs btn-ghost" aria-label="Fermer"><X size={16} /></button>
@@ -58,14 +58,14 @@ export const FeedbackButton = ({ context = "global" }: FeedbackButtonProps) => {
           <div className="flex gap-1.5 mb-3">
             {types.map(t => (
               <button key={t.value} onClick={() => setType(t.value)}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg text-xs transition-colors ${type === t.value ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary text-muted-foreground border border-transparent'}`}>
+                className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg text-xs font-semibold transition-colors ${type === t.value ? 'bg-primary/15 text-primary border border-primary/40 shadow-sm' : 'bg-background text-foreground border border-border'}`}>
                 <t.icon size={14} />
                 {t.label}
               </button>
             ))}
           </div>
           <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Décrivez..." rows={3}
-            className="w-full bg-secondary border border-border rounded-lg p-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary mb-2" />
+            className="w-full bg-background border-2 border-border rounded-lg p-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary mb-2" />
           <div className="text-[10px] text-muted-foreground mb-2">Écran : {location.pathname}</div>
           <button onClick={handleSubmit} disabled={!message.trim()} className="btn btn-primary btn-full btn-sm">Envoyer</button>
         </>
