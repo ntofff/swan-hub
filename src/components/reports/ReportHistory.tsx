@@ -218,18 +218,18 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
 
           {/* Filters */}
           <div className="px-4 py-2 border-b border-border space-y-2">
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={() => setFilterColor(null)}
-                className={`text-sm px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 font-semibold min-h-11 ${!filterColor ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
+                className={`text-xs px-3 py-2 rounded-full whitespace-nowrap shrink-0 font-semibold min-h-9 ${!filterColor ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
                 Toutes
               </button>
               {colorOptions.map((c) => (
                 <button key={c.value} onClick={() => setFilterColor(filterColor === c.value ? null : c.value)}
-                  className="w-11 h-11 rounded-full border-2 shrink-0 transition-all"
+                  className="w-9 h-9 rounded-lg border-2 shrink-0 transition-all"
                   style={{
                     backgroundColor: `hsl(${c.value})`,
-                    borderColor: filterColor === c.value ? "var(--color-text-1)" : "transparent",
-                    boxShadow: filterColor === c.value ? `0 0 0 3px hsl(${c.value} / 0.22)` : undefined,
+                    borderColor: filterColor === c.value ? `hsl(${c.value})` : "transparent",
+                    boxShadow: filterColor === c.value ? `0 0 0 2px hsl(${c.value} / 0.24)` : undefined,
                     transform: filterColor === c.value ? "scale(1.06)" : undefined,
                   }}
                   title={c.label}
@@ -239,20 +239,20 @@ const ReportHistory = ({ reports, folders, colorOptions, onEdit, onDelete }: Pro
               ))}
             </div>
             {folders.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+              <div className="flex flex-wrap items-center gap-2">
                 <button onClick={() => setFilterFolderId(null)}
-                  className={`text-sm px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 flex items-center gap-2 min-h-11 font-semibold ${!filterFolderId ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
-                  <FolderOpen size={15} /> Tous
+                  className={`text-xs px-3 py-2 rounded-full whitespace-nowrap shrink-0 flex items-center gap-1.5 min-h-9 font-semibold ${!filterFolderId ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
+                  <FolderOpen size={13} /> Tous
                 </button>
                 {folders.map((f: any) => (
                   <button key={f.id} onClick={() => setFilterFolderId(filterFolderId === f.id ? null : f.id)}
-                    className={`text-sm px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 flex items-center gap-2 min-h-11 font-semibold transition-colors ${filterFolderId === f.id ? "" : "text-muted-foreground hover:bg-secondary"}`}
+                    className={`text-xs px-3 py-2 rounded-full whitespace-nowrap shrink-0 flex items-center gap-1.5 min-h-9 font-semibold transition-colors ${filterFolderId === f.id ? "" : "text-muted-foreground hover:bg-secondary"}`}
                     style={filterFolderId === f.id ? {
                       backgroundColor: `hsl(${f.color} / 0.15)`,
                       color: `hsl(${f.color})`,
                       boxShadow: `0 0 0 2px hsl(${f.color} / 0.18)`,
                     } : {}}>
-                    <span className="text-lg">{f.icon}</span> {f.name}
+                    <span className="text-base">{f.icon}</span> {f.name}
                   </button>
                 ))}
               </div>

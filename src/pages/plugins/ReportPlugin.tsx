@@ -408,7 +408,7 @@ const ReportPlugin = () => {
       />
       <div className="field-workspace">
         <div className="field-simple-note">
-          Mode simple : titre, lieu, contenu, puis enregistrement. Les dossiers, couleurs et photos restent optionnels.
+          Rapide : notez l'essentiel, ajoutez une photo si besoin, puis enregistrez.
         </div>
 
         {/* Folders strip */}

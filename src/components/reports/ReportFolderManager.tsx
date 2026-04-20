@@ -95,12 +95,12 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
 
         <div>
           <label className="field-label">Icône</label>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {emojiOptions.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => setIcon(emoji)}
-                className={`w-11 h-11 rounded-lg flex items-center justify-center text-lg border-2 transition-all ${icon === emoji ? "bg-primary/15 scale-105 shadow-lg shadow-primary/20" : "bg-secondary hover:bg-secondary/80 border-transparent"}`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-base border-2 transition-all ${icon === emoji ? "bg-primary/15 scale-105 shadow-lg shadow-primary/20" : "bg-secondary hover:bg-secondary/80 border-transparent"}`}
                 style={icon === emoji ? { borderColor: `hsl(${color})`, boxShadow: `0 0 0 3px hsl(${color} / 0.22)` } : undefined}
                 aria-pressed={icon === emoji}
               >
@@ -112,13 +112,13 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
 
         <div>
           <label className="field-label">Couleur</label>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {colorOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setColor(option.value)}
                 title={option.label}
-                className={`w-11 h-11 rounded-lg border-2 transition-all ${color === option.value ? "scale-105 shadow-lg" : "border-transparent"}`}
+                className={`w-10 h-10 rounded-full border-2 transition-all ${color === option.value ? "scale-105 shadow-lg" : "border-transparent"}`}
                 style={{
                   backgroundColor: `hsl(${option.value})`,
                   borderColor: color === option.value ? `hsl(${option.value})` : "transparent",
@@ -158,17 +158,17 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
           {folders.map((folder: any, idx: number) => (
             <div
               key={folder.id}
-              className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/70 gap-2 transition-all"
+              className="flex items-center justify-between p-2.5 rounded-xl border border-border bg-background/70 gap-2 transition-all"
               style={{ borderLeft: `4px solid hsl(${folder.color || "38 50% 58%"})` }}
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-base shrink-0"
                   style={{ backgroundColor: `hsl(${folder.color} / 0.15)` }}
                 >
                   {folder.icon}
                 </div>
-                <span className="text-sm font-medium truncate">{folder.name}</span>
+                <span className="text-sm font-semibold truncate">{folder.name}</span>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => reorderFolder.mutate({ idx, dir: -1 })} disabled={idx === 0} className="btn btn-icon-xs btn-secondary">
