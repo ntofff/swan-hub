@@ -1,6 +1,6 @@
 // ============================================================
 // SWAN · HUB — Page Pricing
-// 3 plans : Découverte · À la carte · Pro Total
+// 3 plans : Découverte · À la carte · Pro illimité
 // ============================================================
 
 import { useState } from 'react';
@@ -137,7 +137,7 @@ export default function Pricing() {
             </div>
             <div style={{ textAlign: 'center', borderLeft: '1px solid var(--color-border)' }}>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>
-                Pro Total
+                Pro illimité
               </div>
               <div
                 style={{
@@ -162,8 +162,8 @@ export default function Pricing() {
             }}
           >
             {proIsCheaper
-              ? `✓ Le Pro Total est plus avantageux à partir de ${PLAN_BREAKEVEN_PLUGINS} outils activés`
-              : `À partir de ${PLAN_BREAKEVEN_PLUGINS} outils activés, le Pro Total devient plus avantageux`}
+              ? `✓ Le Pro illimité est plus avantageux à partir de ${PLAN_BREAKEVEN_PLUGINS} outils activés`
+              : `À partir de ${PLAN_BREAKEVEN_PLUGINS} outils activés, le Pro illimité devient plus avantageux`}
           </p>
         </div>
       </section>

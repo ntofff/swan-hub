@@ -147,7 +147,7 @@ export default function Profile() {
                 </span>
               )}
               <span className="badge badge-gold">
-                {profile.plan === 'free'  ? 'Découverte' : profile.plan === 'pro' ? 'Pro Total' : 'À la carte'}
+                {profile.plan === 'free'  ? 'Découverte' : profile.plan === 'pro' ? 'Pro illimité' : 'À la carte'}
               </span>
             </div>
           </div>

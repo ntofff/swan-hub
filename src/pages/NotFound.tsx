@@ -181,7 +181,7 @@ Les prix sont indiqués en euros, hors taxes (HT) et toutes taxes comprises (TTC
 — Activation et désactivation libre des outils
 — Paiement mensuel par prélèvement automatique
 
-4.3 — Formule Pro Total
+4.3 — Formule Pro illimité
 — 9,00 € HT / 10,80 € TTC par mois
 — Accès illimité à tous les outils actuels et futurs
 — Accès IA illimité

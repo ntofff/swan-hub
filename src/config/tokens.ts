@@ -95,7 +95,7 @@ export const PLANS: Plan[] = [
   },
   {
     id: 'pro',
-    name: 'Pro Total',
+    name: 'Pro illimité',
     priceHT: 9,
     priceTTC: 10.80,
     description: 'Accès illimité à tous les outils',

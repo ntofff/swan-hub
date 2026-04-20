@@ -41,11 +41,41 @@ type PeriodType = "week" | "month" | "year" | "custom";
 
 const inputCls = "field-input";
 const labelCls = "field-label";
+const LOCAL_INVOICE_SETTINGS_PREFIX = "swan_invoice_settings_";
 
 // ── Helpers ──
 const fmtAmount = (n: number) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
 const formatDate = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 const csvEscape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+const isMissingInvoiceSettingsTable = (error: any) => {
+  const message = String(error?.message || "");
+  return error?.code === "PGRST205" || message.includes("invoice_settings");
+};
+
+const getLocalInvoiceSettings = (userId?: string) => {
+  if (!userId) return null;
+  try {
+    const raw = localStorage.getItem(`${LOCAL_INVOICE_SETTINGS_PREFIX}${userId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveLocalInvoiceSettings = (userId: string, payload: any, previous?: any) => {
+  const now = new Date().toISOString();
+  const next = {
+    ...(previous || {}),
+    ...payload,
+    id: previous?.id || `local-${userId}`,
+    user_id: userId,
+    created_at: previous?.created_at || now,
+    updated_at: now,
+  };
+  localStorage.setItem(`${LOCAL_INVOICE_SETTINGS_PREFIX}${userId}`, JSON.stringify(next));
+  return next;
+};
 
 const calcTtc = (ht: number, discountType: string, discountValue: number, tvaRate: number) => {
   let base = ht;
@@ -295,8 +325,13 @@ const QuotesPlugin = () => {
   // ── Queries ──
   const { data: settings } = useQuery({
     queryKey: ["invoice_settings", user?.id], queryFn: async () => {
-      const { data } = await supabase.from("invoice_settings").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-      return data;
+      const localSettings = getLocalInvoiceSettings(user!.id);
+      const { data, error } = await supabase.from("invoice_settings").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) {
+        if (isMissingInvoiceSettingsTable(error)) return localSettings;
+        throw error;
+      }
+      return data ?? localSettings;
     }, enabled: !!user,
   });
 
@@ -381,15 +416,23 @@ const QuotesPlugin = () => {
         emitter_address: sAddress || null, emitter_email: sEmail || null,
         emitter_phone: sPhone || null, default_legal_mentions: sLegal || null,
       };
-      if (settings?.id) {
+      if (settings?.id && !String(settings.id).startsWith("local-")) {
         const { error } = await supabase.from("invoice_settings").update(payload).eq("id", settings.id);
-        if (error) throw error;
+        if (!error) return { local: false };
+        if (!isMissingInvoiceSettingsTable(error)) throw error;
       } else {
         const { error } = await supabase.from("invoice_settings").insert(payload);
-        if (error) throw error;
+        if (!error) return { local: false };
+        if (!isMissingInvoiceSettingsTable(error)) throw error;
       }
+      const localSettings = saveLocalInvoiceSettings(user.id, payload, settings);
+      qc.setQueryData(["invoice_settings", user.id], localSettings);
+      return { local: true };
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["invoice_settings"] }); toast.success("Paramètres sauvegardés !"); },
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["invoice_settings"] });
+      toast.success(result?.local ? "Réglages sauvegardés sur cet appareil." : "Paramètres sauvegardés !");
+    },
     onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de sauvegarder")); },
   });
 
@@ -425,6 +468,23 @@ const QuotesPlugin = () => {
     return tvaAmount;
   };
 
+  const updateInvoiceSettingsCounters = async (patch: Record<string, number>) => {
+    if (!user || !settings?.id) return;
+
+    if (String(settings.id).startsWith("local-")) {
+      const localSettings = saveLocalInvoiceSettings(user.id, patch, settings);
+      qc.setQueryData(["invoice_settings", user.id], localSettings);
+      return;
+    }
+
+    const { error } = await supabase.from("invoice_settings").update(patch).eq("id", settings.id);
+    if (!error) return;
+    if (!isMissingInvoiceSettingsTable(error)) throw error;
+
+    const localSettings = saveLocalInvoiceSettings(user.id, patch, settings);
+    qc.setQueryData(["invoice_settings", user.id], localSettings);
+  };
+
   const addQuote = useMutation({
     mutationFn: async () => {
       if (!user || !fTitle.trim()) return;
@@ -445,9 +505,7 @@ const QuotesPlugin = () => {
         period_description: fPeriod || null,
       });
       if (error) throw error;
-      if (settings?.id) {
-        await supabase.from("invoice_settings").update({ quote_counter: (settings.quote_counter || 1) + 1 }).eq("id", settings.id);
-      }
+      await updateInvoiceSettingsCounters({ quote_counter: (settings?.quote_counter || 1) + 1 });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoice_settings"] }); resetForm(); toast.success("Devis créé !"); },
     onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de créer le devis. Reconnectez-vous.")); },
@@ -474,9 +532,7 @@ const QuotesPlugin = () => {
         period_description: fPeriod || null,
       });
       if (error) throw error;
-      if (settings?.id) {
-        await supabase.from("invoice_settings").update({ invoice_counter: (settings.invoice_counter || 1) + 1 }).eq("id", settings.id);
-      }
+      await updateInvoiceSettingsCounters({ invoice_counter: (settings?.invoice_counter || 1) + 1 });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["invoices"] }); qc.invalidateQueries({ queryKey: ["invoice_settings"] }); resetForm(); toast.success("Facture créée !"); },
     onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de créer la facture.")); },
@@ -573,9 +629,7 @@ const QuotesPlugin = () => {
       });
       if (error) throw error;
       await supabase.from("quotes").update({ status: "Accepté" }).eq("id", quote.id);
-      if (settings?.id) {
-        await supabase.from("invoice_settings").update({ invoice_counter: (settings.invoice_counter || 1) + 1 }).eq("id", settings.id);
-      }
+      await updateInvoiceSettingsCounters({ invoice_counter: (settings?.invoice_counter || 1) + 1 });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); qc.invalidateQueries({ queryKey: ["invoices"] }); qc.invalidateQueries({ queryKey: ["invoice_settings"] }); setSelectedItem(null); toast.success("Converti en facture !"); },
     onError: (err: any) => { toast.error("Erreur : " + (err.message || "Impossible de convertir")); },
@@ -616,9 +670,7 @@ const QuotesPlugin = () => {
         status: "Reçu", method: pMethod || null, paid_at: new Date().toISOString(),
       });
       if (payErr) throw payErr;
-      if (settings?.id) {
-        await supabase.from("invoice_settings").update({ invoice_counter: (settings.invoice_counter || 1) + 1 }).eq("id", settings.id);
-      }
+      await updateInvoiceSettingsCounters({ invoice_counter: (settings?.invoice_counter || 1) + 1 });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["invoices"] });
