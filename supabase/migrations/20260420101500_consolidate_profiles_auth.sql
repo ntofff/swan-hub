@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS public.failed_login_attempts (
 
 ALTER TABLE public.failed_login_attempts ENABLE ROW LEVEL SECURITY;
 
+DROP FUNCTION IF EXISTS public.check_login_block(text);
+
 CREATE OR REPLACE FUNCTION public.check_login_block(check_email text)
 RETURNS TABLE(is_blocked boolean, retry_after_seconds integer)
 LANGUAGE sql
@@ -87,6 +89,8 @@ AS $$
   WHERE lower(email) = lower(check_email)
     AND created_at > now() - interval '15 minutes';
 $$;
+
+DROP FUNCTION IF EXISTS public.log_failed_login(text);
 
 CREATE OR REPLACE FUNCTION public.log_failed_login(login_email text)
 RETURNS void
