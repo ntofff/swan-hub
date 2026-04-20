@@ -451,7 +451,7 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
 
 .main-content {
   flex: 1;
-  padding-bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--tap-comfort) + var(--space-10) + env(safe-area-inset-bottom));
   padding-top: env(safe-area-inset-top);
 }
 
@@ -1643,7 +1643,7 @@ select.input {
 }
 
 .tutorial-dialog-content {
-  padding-bottom: max(calc(var(--tap-comfort) + var(--space-5)), calc(env(safe-area-inset-bottom) + var(--tap-comfort) + var(--space-4)));
+  padding-bottom: var(--space-4);
 }
 
 .tutorial-dialog > button:last-child {
@@ -1653,7 +1653,7 @@ select.input {
 @media (max-width: 640px) {
   .tutorial-dialog {
     top: max(1rem, env(safe-area-inset-top)) !important;
-    bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+    bottom: calc(64px + env(safe-area-inset-bottom) + var(--space-2)) !important;
     transform: translateX(-50%) !important;
     max-height: none !important;
   }
