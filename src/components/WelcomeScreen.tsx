@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { FileText, BookOpen, CheckSquare, Target, Receipt, Car, Sparkles, Rocket, Users, Heart, X, Coffee } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { APP_BUILD_LABEL, APP_VERSION, APP_BUILD } from "@/config/build";
 
-const APP_BUILD = "1.1.0";
 const WELCOME_KEY = "swan_welcome_dismissed";
 const WELCOME_BUILD_KEY = "swan_welcome_build";
 const WELCOME_SESSION_KEY = "swan_welcome_shown_this_session";
+const WELCOME_BUILD_ID = `${APP_VERSION}-${APP_BUILD}`;
 
 const plugins = [
   { icon: FileText, name: "Outil Rapport", desc: "Rapports professionnels en quelques secondes" },
@@ -39,14 +40,14 @@ export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
     const dismissed = localStorage.getItem(WELCOME_KEY);
     const lastBuild = localStorage.getItem(WELCOME_BUILD_KEY);
 
-    if (dismissed === "true" && lastBuild === APP_BUILD) {
+    if (dismissed === "true" && lastBuild === WELCOME_BUILD_ID) {
       // Mark session and skip
       sessionStorage.setItem(WELCOME_SESSION_KEY, "true");
       onClose();
       return;
     }
 
-    if (dismissed === "true" && lastBuild !== APP_BUILD) {
+    if (dismissed === "true" && lastBuild !== WELCOME_BUILD_ID) {
       setIsNewUpdates(true);
     }
 
@@ -58,7 +59,7 @@ export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
     sessionStorage.setItem(WELCOME_SESSION_KEY, "true");
     if (dontShow) {
       localStorage.setItem(WELCOME_KEY, "true");
-      localStorage.setItem(WELCOME_BUILD_KEY, APP_BUILD);
+      localStorage.setItem(WELCOME_BUILD_KEY, WELCOME_BUILD_ID);
     }
     setVisible(false);
     setTimeout(onClose, 350);
@@ -78,7 +79,7 @@ export const WelcomeScreen = ({ onClose }: { onClose: () => void }) => {
         <div className={`text-center space-y-3 transition-all duration-700 delay-200 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
           <h1 className="text-5xl font-bold font-heading text-gradient-gold">SWAN · HUB</h1>
           <p className="text-xs text-muted-foreground tracking-widest uppercase">Simple Work</p>
-          <p className="text-[10px] text-muted-foreground">v{APP_BUILD}</p>
+          <p className="text-[10px] text-muted-foreground">{APP_BUILD_LABEL}</p>
         </div>
 
         {/* Updates mode */}

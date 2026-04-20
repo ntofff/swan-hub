@@ -3,7 +3,7 @@
 // Brief SWAN · Outils · Activité récente
 // ============================================================
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,6 +11,7 @@ import {
   Users, Wallet, Calendar, Banknote, Timer, Package, ShieldCheck,
   Sparkles, ChevronRight, Sun, Moon, Bell, Crown,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
 import { FeedbackButton } from '@/components/FeedbackButton';
@@ -19,6 +20,7 @@ import { VoicePlayer } from '@/components/VoicePlayer';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVE_PLUGINS, SWAN_COPY } from '@/config/tokens';
 import { HOME_TUTORIAL } from '@/config/tutorials';
+import { APP_BUILD_LABEL, APP_COMMIT } from '@/config/build';
 
 // ── Map des icônes (Lucide) ───────────────────────────────────
 const ICON_MAP: Record<string, any> = {
@@ -52,6 +54,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { setTheme, isDark, toggleTextSize, isLargeText } = useTheme();
+  const [activityOpen, setActivityOpen] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] || '';
   const greeting = getGreeting();
@@ -143,12 +146,12 @@ export default function HomePage() {
           .from('reports')
           .select('id, title, created_at')
           .order('created_at', { ascending: false })
-          .limit(3),
+          .limit(12),
         supabase
           .from('tasks')
           .select('id, text, done, updated_at')
           .order('updated_at', { ascending: false })
-          .limit(3),
+          .limit(12),
       ]);
       const items = [
         ...(reports.data ?? []).map((r: any) => ({
@@ -158,6 +161,8 @@ export default function HomePage() {
           icon: FileText,
           path: '/plugins/report',
           time: formatRelativeTime(r.created_at),
+          timestamp: new Date(r.created_at).getTime(),
+          label: 'Rapport',
         })),
         ...(tasks.data ?? []).map((t: any) => ({
           id: `t-${t.id}`,
@@ -166,14 +171,18 @@ export default function HomePage() {
           icon: CheckSquare,
           path: '/plugins/tasks',
           time: formatRelativeTime(t.updated_at),
+          timestamp: new Date(t.updated_at).getTime(),
+          label: 'Tâche',
           done: t.done,
         })),
       ];
-      return items.slice(0, 6);
+      return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
     },
     enabled: !!user,
     staleTime: 30_000,
   });
+
+  const previewActivity = activity.slice(0, 4);
 
   // ── Toggle thème rapide (cycle night/sun) ──────────────────
   const quickToggleTheme = () => {
@@ -196,6 +205,18 @@ export default function HomePage() {
                 VIP
               </span>
             )}
+          </p>
+          <p
+            title={`Commit ${APP_COMMIT}`}
+            style={{
+              marginTop: 4,
+              fontSize: 'var(--text-2xs)',
+              color: 'var(--color-text-3)',
+              fontWeight: 600,
+              letterSpacing: '0.01em',
+            }}
+          >
+            {APP_BUILD_LABEL}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
@@ -290,7 +311,15 @@ export default function HomePage() {
       <section className="field-workspace">
         <div className="field-zone-header">
           <h2 className="field-zone-title">Activité récente</h2>
-          <span className="field-zone-help">Derniers éléments</span>
+          <button
+            type="button"
+            onClick={() => setActivityOpen(true)}
+            className="btn btn-ghost btn-sm"
+            style={{ minHeight: 'auto', padding: '4px 8px' }}
+          >
+            Voir le fil
+            <ChevronRight size={14} />
+          </button>
         </div>
 
         {activity.length === 0 ? (
@@ -304,11 +333,23 @@ export default function HomePage() {
             </p>
           </div>
         ) : (
-          <div className="card" style={{ padding: 0 }}>
-            {activity.map((item: any, i: number) => (
+          <div
+            className="card card-interactive"
+            role="button"
+            tabIndex={0}
+            onClick={() => setActivityOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') setActivityOpen(true);
+            }}
+            style={{ padding: 0 }}
+          >
+            {previewActivity.map((item: any, i: number) => (
               <button
                 key={item.id}
-                onClick={() => navigate(item.path)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActivityOpen(true);
+                }}
                 style={{
                   width: '100%',
                   display: 'flex',
@@ -349,6 +390,58 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      <Dialog open={activityOpen} onOpenChange={setActivityOpen}>
+        <DialogContent className="rounded-2xl" style={{ width: 'min(92vw, 520px)', maxHeight: 'min(78dvh, 680px)', padding: 'var(--space-4)' }}>
+          <DialogHeader>
+            <DialogTitle>Fil d'activité</DialogTitle>
+            <DialogDescription>
+              Vos derniers rapports et tâches, du plus récent au plus ancien.
+            </DialogDescription>
+          </DialogHeader>
+          <div style={{ overflowY: 'auto', paddingRight: 4, display: 'grid', gap: 'var(--space-2)', maxHeight: 'calc(min(78dvh, 680px) - 140px)' }}>
+            {activity.length === 0 ? (
+              <div className="card" style={{ padding: 'var(--space-5)', textAlign: 'center' }}>
+                <Sparkles size={22} style={{ color: 'var(--color-primary)', margin: '0 auto var(--space-2)' }} />
+                <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>Aucune activité pour le moment</p>
+              </div>
+            ) : (
+              activity.map((item: any) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActivityOpen(false);
+                    navigate(item.path);
+                  }}
+                  className="plugin-record"
+                  style={{
+                    '--record-color': item.type === 'report' ? 'hsl(38 50% 58%)' : 'hsl(217 91% 60%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    textAlign: 'left',
+                    width: '100%',
+                  } as CSSProperties}
+                >
+                  <div className="plugin-icon-wrapper" style={{ width: 44, height: 44, flexShrink: 0 }}>
+                    <item.icon size={18} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 2 }}>
+                      <span className="badge badge-info">{item.label}</span>
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', fontWeight: 700 }}>{item.time}</span>
+                    </div>
+                    <p className="plugin-record-title" style={{ fontSize: 'var(--text-base)' }}>
+                      {item.text}
+                    </p>
+                  </div>
+                  <ChevronRight size={16} style={{ color: 'var(--color-text-3)', flexShrink: 0 }} />
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <FeedbackButton context="home" />
     </div>
