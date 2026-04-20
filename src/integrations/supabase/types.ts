@@ -360,6 +360,7 @@ export type Database = {
           id: string
           invoice_number: string
           issue_date: string | null
+          line_items: Json | null
           notes: string | null
           payment_method: string | null
           payment_terms: number | null
@@ -387,6 +388,7 @@ export type Database = {
           id?: string
           invoice_number: string
           issue_date?: string | null
+          line_items?: Json | null
           notes?: string | null
           payment_method?: string | null
           payment_terms?: number | null
@@ -414,6 +416,7 @@ export type Database = {
           id?: string
           invoice_number?: string
           issue_date?: string | null
+          line_items?: Json | null
           notes?: string | null
           payment_method?: string | null
           payment_terms?: number | null
@@ -832,6 +835,7 @@ export type Database = {
           due_date: string | null
           id: string
           issue_date: string | null
+          line_items: Json | null
           notes: string | null
           payment_method: string | null
           payment_terms: number | null
@@ -857,6 +861,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           issue_date?: string | null
+          line_items?: Json | null
           notes?: string | null
           payment_method?: string | null
           payment_terms?: number | null
@@ -882,6 +887,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           issue_date?: string | null
+          line_items?: Json | null
           notes?: string | null
           payment_method?: string | null
           payment_terms?: number | null

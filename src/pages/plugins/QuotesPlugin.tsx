@@ -38,10 +38,22 @@ const tvaRateOptions = [{ label: "Sans TVA", value: 0 }, { label: "20%", value: 
 
 type Tab = "devis" | "factures" | "paiements" | "clients" | "dashboard" | "settings";
 type PeriodType = "week" | "month" | "year" | "custom";
+type LineItem = {
+  description: string;
+  quantity: string;
+  unitPriceHt: string;
+};
+type StoredLineItem = {
+  description: string;
+  quantity: number;
+  unit_price_ht: number;
+  total_ht: number;
+};
 
 const inputCls = "field-input";
 const labelCls = "field-label";
 const LOCAL_INVOICE_SETTINGS_PREFIX = "swan_invoice_settings_";
+const createEmptyLineItem = (): LineItem => ({ description: "", quantity: "1", unitPriceHt: "" });
 
 // ── Helpers ──
 const fmtAmount = (n: number) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
@@ -85,6 +97,46 @@ const calcTtc = (ht: number, discountType: string, discountValue: number, tvaRat
   return { htAfterDiscount: base, tvaAmount: tva, ttc: base + tva };
 };
 
+const normalizeLineItems = (items: LineItem[]): StoredLineItem[] =>
+  items
+    .map((item) => {
+      const quantity = Math.max(0, Number(item.quantity) || 0);
+      const unitPriceHt = Math.max(0, Number(item.unitPriceHt) || 0);
+      return {
+        description: item.description.trim(),
+        quantity: quantity || 1,
+        unit_price_ht: unitPriceHt,
+        total_ht: (quantity || 1) * unitPriceHt,
+      };
+    })
+    .filter((item) => item.description || item.unit_price_ht > 0);
+
+const getLineItemsTotal = (items: LineItem[]) =>
+  normalizeLineItems(items).reduce((sum, item) => sum + item.total_ht, 0);
+
+const getStoredLineItems = (item: any): StoredLineItem[] => {
+  const raw = Array.isArray(item?.line_items) ? item.line_items : [];
+  const normalized = raw
+    .map((line: any) => {
+      const quantity = Math.max(0, Number(line.quantity) || 0);
+      const unitPriceHt = Math.max(0, Number(line.unit_price_ht ?? line.unitPriceHt) || 0);
+      return {
+        description: String(line.description || "").trim(),
+        quantity: quantity || 1,
+        unit_price_ht: unitPriceHt,
+        total_ht: Number(line.total_ht) || (quantity || 1) * unitPriceHt,
+      };
+    })
+    .filter((line: StoredLineItem) => line.description || line.unit_price_ht > 0);
+
+  if (normalized.length > 0) return normalized;
+
+  const ht = Number(item?.amount_ht) || 0;
+  return ht > 0
+    ? [{ description: item?.title || "Prestation", quantity: 1, unit_price_ht: ht, total_ht: ht }]
+    : [];
+};
+
 // ── Preview Component ──
 const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any) => {
   const emitter = settings || {};
@@ -93,7 +145,8 @@ const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any)
     ? new Date(new Date(item.issue_date).getTime() + item.payment_terms * 86400000).toLocaleDateString("fr-FR")
     : null;
 
-  const ht = Number(item.amount_ht) || 0;
+  const lineItems = getStoredLineItems(item);
+  const ht = lineItems.length > 0 ? lineItems.reduce((sum, line) => sum + line.total_ht, 0) : Number(item.amount_ht) || 0;
   const dType = item.discount_type || "";
   const dVal = Number(item.discount_value) || 0;
   const rate = Number(item.tva_rate) || 0;
@@ -146,13 +199,25 @@ const DocumentPreview = ({ item, settings, isQuote, onExportPdf, onShare }: any)
           )}
 
           {/* Designation */}
-          <div className="border-b border-gray-200 pb-1.5 mb-2 flex justify-between">
+          <div className="grid grid-cols-[1fr_45px_80px] gap-2 border-b border-gray-200 pb-1.5 mb-2">
             <p className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Désignation</p>
-            <p className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Montant</p>
+            <p className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider text-right">Qté</p>
+            <p className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider text-right">HT</p>
           </div>
-          <div className="flex justify-between items-start mb-1">
-            <p className="font-medium text-sm text-gray-800 flex-1">{item.title}</p>
-            {ht > 0 && <p className="text-gray-700 ml-4">{fmtAmount(ht)} HT</p>}
+          <div className="space-y-1.5">
+            {lineItems.length > 0 ? lineItems.map((line, index) => (
+              <div key={`${line.description}-${index}`} className="grid grid-cols-[1fr_45px_80px] gap-2 items-start">
+                <p className="font-medium text-sm text-gray-800">{line.description || item.title}</p>
+                <p className="text-gray-500 text-right">{line.quantity}</p>
+                <p className="text-gray-700 text-right">{fmtAmount(line.total_ht)}</p>
+              </div>
+            )) : (
+              <div className="grid grid-cols-[1fr_45px_80px] gap-2 items-start">
+                <p className="font-medium text-sm text-gray-800">{item.title}</p>
+                <p className="text-gray-500 text-right">1</p>
+                <p className="text-gray-700 text-right">{ht > 0 ? fmtAmount(ht) : "-"}</p>
+              </div>
+            )}
           </div>
 
           {dType && (
@@ -250,6 +315,7 @@ const QuotesPlugin = () => {
   const [fTitle, setFTitle] = useState("");
   const [fClientId, setFClientId] = useState("");
   const [fAmountHt, setFAmountHt] = useState("");
+  const [fLineItems, setFLineItems] = useState<LineItem[]>([createEmptyLineItem()]);
   const [fPayment, setFPayment] = useState("");
   const [fTva, setFTva] = useState("");
   const [fTvaRate, setFTvaRate] = useState<number>(0);
@@ -448,24 +514,36 @@ const QuotesPlugin = () => {
     return rateState;
   };
 
+  const getFormAmountHt = () => getLineItemsTotal(fLineItems) || parseFloat(fAmountHt) || 0;
+
   const calcFinal = () => {
-    const ht = parseFloat(fAmountHt) || 0;
+    const ht = getFormAmountHt();
     const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
     const { ttc } = calcTtc(ht, fDiscountType, parseFloat(fDiscountValue) || 0, rate);
     return ttc;
   };
 
   const calcFinalHtAfterDiscount = () => {
-    const ht = parseFloat(fAmountHt) || 0;
+    const ht = getFormAmountHt();
     const { htAfterDiscount } = calcTtc(ht, fDiscountType, parseFloat(fDiscountValue) || 0, 0);
     return htAfterDiscount;
   };
 
   const calcFinalTva = () => {
-    const ht = parseFloat(fAmountHt) || 0;
+    const ht = getFormAmountHt();
     const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
     const { tvaAmount } = calcTtc(ht, fDiscountType, parseFloat(fDiscountValue) || 0, rate);
     return tvaAmount;
+  };
+
+  const updateLineItem = (index: number, patch: Partial<LineItem>) => {
+    setFLineItems((items) => items.map((item, i) => i === index ? { ...item, ...patch } : item));
+  };
+
+  const addLineItem = () => setFLineItems((items) => [...items, createEmptyLineItem()]);
+
+  const removeLineItem = (index: number) => {
+    setFLineItems((items) => items.length === 1 ? [createEmptyLineItem()] : items.filter((_, i) => i !== index));
   };
 
   const updateInvoiceSettingsCounters = async (patch: Record<string, number>) => {
@@ -491,11 +569,14 @@ const QuotesPlugin = () => {
       const num = generateNumber("quote");
       const cl = clients.find((c: any) => c.id === fClientId);
       const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
+      const lineItems = normalizeLineItems(fLineItems);
+      const amountHt = lineItems.reduce((sum, item) => sum + item.total_ht, 0) || parseFloat(fAmountHt) || 0;
       const finalAmount = calcFinal();
       const { error } = await supabase.from("quotes").insert({
         user_id: user.id, quote_number: num, title: fTitle.trim(),
         client: cl?.name || null, client_id: fClientId || null,
-        amount: finalAmount || null, amount_ht: parseFloat(fAmountHt) || null,
+        amount: finalAmount || null, amount_ht: amountHt || null,
+        line_items: lineItems.length > 0 ? lineItems : null,
         payment_method: fPayment || null, tva_mention: fTva || null,
         tva_rate: rate || null,
         color: fColor || null,
@@ -517,12 +598,15 @@ const QuotesPlugin = () => {
       const num = generateNumber("invoice");
       const cl = clients.find((c: any) => c.id === fClientId);
       const rate = getEffectiveTvaRate(fTvaRate, fTvaCustom);
+      const lineItems = normalizeLineItems(fLineItems);
+      const amountHt = lineItems.reduce((sum, item) => sum + item.total_ht, 0) || parseFloat(fAmountHt) || 0;
       const finalAmount = calcFinal();
       const ribDetails = (fShowRib && (sIban || sBic)) ? { iban: sIban, bic: sBic, bank: sBank, holder: sHolder } : null;
       const { error } = await supabase.from("invoices").insert({
         user_id: user.id, invoice_number: num, title: fTitle.trim(),
         client: cl?.name || null, client_id: fClientId || null,
-        amount: finalAmount || null, amount_ht: parseFloat(fAmountHt) || null,
+        amount: finalAmount || null, amount_ht: amountHt || null,
+        line_items: lineItems.length > 0 ? lineItems : null,
         payment_method: fPayment || null, tva_mention: fTva || null,
         tva_rate: rate || null, color: fColor || null,
         discount_type: fDiscountType || null, discount_value: parseFloat(fDiscountValue) || null,
@@ -621,6 +705,7 @@ const QuotesPlugin = () => {
         user_id: user.id, invoice_number: num, title: quote.title,
         client: quote.client, client_id: quote.client_id, amount: quote.amount,
         amount_ht: quote.amount_ht, quote_id: quote.id, color: quote.color,
+        line_items: Array.isArray(quote.line_items) ? quote.line_items : null,
         payment_method: quote.payment_method, tva_mention: quote.tva_mention,
         tva_rate: quote.tva_rate,
         discount_type: quote.discount_type, discount_value: quote.discount_value,
@@ -692,7 +777,7 @@ const QuotesPlugin = () => {
   });
 
   // ── Helpers ──
-  const resetForm = () => { setFTitle(""); setFClientId(""); setFAmountHt(""); setFPayment(""); setFTva(""); setFTvaRate(0); setFTvaCustom(""); setFColor(""); setFDiscountType(""); setFDiscountValue(""); setFShowRib(false); setFShowOptions(false); setFNotes(""); setFIssueDate(new Date().toISOString().slice(0, 10)); setFPaymentTerms(""); setFPeriod(""); setShowForm(false); };
+  const resetForm = () => { setFTitle(""); setFClientId(""); setFAmountHt(""); setFLineItems([createEmptyLineItem()]); setFPayment(""); setFTva(""); setFTvaRate(0); setFTvaCustom(""); setFColor(""); setFDiscountType(""); setFDiscountValue(""); setFShowRib(false); setFShowOptions(false); setFNotes(""); setFIssueDate(new Date().toISOString().slice(0, 10)); setFPaymentTerms(""); setFPeriod(""); setShowForm(false); };
   const resetClientForm = () => { setCName(""); setCSiret(""); setCAddr(""); setCEmail(""); setCPhone(""); setEditingClient(null); setShowClientForm(false); };
   const closeCreateForms = () => { setShowForm(false); setShowClientForm(false); setShowPayForm(false); };
   const closePanels = () => { setShowExport(false); setShowShare(false); };
@@ -1025,11 +1110,72 @@ const QuotesPlugin = () => {
     </div>
   );
 
+  const renderLineItemsEditor = () => (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className={labelCls}>Prestations</p>
+          <p className="text-xs text-muted-foreground">Ajoutez une ligne par produit ou service.</p>
+        </div>
+        <button type="button" onClick={addLineItem} className="btn btn-icon-sm btn-secondary rounded-full" aria-label="Ajouter une ligne">
+          <Plus size={16} />
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {fLineItems.map((line, index) => {
+          const quantity = Number(line.quantity) || 0;
+          const unitPrice = Number(line.unitPriceHt) || 0;
+          const lineTotal = (quantity || 1) * unitPrice;
+          return (
+            <div key={index} className="rounded-lg border border-border bg-background/70 p-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  value={line.description}
+                  onChange={e => updateLineItem(index, { description: e.target.value })}
+                  placeholder="Prestation ou produit"
+                  className={`${inputCls} flex-1`}
+                />
+                <button type="button" onClick={() => removeLineItem(index)} className="btn btn-icon-sm btn-delete rounded-full" aria-label="Supprimer la ligne">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-[minmax(76px,0.7fr)_1fr_minmax(88px,0.9fr)] gap-2 items-center">
+                <input
+                  value={line.quantity}
+                  onChange={e => updateLineItem(index, { quantity: e.target.value })}
+                  placeholder="Qté"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={inputCls}
+                />
+                <input
+                  value={line.unitPriceHt}
+                  onChange={e => updateLineItem(index, { unitPriceHt: e.target.value })}
+                  placeholder="Prix HT"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={inputCls}
+                />
+                <p className="text-right text-sm font-semibold text-foreground">{fmtAmount(lineTotal)}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   // ══════════════════════ DETAIL VIEW ══════════════════════
   if (selectedItem) {
     const isQuote = !!selectedItem.quote_number;
     const itemRate = Number(selectedItem.tva_rate) || 0;
-    const itemHt = Number(selectedItem.amount_ht) || 0;
+    const selectedLineItems = getStoredLineItems(selectedItem);
+    const itemHt = selectedLineItems.length > 0
+      ? selectedLineItems.reduce((sum, line) => sum + line.total_ht, 0)
+      : Number(selectedItem.amount_ht) || 0;
     const itemDType = selectedItem.discount_type || "";
     const itemDVal = Number(selectedItem.discount_value) || 0;
     const { htAfterDiscount, tvaAmount: itemTva, ttc: itemTtc } = calcTtc(itemHt, itemDType, itemDVal, itemRate);
@@ -1128,6 +1274,17 @@ const QuotesPlugin = () => {
                 {selectedItem.period_description && <p>Période : {selectedItem.period_description}</p>}
                 {getClientName(selectedItem) && <p>Client : {getClientName(selectedItem)}</p>}
                 {selectedItem.clients?.siret && <p>SIRET : {selectedItem.clients.siret}</p>}
+                {selectedLineItems.length > 0 && (
+                  <div className="mt-2 rounded-lg border border-border bg-secondary/70 p-2 space-y-1">
+                    <p className="font-semibold text-foreground">Prestations</p>
+                    {selectedLineItems.map((line, index) => (
+                      <div key={`${line.description}-${index}`} className="flex items-start justify-between gap-3">
+                        <p className="text-foreground">{line.description || selectedItem.title} <span className="text-muted-foreground">x{line.quantity}</span></p>
+                        <p className="font-semibold text-foreground whitespace-nowrap">{fmtAmount(line.total_ht)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {itemHt > 0 && <p>Montant HT : {fmtAmount(itemHt)}</p>}
                 {selectedItem.discount_type && <p>Remise : {selectedItem.discount_type === "percent" ? `${selectedItem.discount_value}%` : fmtAmount(selectedItem.discount_value)}</p>}
                 {itemHt > 0 && htAfterDiscount !== itemHt && <p>HT après remise : {fmtAmount(htAfterDiscount)}</p>}
@@ -1456,7 +1613,7 @@ const QuotesPlugin = () => {
                   <option value="">-- Client --</option>
                   {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <input value={fAmountHt} onChange={e => setFAmountHt(e.target.value)} placeholder="Montant HT (€)" type="number" className={inputCls} />
+                {renderLineItemsEditor()}
 
                 <div className="flex gap-2 items-center">
                   <select value={fDiscountType} onChange={e => setFDiscountType(e.target.value as any)} className={`${inputCls} flex-1`}>
@@ -1468,8 +1625,9 @@ const QuotesPlugin = () => {
                 {/* TVA Rate Selection */}
                 <TvaRateSelector rate={fTvaRate} setRate={setFTvaRate} custom={fTvaCustom} setCustom={setFTvaCustom} mention={fTva} setMention={setFTva} />
 
-                {fAmountHt && (
+                {getFormAmountHt() > 0 && (
                   <div className="text-xs text-muted-foreground space-y-0.5 bg-secondary p-2 rounded-lg">
+                    <p>Total HT : <span className="font-semibold text-foreground">{fmtAmount(getFormAmountHt())}</span></p>
                     <p>HT après remise : <span className="font-semibold text-foreground">{fmtAmount(calcFinalHtAfterDiscount())}</span></p>
                     {getEffectiveTvaRate(fTvaRate, fTvaCustom) > 0 && (
                       <p>TVA ({getEffectiveTvaRate(fTvaRate, fTvaCustom)}%) : <span className="font-semibold text-foreground">{fmtAmount(calcFinalTva())}</span></p>
@@ -1523,7 +1681,7 @@ const QuotesPlugin = () => {
                   <option value="">-- Client --</option>
                   {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <input value={fAmountHt} onChange={e => setFAmountHt(e.target.value)} placeholder="Montant HT (€)" type="number" className={inputCls} />
+                {renderLineItemsEditor()}
 
                 <div className="flex gap-2 items-center">
                   <select value={fDiscountType} onChange={e => setFDiscountType(e.target.value as any)} className={`${inputCls} flex-1`}>
@@ -1534,8 +1692,9 @@ const QuotesPlugin = () => {
 
                 <TvaRateSelector rate={fTvaRate} setRate={setFTvaRate} custom={fTvaCustom} setCustom={setFTvaCustom} mention={fTva} setMention={setFTva} />
 
-                {fAmountHt && (
+                {getFormAmountHt() > 0 && (
                   <div className="text-xs text-muted-foreground space-y-0.5 bg-secondary p-2 rounded-lg">
+                    <p>Total HT : <span className="font-semibold text-foreground">{fmtAmount(getFormAmountHt())}</span></p>
                     <p>HT après remise : <span className="font-semibold text-foreground">{fmtAmount(calcFinalHtAfterDiscount())}</span></p>
                     {getEffectiveTvaRate(fTvaRate, fTvaCustom) > 0 && (
                       <p>TVA ({getEffectiveTvaRate(fTvaRate, fTvaCustom)}%) : <span className="font-semibold text-foreground">{fmtAmount(calcFinalTva())}</span></p>
