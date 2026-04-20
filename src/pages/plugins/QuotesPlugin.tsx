@@ -18,9 +18,10 @@ import { jsPDF } from "jspdf";
 
 const statusColors: Record<string, string> = {
   Brouillon: "0 0% 50%", Envoyé: "217 91% 60%", Accepté: "142 71% 45%",
-  Payé: "38 50% 58%", "En retard": "0 72% 51%",
+  Payé: "38 50% 58%", Reçu: "38 50% 58%", "En retard": "0 72% 51%",
 };
-const statuses = ["Brouillon", "Envoyé", "Accepté", "Payé", "En retard"];
+const quoteStatuses = ["Brouillon", "Envoyé", "Accepté"];
+const invoiceStatuses = ["Brouillon", "Envoyé", "Payé", "En retard"];
 const paymentMethods = ["Virement", "CB", "Espèces", "Chèque"];
 const tvaMentions = [
   "TVA non applicable, art. 293 B du CGI",
@@ -44,6 +45,7 @@ const labelCls = "field-label";
 // ── Helpers ──
 const fmtAmount = (n: number) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
 const formatDate = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const csvEscape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 
 const calcTtc = (ht: number, discountType: string, discountValue: number, tvaRate: number) => {
   let base = ht;
@@ -582,7 +584,7 @@ const QuotesPlugin = () => {
   const addPayment = useMutation({
     mutationFn: async ({ invoice, method }: { invoice: any; method: string }) => {
       if (!user || !invoice.amount) return;
-      const { error } = await supabase.from("payments").insert({ user_id: user.id, invoice_id: invoice.id, amount: invoice.amount, status: "Payé", method, paid_at: new Date().toISOString() });
+      const { error } = await supabase.from("payments").insert({ user_id: user.id, invoice_id: invoice.id, amount: invoice.amount, status: "Reçu", method, paid_at: new Date().toISOString() });
       if (error) throw error;
       await supabase.from("invoices").update({ status: "Payé" }).eq("id", invoice.id);
     },
@@ -611,7 +613,7 @@ const QuotesPlugin = () => {
       // Create payment
       const { error: payErr } = await supabase.from("payments").insert({
         user_id: user.id, invoice_id: inv.id, amount: ttc,
-        status: "Payé", method: pMethod || null, paid_at: new Date().toISOString(),
+        status: "Reçu", method: pMethod || null, paid_at: new Date().toISOString(),
       });
       if (payErr) throw payErr;
       if (settings?.id) {
@@ -642,6 +644,12 @@ const QuotesPlugin = () => {
   const resetClientForm = () => { setCName(""); setCSiret(""); setCAddr(""); setCEmail(""); setCPhone(""); setEditingClient(null); setShowClientForm(false); };
   const closeCreateForms = () => { setShowForm(false); setShowClientForm(false); setShowPayForm(false); };
   const closePanels = () => { setShowExport(false); setShowShare(false); };
+  const prepareDocumentForm = () => {
+    setFPayment(sDefaultPayment || "");
+    setFTva(sDefaultTva || "");
+    setFTvaRate(0);
+    setFTvaCustom("");
+  };
   const editClientFn = (c: any) => { setCName(c.name); setCSiret(c.siret || ""); setCAddr(c.address || ""); setCEmail(c.email || ""); setCPhone(c.phone || ""); setEditingClient(c); setShowClientForm(true); };
   const getClientName = (item: any) => item.clients?.name || item.client || "";
   const profileName = profile?.full_name || [sFirstName, sLastName].filter(Boolean).join(" ") || "SWAN";
@@ -755,22 +763,117 @@ const QuotesPlugin = () => {
   };
 
   // ── Batch export/share ──
-  const handleExport = async (format: "pdf" | "csv") => {
+  const buildExportItems = () => {
     const exportItems: any[] = [];
-    if (exportSections.devis) quotes.forEach((q: any) => exportItems.push({ ...q, client_name: getClientName(q), siret: q.clients?.siret, address: q.clients?.address }));
-    if (exportSections.factures) invoices.forEach((i: any) => exportItems.push({ ...i, client_name: getClientName(i), siret: i.clients?.siret, address: i.clients?.address }));
+    if (exportSections.devis) quotes.forEach((q: any) => exportItems.push({ ...q, kind: "Devis", number: q.quote_number, client_name: getClientName(q), siret: q.clients?.siret, address: q.clients?.address }));
+    if (exportSections.factures) invoices.forEach((i: any) => exportItems.push({ ...i, kind: "Facture", number: i.invoice_number, client_name: getClientName(i), siret: i.clients?.siret, address: i.clients?.address }));
+    if (exportSections.paiements) payments.forEach((p: any) => exportItems.push({
+      kind: "Paiement",
+      number: p.invoices?.invoice_number || "",
+      title: p.invoices?.title || "Paiement",
+      client_name: p.invoices?.clients?.name || p.invoices?.client || "",
+      amount: p.amount,
+      status: p.status,
+      method: p.method,
+      created_at: p.paid_at || p.created_at,
+    }));
+    if (exportSections.clients) clients.forEach((c: any) => exportItems.push({
+      kind: "Client",
+      number: "",
+      title: c.name,
+      client_name: c.name,
+      siret: c.siret,
+      address: c.address,
+      amount: "",
+      status: "",
+      method: "",
+      created_at: c.created_at,
+    }));
+    return exportItems;
+  };
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const buildCsvBlob = (exportItems: any[]) => {
+    const headers = ["Type", "Numéro", "Titre", "Client", "SIRET", "Adresse", "Montant", "Statut", "Mode", "Date"];
+    const rows = exportItems.map((item: any) => [
+      item.kind,
+      item.number || item.quote_number || item.invoice_number || "",
+      item.title || "",
+      item.client_name || getClientName(item),
+      item.siret || "",
+      item.address || "",
+      item.amount ? fmtAmount(Number(item.amount)) : "",
+      item.status || "",
+      item.method || item.payment_method || "",
+      item.created_at ? formatDate(item.created_at) : "",
+    ]);
+    const csv = [headers, ...rows].map(row => row.map(csvEscape).join(";")).join("\n");
+    return new Blob([csv], { type: "text/csv;charset=utf-8" });
+  };
+
+  const buildPdfBlob = (exportItems: any[]) => {
+    const pdf = new jsPDF("p", "mm", "a4");
+    const margin = 14;
+    let y = 18;
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(15);
+    pdf.text("SWAN - Devis & Factures", margin, y);
+    y += 8;
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.text(`Export du ${new Date().toLocaleDateString("fr-FR")}`, margin, y);
+    y += 10;
+
+    exportItems.forEach((item: any) => {
+      if (y > 276) {
+        pdf.addPage();
+        y = 18;
+      }
+      const num = item.number || item.quote_number || item.invoice_number || "";
+      const amount = item.amount ? fmtAmount(Number(item.amount)) : "";
+      const line = `${item.kind} ${num} - ${item.title || ""}`;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.text(pdf.splitTextToSize(line, 180), margin, y);
+      y += 5;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      const details = [
+        item.client_name || getClientName(item),
+        amount,
+        item.status,
+        item.method || item.payment_method,
+        item.created_at ? formatDate(item.created_at) : "",
+      ].filter(Boolean).join(" | ");
+      pdf.text(pdf.splitTextToSize(details || "-", 180), margin, y);
+      y += 8;
+    });
+
+    return pdf.output("blob");
+  };
+
+  const handleExport = async (format: "pdf" | "csv") => {
+    const exportItems = buildExportItems();
     if (exportItems.length === 0) { toast.error("Aucune donnée"); return; }
     toast.loading("Export...");
     try {
-      const { data, error } = await supabase.functions.invoke("export-quotes", { body: { items: exportItems, title: "Devis & Factures", format } });
-      if (error) throw error;
-      const b64 = format === "csv" ? data.csv_base64 : data.pdf_base64;
-      const mime = format === "csv" ? "text/csv" : "application/pdf";
+      const blob = format === "csv" ? buildCsvBlob(exportItems) : buildPdfBlob(exportItems);
       const ext = format === "csv" ? "csv" : "pdf";
-      const blob = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: mime });
-      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `export.${ext}`; a.click(); URL.revokeObjectURL(url);
-      toast.dismiss(); toast.success(`${ext.toUpperCase()} téléchargé !`);
-    } catch { toast.dismiss(); toast.error("Erreur export"); }
+      downloadBlob(blob, `devis-factures-${new Date().toISOString().slice(0, 10)}.${ext}`);
+      toast.dismiss();
+      toast.success(`${ext.toUpperCase()} téléchargé !`);
+    } catch {
+      toast.dismiss();
+      toast.error("Erreur export");
+    }
     setShowExport(false);
   };
 
@@ -779,6 +882,7 @@ const QuotesPlugin = () => {
     if (exportSections.devis) quotes.forEach((q: any) => lines.push(`${q.quote_number} - ${q.title} - ${getClientName(q)} - ${q.amount ? fmtAmount(q.amount) : "-"} - ${q.status}`));
     if (exportSections.factures) invoices.forEach((i: any) => lines.push(`${i.invoice_number} - ${i.title} - ${getClientName(i)} - ${i.amount ? fmtAmount(i.amount) : "-"} - ${i.status}`));
     if (exportSections.paiements) payments.forEach((p: any) => lines.push(`Paiement ${p.invoices?.invoice_number || ""} - ${fmtAmount(p.amount)} - ${p.method || ""}`));
+    if (lines.length === 0) { toast.error("Aucune donnée à partager"); return; }
     const text = "SWAN — Devis & Factures\n\n" + lines.join("\n");
     if (method === "copy") { navigator.clipboard.writeText(text); toast.success("Copié !"); }
     else if (method === "email") window.open(`mailto:?subject=${encodeURIComponent("Devis & Factures")}&body=${encodeURIComponent(text)}`);
@@ -998,7 +1102,7 @@ const QuotesPlugin = () => {
           <div>
             <p className={`${labelCls} mb-2`}>Changer le statut</p>
             <div className="flex flex-wrap gap-1.5">
-              {statuses.map(s => (
+              {(isQuote ? quoteStatuses : invoiceStatuses).map(s => (
                 <button key={s} onClick={() => {
                   if (!window.confirm(`Changer le statut en "${s}" ?`)) return;
                   updateStatus.mutate({ id: selectedItem.id, status: s, type: isQuote ? "quotes" : "invoices" });
@@ -1065,7 +1169,10 @@ const QuotesPlugin = () => {
     closeCreateForms();
     if (tab === "clients") setShowClientForm(true);
     else if (tab === "paiements") setShowPayForm(true);
-    else setShowForm(true);
+    else {
+      prepareDocumentForm();
+      setShowForm(true);
+    }
   };
 
   return (
@@ -1195,8 +1302,8 @@ const QuotesPlugin = () => {
               <textarea value={sLegal} onChange={e => setSLegal(e.target.value)} rows={3} placeholder="Mentions légales affichées sur devis/factures..." className={inputCls} />
             </div>
 
-            <button onClick={() => saveSettings.mutate()} className="btn btn-primary btn-full">
-              <Check size={16} /> Sauvegarder les réglages
+            <button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending} className="btn btn-primary btn-full">
+              <Check size={16} /> {saveSettings.isPending ? "Sauvegarde..." : "Sauvegarder les réglages"}
             </button>
           </div>
         )}
@@ -1351,7 +1458,9 @@ const QuotesPlugin = () => {
                   </div>
                 )}
 
-                <button onClick={() => addQuote.mutate()} disabled={!fTitle.trim()} className="btn btn-primary btn-full">Créer le devis</button>
+                <button onClick={() => addQuote.mutate()} disabled={!fTitle.trim() || addQuote.isPending} className="btn btn-primary btn-full">
+                  {addQuote.isPending ? "Création..." : "Créer le devis"}
+                </button>
               </div>
             )}
 
@@ -1415,7 +1524,9 @@ const QuotesPlugin = () => {
                   </div>
                 )}
 
-                <button onClick={() => addInvoice.mutate()} disabled={!fTitle.trim()} className="btn btn-primary btn-full">Créer la facture</button>
+                <button onClick={() => addInvoice.mutate()} disabled={!fTitle.trim() || addInvoice.isPending} className="btn btn-primary btn-full">
+                  {addInvoice.isPending ? "Création..." : "Créer la facture"}
+                </button>
               </div>
             )}
 
@@ -1424,7 +1535,7 @@ const QuotesPlugin = () => {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="field-input pl-9" />
             </div>
             <div className="flex gap-1 overflow-x-auto mb-4">
-              {["all", ...statuses].map(s => (
+              {["all", ...(tab === "devis" ? quoteStatuses : invoiceStatuses)].map(s => (
                 <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${statusFilter === s ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{s === "all" ? "Tout" : s}</button>
               ))}
             </div>
@@ -1525,8 +1636,8 @@ const QuotesPlugin = () => {
                       <p className="text-muted-foreground mt-1">Une facture n° {generateNumber("invoice")} sera automatiquement créée.</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => addStandalonePayment.mutate()} className="btn btn-primary" style={{ flex: 1 }}>
-                        <Check size={16} /> Valider
+                      <button onClick={() => addStandalonePayment.mutate()} disabled={addStandalonePayment.isPending} className="btn btn-primary" style={{ flex: 1 }}>
+                        <Check size={16} /> {addStandalonePayment.isPending ? "Validation..." : "Valider"}
                       </button>
                       <button onClick={() => setPConfirmStep(false)} className="btn btn-icon-sm btn-ghost"><X size={16} /></button>
                     </div>
