@@ -118,11 +118,11 @@ const ReportFolderManager = ({ folders, colorOptions, onClose }: Props) => {
                 key={option.value}
                 onClick={() => setColor(option.value)}
                 title={option.label}
-                className={`w-10 h-10 rounded-full border-2 transition-all ${color === option.value ? "scale-105 shadow-lg" : "border-transparent"}`}
+                className="w-11 h-11 rounded-lg border-4 transition-all"
                 style={{
                   backgroundColor: `hsl(${option.value})`,
-                  borderColor: color === option.value ? `hsl(${option.value})` : "transparent",
-                  boxShadow: color === option.value ? `0 0 0 3px hsl(${option.value} / 0.28)` : undefined,
+                  borderColor: color === option.value ? "hsl(var(--primary))" : "hsl(var(--background))",
+                  boxShadow: color === option.value ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
                 }}
                 aria-pressed={color === option.value}
               />

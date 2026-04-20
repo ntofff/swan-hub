@@ -31,6 +31,25 @@ const priorityOptions = [
   { value: "urgent", label: "Urgent", cls: "bg-destructive/15 text-destructive" },
 ];
 
+const getColorPanelStyle = (color: string): CSSProperties => ({
+  borderColor: `hsl(${color})`,
+  boxShadow: `inset 5px 0 0 hsl(${color}), 0 0 0 3px hsl(${color} / 0.12)`,
+});
+
+const getColorChoiceStyle = (value: string, selected: string): CSSProperties => ({
+  backgroundColor: `hsl(${value})`,
+  borderColor: selected === value ? "hsl(var(--primary))" : "hsl(var(--background))",
+  boxShadow: selected === value ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
+});
+
+const ColorSelectedBanner = ({ color }: { color: string }) => (
+  <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold"
+    style={{ borderColor: `hsl(${color})`, backgroundColor: `hsl(${color} / 0.12)`, color: `hsl(${color})` }}>
+    <span>Couleur sélectionnée</span>
+    <span className="h-6 w-6 rounded-md border-2 border-background" style={{ backgroundColor: `hsl(${color})` }} />
+  </div>
+);
+
 const shareActions = [
   { id: "copy", icon: Copy, label: "Copier" },
   { id: "email", icon: Mail, label: "Email" },
@@ -335,7 +354,8 @@ const LogbookPlugin = () => {
         )}
 
         {showForm && (
-          <div className="field-form-panel space-y-4 slide-up">
+          <div className="field-form-panel space-y-4 slide-up transition-all" style={getColorPanelStyle(newColor)}>
+            <ColorSelectedBanner color={newColor} />
             <div>
               <label className="field-label">Étiquette</label>
               <div className="field-choice-row">
@@ -353,11 +373,12 @@ const LogbookPlugin = () => {
             </div>
             <div>
               <label className="field-label">Couleur</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {colorOptions.map(c => (
-                  <button key={c.value} onClick={() => setNewColor(c.value)} title={c.label}
-                    className={`w-11 h-11 rounded-lg border-2 transition-all ${newColor === c.value ? "border-foreground scale-105" : "border-transparent"}`}
-                    style={{ backgroundColor: `hsl(${c.value})` }} />
+                  <button key={c.value} type="button" onClick={() => setNewColor(c.value)} title={c.label}
+                    className="w-11 h-11 rounded-lg border-4 transition-all"
+                    style={getColorChoiceStyle(c.value, newColor)}
+                    aria-pressed={newColor === c.value} />
                 ))}
               </div>
             </div>
@@ -415,7 +436,8 @@ const LogbookPlugin = () => {
                   style={{ "--record-color": `hsl(${e.color || "38 50% 58%"})` } as CSSProperties}
                   onClick={selectMode ? () => toggleSelect(e.id) : undefined}>
                   {editingId === e.id ? (
-                    <div className="space-y-3" onClick={ev => ev.stopPropagation()}>
+                    <div className="space-y-3 rounded-xl border p-3 transition-all" style={getColorPanelStyle(editColor)} onClick={ev => ev.stopPropagation()}>
+                      <ColorSelectedBanner color={editColor} />
                       <div className="flex gap-1.5">
                         {priorityOptions.map(p => (
                           <button key={p.value} onClick={() => setEditPriority(p.value)}
@@ -427,11 +449,12 @@ const LogbookPlugin = () => {
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 flex-wrap">
                         {colorOptions.map(c => (
-                          <button key={c.value} onClick={() => setEditColor(c.value)}
-                            className={`w-9 h-9 rounded-lg border-2 transition-all ${editColor === c.value ? "border-foreground scale-105 shadow-sm" : "border-transparent"}`}
-                            style={{ backgroundColor: `hsl(${c.value})` }} />
+                          <button key={c.value} type="button" onClick={() => setEditColor(c.value)}
+                            className="w-11 h-11 rounded-lg border-4 transition-all"
+                            style={getColorChoiceStyle(c.value, editColor)}
+                            aria-pressed={editColor === c.value} />
                         ))}
                       </div>
                       <div className="grid grid-cols-2 gap-2">

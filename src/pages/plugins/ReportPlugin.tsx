@@ -462,9 +462,14 @@ const ReportPlugin = () => {
 
         {/* Form */}
         <div
-          className="field-form-panel space-y-4"
-          style={{ borderLeft: `4px solid hsl(${color})`, boxShadow: `0 0 0 3px hsl(${color} / 0.08), var(--shadow-md)` }}
+          className="field-form-panel space-y-4 transition-all"
+          style={{ borderColor: `hsl(${color})`, boxShadow: `inset 5px 0 0 hsl(${color}), 0 0 0 3px hsl(${color} / 0.12), var(--shadow-md)` }}
         >
+          <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold"
+            style={{ borderColor: `hsl(${color})`, backgroundColor: `hsl(${color} / 0.12)`, color: `hsl(${color})` }}>
+            <span>Couleur sélectionnée</span>
+            <span className="h-6 w-6 rounded-md border-2 border-background" style={{ backgroundColor: `hsl(${color})` }} />
+          </div>
           {editingId && (
             <div className="flex items-center justify-between bg-primary/10 px-3 py-2 rounded-lg">
               <span className="text-xs font-medium text-primary">Mode édition</span>
@@ -567,12 +572,12 @@ const ReportPlugin = () => {
                 <label className="field-label">Couleur</label>
                 <div className="flex flex-wrap gap-1.5">
                   {colorOptions.map((c) => (
-                    <button key={c.value} onClick={() => setColor(c.value)} title={c.label}
-                      className={`w-11 h-11 rounded-lg border-2 transition-all ${color === c.value ? "scale-105 shadow-lg" : "border-transparent"}`}
+                    <button key={c.value} type="button" onClick={() => setColor(c.value)} title={c.label}
+                      className="w-11 h-11 rounded-lg border-4 transition-all"
                       style={{
                         backgroundColor: `hsl(${c.value})`,
-                        borderColor: color === c.value ? `hsl(${c.value})` : "transparent",
-                        boxShadow: color === c.value ? `0 0 0 3px hsl(${c.value} / 0.28)` : undefined,
+                        borderColor: color === c.value ? "hsl(var(--primary))" : "hsl(var(--background))",
+                        boxShadow: color === c.value ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
                       }}
                       aria-pressed={color === c.value} />
                   ))}
