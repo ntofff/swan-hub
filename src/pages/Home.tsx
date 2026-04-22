@@ -49,6 +49,17 @@ function formatRelativeTime(date: string): string {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
+function getTimestamp(date?: string | null): number {
+  if (!date) return 0;
+  const timestamp = new Date(date).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function shortText(value?: string | null, fallback = 'Sans titre'): string {
+  const text = (value || fallback).trim();
+  return text.length > 70 ? `${text.slice(0, 67)}...` : text;
+}
+
 // ── Composant principal ───────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate();
@@ -141,42 +152,198 @@ export default function HomePage() {
   const { data: activity = [] } = useQuery({
     queryKey: ['home_activity'],
     queryFn: async () => {
-      const [reports, tasks] = await Promise.all([
+      const [
+        reports,
+        tasks,
+        quotes,
+        invoices,
+        missions,
+        logEntries,
+        trips,
+        vehicles,
+        drivers,
+        routes,
+      ] = await Promise.allSettled([
         supabase
           .from('reports')
-          .select('id, title, created_at')
+          .select('id, title, created_at, updated_at')
+          .eq('user_id', user!.id)
           .order('created_at', { ascending: false })
-          .limit(12),
+          .limit(8),
         supabase
           .from('tasks')
           .select('id, text, done, updated_at')
+          .eq('user_id', user!.id)
           .order('updated_at', { ascending: false })
-          .limit(12),
+          .limit(8),
+        supabase
+          .from('quotes')
+          .select('id, title, quote_number, client, status, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('updated_at', { ascending: false })
+          .limit(8),
+        supabase
+          .from('invoices')
+          .select('id, title, invoice_number, client, status, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('updated_at', { ascending: false })
+          .limit(8),
+        supabase
+          .from('missions')
+          .select('id, title, status, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('updated_at', { ascending: false })
+          .limit(8),
+        supabase
+          .from('log_entries')
+          .select('id, text, priority, entry_date, created_at')
+          .eq('user_id', user!.id)
+          .order('entry_date', { ascending: false })
+          .limit(8),
+        supabase
+          .from('trips')
+          .select('id, purpose, start_location, end_location, date, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('created_at', { ascending: false })
+          .limit(8),
+        supabase
+          .from('vehicles')
+          .select('id, name, brand_model, license_plate, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('updated_at', { ascending: false })
+          .limit(8),
+        supabase
+          .from('drivers')
+          .select('id, name, role, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('updated_at', { ascending: false })
+          .limit(8),
+        supabase
+          .from('frequent_routes')
+          .select('id, name, start_location, end_location, created_at')
+          .eq('user_id', user!.id)
+          .order('created_at', { ascending: false })
+          .limit(8),
       ]);
+
+      const dataOf = (result: PromiseSettledResult<any>) => (
+        result.status === 'fulfilled' && !result.value.error ? result.value.data ?? [] : []
+      );
+
       const items = [
-        ...(reports.data ?? []).map((r: any) => ({
+        ...dataOf(reports).map((r: any) => ({
           id: `r-${r.id}`,
-          text: r.title,
+          text: shortText(r.title, 'Rapport sans titre'),
           type: 'report',
           icon: FileText,
           path: '/plugins/report',
-          time: formatRelativeTime(r.created_at),
-          timestamp: new Date(r.created_at).getTime(),
+          time: formatRelativeTime(r.updated_at || r.created_at),
+          timestamp: getTimestamp(r.updated_at || r.created_at),
           label: 'Rapport',
+          color: '38 50% 58%',
         })),
-        ...(tasks.data ?? []).map((t: any) => ({
+        ...dataOf(tasks).map((t: any) => ({
           id: `t-${t.id}`,
-          text: t.text.slice(0, 50),
+          text: shortText(t.text, 'Tâche sans titre'),
           type: 'task',
           icon: CheckSquare,
           path: '/plugins/tasks',
           time: formatRelativeTime(t.updated_at),
-          timestamp: new Date(t.updated_at).getTime(),
+          timestamp: getTimestamp(t.updated_at),
           label: 'Tâche',
           done: t.done,
+          color: '142 71% 45%',
+        })),
+        ...dataOf(quotes).map((q: any) => ({
+          id: `q-${q.id}`,
+          text: shortText(`${q.quote_number ? `${q.quote_number} - ` : ''}${q.title || q.client || 'Devis sans titre'}`),
+          type: 'quote',
+          icon: Receipt,
+          path: '/plugins/quotes',
+          time: formatRelativeTime(q.updated_at || q.created_at),
+          timestamp: getTimestamp(q.updated_at || q.created_at),
+          label: 'Devis',
+          color: '270 50% 60%',
+        })),
+        ...dataOf(invoices).map((i: any) => ({
+          id: `i-${i.id}`,
+          text: shortText(`${i.invoice_number ? `${i.invoice_number} - ` : ''}${i.title || i.client || 'Facture sans titre'}`),
+          type: 'invoice',
+          icon: Receipt,
+          path: '/plugins/quotes',
+          time: formatRelativeTime(i.updated_at || i.created_at),
+          timestamp: getTimestamp(i.updated_at || i.created_at),
+          label: 'Facture',
+          color: '270 50% 60%',
+        })),
+        ...dataOf(missions).map((m: any) => ({
+          id: `m-${m.id}`,
+          text: shortText(m.title, 'Mission sans titre'),
+          type: 'mission',
+          icon: Target,
+          path: '/plugins/missions',
+          time: formatRelativeTime(m.updated_at || m.created_at),
+          timestamp: getTimestamp(m.updated_at || m.created_at),
+          label: 'Mission',
+          color: '217 91% 60%',
+        })),
+        ...dataOf(logEntries).map((entry: any) => ({
+          id: `l-${entry.id}`,
+          text: shortText(entry.text, 'Note sans titre'),
+          type: 'logbook',
+          icon: BookOpen,
+          path: '/plugins/logbook',
+          time: formatRelativeTime(entry.entry_date || entry.created_at),
+          timestamp: getTimestamp(entry.entry_date || entry.created_at),
+          label: 'Journal',
+          color: entry.priority === 'urgent' ? '0 65% 55%' : entry.priority === 'important' ? '38 85% 50%' : '142 50% 45%',
+        })),
+        ...dataOf(trips).map((trip: any) => ({
+          id: `trip-${trip.id}`,
+          text: shortText(trip.purpose || `${trip.start_location || 'Départ'} → ${trip.end_location || 'Arrivée'}`, 'Trajet'),
+          type: 'trip',
+          icon: Car,
+          path: '/plugins/vehicle',
+          time: formatRelativeTime(trip.updated_at || trip.created_at || trip.date),
+          timestamp: getTimestamp(trip.updated_at || trip.created_at || trip.date),
+          label: 'Trajet',
+          color: '38 92% 50%',
+        })),
+        ...dataOf(vehicles).map((vehicle: any) => ({
+          id: `vehicle-${vehicle.id}`,
+          text: shortText(vehicle.name || vehicle.brand_model || vehicle.license_plate, 'Véhicule'),
+          type: 'vehicle',
+          icon: Car,
+          path: '/plugins/vehicle',
+          time: formatRelativeTime(vehicle.updated_at || vehicle.created_at),
+          timestamp: getTimestamp(vehicle.updated_at || vehicle.created_at),
+          label: 'Véhicule',
+          color: '38 92% 50%',
+        })),
+        ...dataOf(drivers).map((driver: any) => ({
+          id: `driver-${driver.id}`,
+          text: shortText(driver.name, 'Conducteur'),
+          type: 'driver',
+          icon: Users,
+          path: '/plugins/vehicle',
+          time: formatRelativeTime(driver.updated_at || driver.created_at),
+          timestamp: getTimestamp(driver.updated_at || driver.created_at),
+          label: 'Conducteur',
+          color: '38 92% 50%',
+        })),
+        ...dataOf(routes).map((route: any) => ({
+          id: `route-${route.id}`,
+          text: shortText(route.name || `${route.start_location || 'Départ'} → ${route.end_location || 'Arrivée'}`, 'Itinéraire'),
+          type: 'route',
+          icon: Car,
+          path: '/plugins/vehicle',
+          time: formatRelativeTime(route.created_at),
+          timestamp: getTimestamp(route.created_at),
+          label: 'Itinéraire',
+          color: '38 92% 50%',
         })),
       ];
-      return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
+      return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30);
     },
     enabled: !!user,
     staleTime: 30_000,
@@ -317,7 +484,7 @@ export default function HomePage() {
               Prêt à démarrer
             </p>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: '4px' }}>
-              Créez votre premier rapport ou votre première tâche
+              Créez votre premier élément dans un outil
             </p>
           </div>
         ) : (
@@ -358,7 +525,7 @@ export default function HomePage() {
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-2)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
-                <item.icon size={16} style={{ color: 'var(--color-text-3)', flexShrink: 0 }} />
+                <item.icon size={16} style={{ color: `hsl(${item.color})`, flexShrink: 0 }} />
                 <span
                   style={{
                     flex: 1,
@@ -403,7 +570,7 @@ export default function HomePage() {
           <DialogHeader>
             <DialogTitle>Fil d'activité</DialogTitle>
             <DialogDescription>
-              Vos derniers rapports et tâches, du plus récent au plus ancien.
+              Les dernières actions de tous vos outils, du plus récent au plus ancien.
             </DialogDescription>
           </DialogHeader>
           <div style={{ overflowY: 'auto', paddingRight: 4, display: 'grid', gap: 'var(--space-2)', maxHeight: 'calc(78dvh - 140px)' }}>
@@ -422,7 +589,7 @@ export default function HomePage() {
                   }}
                   className="plugin-record"
                   style={{
-                    '--record-color': item.type === 'report' ? 'hsl(38 50% 58%)' : 'hsl(217 91% 60%)',
+                    '--record-color': `hsl(${item.color})`,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 'var(--space-3)',
@@ -430,8 +597,16 @@ export default function HomePage() {
                     width: '100%',
                   } as CSSProperties}
                 >
-                  <div className="plugin-icon-wrapper" style={{ width: 44, height: 44, flexShrink: 0 }}>
-                    <item.icon size={18} />
+                  <div
+                    className="plugin-icon-wrapper"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      flexShrink: 0,
+                      backgroundColor: `hsl(${item.color} / 0.12)`,
+                    }}
+                  >
+                    <item.icon size={18} style={{ color: `hsl(${item.color})` }} />
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 2 }}>
