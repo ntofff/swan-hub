@@ -42,14 +42,6 @@ const getColorChoiceStyle = (value: string, selected: string): CSSProperties => 
   boxShadow: selected === value ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
 });
 
-const ColorSelectedBanner = ({ color }: { color: string }) => (
-  <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold"
-    style={{ borderColor: `hsl(${color})`, backgroundColor: `hsl(${color} / 0.12)`, color: `hsl(${color})` }}>
-    <span>Couleur sélectionnée</span>
-    <span className="h-6 w-6 rounded-md border-2 border-background" style={{ backgroundColor: `hsl(${color})` }} />
-  </div>
-);
-
 const shareActions = [
   { id: "copy", icon: Copy, label: "Copier" },
   { id: "email", icon: Mail, label: "Email" },
@@ -355,7 +347,6 @@ const LogbookPlugin = () => {
 
         {showForm && (
           <div className="field-form-panel space-y-4 slide-up transition-all" style={getColorPanelStyle(newColor)}>
-            <ColorSelectedBanner color={newColor} />
             <div>
               <label className="field-label">Étiquette</label>
               <div className="field-choice-row">
@@ -437,7 +428,6 @@ const LogbookPlugin = () => {
                   onClick={selectMode ? () => toggleSelect(e.id) : undefined}>
                   {editingId === e.id ? (
                     <div className="space-y-3 rounded-xl border p-3 transition-all" style={getColorPanelStyle(editColor)} onClick={ev => ev.stopPropagation()}>
-                      <ColorSelectedBanner color={editColor} />
                       <div className="flex gap-1.5">
                         {priorityOptions.map(p => (
                           <button key={p.value} onClick={() => setEditPriority(p.value)}
