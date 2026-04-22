@@ -638,7 +638,9 @@ const TasksPlugin = () => {
                             <Archive size={14} />
                           </button>
                           <button onClick={() => setDeleteConfirm(t.id)}
-                            className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
+                            className="btn btn-icon-sm btn-delete rounded-full" title="Supprimer">
+                            <Trash2 size={14} />
+                          </button>
                         </>
                       )}
                       {tab === "archived" && (
@@ -647,7 +649,9 @@ const TasksPlugin = () => {
                             <Archive size={14} />
                           </button>
                           <button onClick={() => setDeleteConfirm(t.id)}
-                            className="btn btn-icon-sm btn-delete rounded-full"><Trash2 size={14} /></button>
+                            className="btn btn-icon-sm btn-delete rounded-full" title="Supprimer définitivement">
+                            <Trash2 size={14} />
+                          </button>
                         </>
                       )}
                     </div>
@@ -697,7 +701,7 @@ const TasksPlugin = () => {
             <button onClick={() => setDeleteConfirm(null)}
               className="btn btn-secondary" style={{ flex: 1 }}>Annuler</button>
             <button onClick={() => deleteConfirm && deleteTask.mutate(deleteConfirm)}
-              className="btn btn-danger" style={{ flex: 1 }}>Supprimer</button>
+              className="btn btn-delete" style={{ flex: 1 }}>Supprimer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
