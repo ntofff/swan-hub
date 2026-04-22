@@ -465,11 +465,6 @@ const ReportPlugin = () => {
           className="field-form-panel space-y-4 transition-all"
           style={{ borderColor: `hsl(${color})`, boxShadow: `inset 5px 0 0 hsl(${color}), 0 0 0 3px hsl(${color} / 0.12), var(--shadow-md)` }}
         >
-          <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold"
-            style={{ borderColor: `hsl(${color})`, backgroundColor: `hsl(${color} / 0.12)`, color: `hsl(${color})` }}>
-            <span>Couleur sélectionnée</span>
-            <span className="h-6 w-6 rounded-md border-2 border-background" style={{ backgroundColor: `hsl(${color})` }} />
-          </div>
           {editingId && (
             <div className="flex items-center justify-between bg-primary/10 px-3 py-2 rounded-lg">
               <span className="text-xs font-medium text-primary">Mode édition</span>
