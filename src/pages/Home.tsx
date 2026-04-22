@@ -28,6 +28,13 @@ const ICON_MAP: Record<string, any> = {
   Users, Wallet, Calendar, Banknote, Timer, Package, ShieldCheck,
 };
 
+const TOOL_COLORS = ACTIVE_PLUGINS.reduce<Record<string, string>>((acc, plugin) => {
+  acc[plugin.id] = plugin.color;
+  return acc;
+}, {});
+
+const getToolColor = (toolId: string) => TOOL_COLORS[toolId] || '38 50% 58%';
+
 // ── Utilitaires ───────────────────────────────────────────────
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -240,7 +247,7 @@ export default function HomePage() {
           time: formatRelativeTime(r.updated_at || r.created_at),
           timestamp: getTimestamp(r.updated_at || r.created_at),
           label: 'Rapport',
-          color: '38 50% 58%',
+          color: getToolColor('report'),
         })),
         ...dataOf(tasks).map((t: any) => ({
           id: `t-${t.id}`,
@@ -252,7 +259,7 @@ export default function HomePage() {
           timestamp: getTimestamp(t.updated_at),
           label: 'Tâche',
           done: t.done,
-          color: '142 71% 45%',
+          color: getToolColor('tasks'),
         })),
         ...dataOf(quotes).map((q: any) => ({
           id: `q-${q.id}`,
@@ -263,7 +270,7 @@ export default function HomePage() {
           time: formatRelativeTime(q.updated_at || q.created_at),
           timestamp: getTimestamp(q.updated_at || q.created_at),
           label: 'Devis',
-          color: '270 50% 60%',
+          color: getToolColor('quotes'),
         })),
         ...dataOf(invoices).map((i: any) => ({
           id: `i-${i.id}`,
@@ -274,7 +281,7 @@ export default function HomePage() {
           time: formatRelativeTime(i.updated_at || i.created_at),
           timestamp: getTimestamp(i.updated_at || i.created_at),
           label: 'Facture',
-          color: '270 50% 60%',
+          color: getToolColor('quotes'),
         })),
         ...dataOf(missions).map((m: any) => ({
           id: `m-${m.id}`,
@@ -285,7 +292,7 @@ export default function HomePage() {
           time: formatRelativeTime(m.updated_at || m.created_at),
           timestamp: getTimestamp(m.updated_at || m.created_at),
           label: 'Mission',
-          color: '217 91% 60%',
+          color: getToolColor('missions'),
         })),
         ...dataOf(logEntries).map((entry: any) => ({
           id: `l-${entry.id}`,
@@ -296,7 +303,7 @@ export default function HomePage() {
           time: formatRelativeTime(entry.entry_date || entry.created_at),
           timestamp: getTimestamp(entry.entry_date || entry.created_at),
           label: 'Journal',
-          color: entry.priority === 'urgent' ? '0 65% 55%' : entry.priority === 'important' ? '38 85% 50%' : '142 50% 45%',
+          color: getToolColor('logbook'),
         })),
         ...dataOf(trips).map((trip: any) => ({
           id: `trip-${trip.id}`,
@@ -307,7 +314,7 @@ export default function HomePage() {
           time: formatRelativeTime(trip.updated_at || trip.created_at || trip.date),
           timestamp: getTimestamp(trip.updated_at || trip.created_at || trip.date),
           label: 'Trajet',
-          color: '38 92% 50%',
+          color: getToolColor('vehicle'),
         })),
         ...dataOf(vehicles).map((vehicle: any) => ({
           id: `vehicle-${vehicle.id}`,
@@ -318,7 +325,7 @@ export default function HomePage() {
           time: formatRelativeTime(vehicle.updated_at || vehicle.created_at),
           timestamp: getTimestamp(vehicle.updated_at || vehicle.created_at),
           label: 'Véhicule',
-          color: '38 92% 50%',
+          color: getToolColor('vehicle'),
         })),
         ...dataOf(drivers).map((driver: any) => ({
           id: `driver-${driver.id}`,
@@ -329,7 +336,7 @@ export default function HomePage() {
           time: formatRelativeTime(driver.updated_at || driver.created_at),
           timestamp: getTimestamp(driver.updated_at || driver.created_at),
           label: 'Conducteur',
-          color: '38 92% 50%',
+          color: getToolColor('vehicle'),
         })),
         ...dataOf(routes).map((route: any) => ({
           id: `route-${route.id}`,
@@ -340,7 +347,7 @@ export default function HomePage() {
           time: formatRelativeTime(route.created_at),
           timestamp: getTimestamp(route.created_at),
           label: 'Itinéraire',
-          color: '38 92% 50%',
+          color: getToolColor('vehicle'),
         })),
       ];
       return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30);
