@@ -819,25 +819,27 @@ h4 { font-size: var(--text-lg); font-weight: 600; }
 }
 
 .btn-delete {
-  background: var(--color-danger-bg);
+  background: rgba(239, 68, 68, 0.14);
   color: var(--color-danger);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.08);
 }
 
 .btn-delete:hover {
   border-color: var(--color-danger);
-  background: rgba(239, 68, 68, 0.14);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .btn-archive {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(59, 130, 246, 0.16);
   color: rgb(37, 99, 235);
-  border: 1px solid rgba(59, 130, 246, 0.28);
+  border: 1px solid rgba(59, 130, 246, 0.42);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.08);
 }
 
 .btn-archive:hover {
   border-color: rgba(59, 130, 246, 0.55);
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(59, 130, 246, 0.22);
 }
 
 .dark .btn-archive {
