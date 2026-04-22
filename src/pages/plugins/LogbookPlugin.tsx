@@ -13,33 +13,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-
-const colorOptions = [
-  { value: "38 50% 58%", label: "Sable" },
-  { value: "210 60% 55%", label: "Bleu" },
-  { value: "142 50% 45%", label: "Vert" },
-  { value: "0 65% 55%", label: "Rouge" },
-  { value: "280 55% 55%", label: "Violet" },
-  { value: "45 85% 55%", label: "Jaune" },
-  { value: "195 75% 45%", label: "Cyan" },
-  { value: "25 75% 55%", label: "Orange" },
-];
+import { jsPDF } from "jspdf";
 
 const priorityOptions = [
-  { value: "normale", label: "Normale", cls: "" },
-  { value: "important", label: "Important", cls: "bg-warning/15 text-warning" },
-  { value: "urgent", label: "Urgent", cls: "bg-destructive/15 text-destructive" },
+  { value: "normale", label: "Normale", color: "142 50% 45%", cls: "bg-success/15 text-success" },
+  { value: "important", label: "Important", color: "38 85% 50%", cls: "bg-warning/15 text-warning" },
+  { value: "urgent", label: "Urgent", color: "0 65% 55%", cls: "bg-destructive/15 text-destructive" },
 ];
 
-const getColorPanelStyle = (color: string): CSSProperties => ({
-  borderColor: `hsl(${color})`,
-  boxShadow: `inset 5px 0 0 hsl(${color}), 0 0 0 3px hsl(${color} / 0.12)`,
-});
+const exportFieldOptions = [
+  { key: "seq", label: "ID" },
+  { key: "date", label: "Date" },
+  { key: "priority", label: "Urgence" },
+  { key: "text", label: "Note" },
+] as const;
 
-const getColorChoiceStyle = (value: string, selected: string): CSSProperties => ({
-  backgroundColor: `hsl(${value})`,
-  borderColor: selected === value ? "hsl(var(--primary))" : "hsl(var(--background))",
-  boxShadow: selected === value ? "0 0 0 3px hsl(var(--primary) / 0.28)" : "0 0 0 1px hsl(var(--border))",
+type ExportField = (typeof exportFieldOptions)[number]["key"];
+
+const getPriorityInfo = (p: string) => priorityOptions.find(o => o.value === p) || priorityOptions[0];
+const getPriorityColor = (p: string) => getPriorityInfo(p).color;
+
+const getPriorityPanelStyle = (priority: string): CSSProperties => ({
+  borderColor: `hsl(${getPriorityColor(priority)})`,
+  boxShadow: `inset 5px 0 0 hsl(${getPriorityColor(priority)}), 0 0 0 3px hsl(${getPriorityColor(priority)} / 0.12)`,
 });
 
 const shareActions = [
@@ -75,13 +71,18 @@ const LogbookPlugin = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportFields, setExportFields] = useState<Record<ExportField, boolean>>({
+    seq: true,
+    date: true,
+    priority: true,
+    text: true,
+  });
 
   // Delete confirm dialog
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // New entry state
   const [newEntry, setNewEntry] = useState("");
-  const [newColor, setNewColor] = useState("38 50% 58%");
   const [newPriority, setNewPriority] = useState("normale");
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("");
@@ -89,7 +90,6 @@ const LogbookPlugin = () => {
   // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const [editColor, setEditColor] = useState("38 50% 58%");
   const [editPriority, setEditPriority] = useState("normale");
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -116,13 +116,13 @@ const LogbookPlugin = () => {
         : new Date().toISOString();
       const nextSeq = String(allEntries.length + 1).padStart(3, "0");
       const { error } = await supabase.from("log_entries").insert({
-        user_id: user.id, text: newEntry.trim(), color: newColor, priority: newPriority, entry_date: entryDate, seq_number: nextSeq,
+        user_id: user.id, text: newEntry.trim(), color: getPriorityColor(newPriority), priority: newPriority, entry_date: entryDate, seq_number: nextSeq,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["log_entries"] });
-      setNewEntry(""); setNewColor("38 50% 58%"); setNewPriority("normale"); setNewDate(""); setNewTime("");
+      setNewEntry(""); setNewPriority("normale"); setNewDate(""); setNewTime("");
       setShowForm(false);
       toast.success("Entrée ajoutée");
     },
@@ -167,9 +167,9 @@ const LogbookPlugin = () => {
   });
 
   const updateEntry = useMutation({
-    mutationFn: async (payload: { id: string; text: string; color: string; priority: string; entry_date: string }) => {
+    mutationFn: async (payload: { id: string; text: string; priority: string; entry_date: string }) => {
       const { id, ...rest } = payload;
-      const { error } = await supabase.from("log_entries").update(rest as any).eq("id", id);
+      const { error } = await supabase.from("log_entries").update({ ...rest, color: getPriorityColor(rest.priority) } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -198,13 +198,11 @@ const LogbookPlugin = () => {
   };
 
   const getEntryDate = (e: any) => e.entry_date || e.created_at;
-  const getPriorityInfo = (p: string) => priorityOptions.find(o => o.value === p) || priorityOptions[0];
 
   const startEdit = (e: any) => {
     const d = new Date(getEntryDate(e));
     setEditingId(e.id);
     setEditText(e.text);
-    setEditColor(e.color || "38 50% 58%");
     setEditPriority(e.priority || "normale");
     setEditDate(d.toISOString().slice(0, 10));
     setEditTime(d.toTimeString().slice(0, 5));
@@ -215,7 +213,7 @@ const LogbookPlugin = () => {
     const entryDate = editDate && editTime
       ? new Date(`${editDate}T${editTime}`).toISOString()
       : new Date().toISOString();
-    updateEntry.mutate({ id: editingId, text: editText.trim(), color: editColor, priority: editPriority, entry_date: entryDate });
+    updateEntry.mutate({ id: editingId, text: editText.trim(), priority: editPriority, entry_date: entryDate });
   };
 
   // Selection logic
@@ -248,27 +246,112 @@ const LogbookPlugin = () => {
     setShowShareMenu(false);
   };
 
+  const toggleExportField = (field: ExportField) => {
+    setExportFields(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
   const handleExportPdf = async () => {
     const selected = getSelectedEntries();
     if (selected.length === 0) { toast.error("Aucune entrée à exporter"); return; }
+    const enabledFields = exportFieldOptions.filter(field => exportFields[field.key]);
+    if (enabledFields.length === 0) { toast.error("Choisis au moins une information à exporter"); return; }
+
     setExporting(true);
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const { data: profileData } = await supabase.from("profiles").select("full_name").eq("user_id", currentUser?.id ?? "").maybeSingle();
       const userName = profileData?.full_name || currentUser?.email || "Utilisateur";
-      const { data, error } = await supabase.functions.invoke("export-logbook", { body: { entries: selected, userName } });
-      if (error) throw error;
-      if (data?.pdf_base64) {
-        const byteChars = atob(data.pdf_base64);
-        const byteArray = new Uint8Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
-        const blob = new Blob([byteArray], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = `journal-de-bord-${new Date().toISOString().slice(0, 10)}.pdf`;
-        a.click(); URL.revokeObjectURL(url);
-        toast.success("PDF téléchargé");
-      }
+
+      const pdf = new jsPDF("l", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const usableWidth = pageWidth - margin * 2;
+      const fixedWidths: Partial<Record<ExportField, number>> = { seq: 24, date: 44, priority: 30 };
+      const textWidth = exportFields.text
+        ? Math.max(70, usableWidth - enabledFields.reduce((sum, field) => sum + (field.key === "text" ? 0 : fixedWidths[field.key] || 28), 0))
+        : 0;
+      const columns = enabledFields.map(field => ({
+        ...field,
+        width: field.key === "text" ? textWidth : fixedWidths[field.key] || 28,
+      }));
+
+      const drawHeader = () => {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(16);
+        pdf.text("Journal de bord", margin, 16);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        pdf.text(`Export du ${new Date().toLocaleDateString("fr-FR")} - ${userName}`, margin, 22);
+        pdf.text(`${selected.length} entree${selected.length > 1 ? "s" : ""}`, pageWidth - margin, 22, { align: "right" });
+        pdf.setDrawColor(210);
+        pdf.line(margin, 27, pageWidth - margin, 27);
+      };
+
+      const drawTableHeader = (y: number) => {
+        let x = margin;
+        pdf.setFillColor(242, 240, 235);
+        pdf.rect(margin, y - 5, usableWidth, 8, "F");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        columns.forEach(col => {
+          pdf.text(col.label, x + 2, y);
+          x += col.width;
+        });
+        return y + 8;
+      };
+
+      const formatExportDate = (value: string) => new Date(value).toLocaleString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const getCellValue = (entry: any, key: ExportField) => {
+        if (key === "seq") return entry.seq_number ? `#${entry.seq_number}` : "-";
+        if (key === "date") return formatExportDate(getEntryDate(entry));
+        if (key === "priority") return getPriorityInfo(entry.priority).label;
+        return entry.text || "-";
+      };
+
+      drawHeader();
+      let y = drawTableHeader(34);
+
+      selected.forEach((entry: any) => {
+        const cellLines = columns.map(col => pdf.splitTextToSize(String(getCellValue(entry, col.key)), col.width - 4));
+        const rowHeight = Math.max(10, ...cellLines.map(lines => lines.length * 4 + 4));
+
+        if (y + rowHeight > pageHeight - margin) {
+          pdf.addPage();
+          drawHeader();
+          y = drawTableHeader(34);
+        }
+
+        let x = margin;
+        pdf.setDrawColor(225);
+        pdf.line(margin, y - 3, pageWidth - margin, y - 3);
+        pdf.setFillColor(138, 106, 30);
+        pdf.rect(margin, y - 2, 1.5, rowHeight - 2, "F");
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+
+        columns.forEach((col, index) => {
+          pdf.text(cellLines[index], x + 2, y + 2);
+          x += col.width;
+        });
+        y += rowHeight;
+      });
+
+      const blob = pdf.output("blob");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `journal-de-bord-${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF téléchargé");
     } catch (e) {
       console.error(e);
       toast.error("Erreur lors de l'export");
@@ -281,7 +364,7 @@ const LogbookPlugin = () => {
         action={
           <div className="flex items-center gap-1.5">
             <TutorialButton {...TOOL_TUTORIALS.logbook} />
-            {allEntries.length > 0 && tab === "active" && (
+            {entries.length > 0 && (
               <button onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
                 className={`btn btn-icon-sm ${selectMode ? "btn-ghost" : "btn-ghost"}`}>
                 <CheckSquare size={18} />
@@ -297,7 +380,7 @@ const LogbookPlugin = () => {
 
       <div className="field-workspace">
         <div className="field-simple-note">
-          Rapide : notez l'essentiel, choisissez une couleur, puis enregistrez.
+          Rapide : notez l'essentiel, choisissez l'urgence, puis enregistrez.
         </div>
         {/* Tabs */}
         <div className="flex gap-1 bg-secondary rounded-xl p-1">
@@ -312,7 +395,7 @@ const LogbookPlugin = () => {
         </div>
 
         {/* Selection toolbar */}
-        {selectMode && tab === "active" && (
+        {selectMode && (
           <div className="glass-card p-3 space-y-2 slide-up">
             <div className="flex items-center justify-between">
               <button onClick={selectAll} className="btn btn-secondary btn-xs">
@@ -332,6 +415,20 @@ const LogbookPlugin = () => {
                 <Share2 size={14} /> Partager
               </button>
             </div>
+            <div className="rounded-xl border border-border bg-background/50 p-2">
+              <p className="mb-2 text-xs font-semibold text-muted-foreground">Informations dans le PDF</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {exportFieldOptions.map(field => (
+                  <button key={field.key} type="button" onClick={() => toggleExportField(field.key)}
+                    className={`flex items-center gap-2 rounded-lg border px-2 py-2 text-xs font-semibold transition-colors ${
+                      exportFields[field.key] ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                    }`}>
+                    {exportFields[field.key] ? <CheckSquare size={13} /> : <Square size={13} />}
+                    {field.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             {showShareMenu && (
               <div className="flex gap-1.5 pt-1">
                 {shareActions.map(s => (
@@ -346,9 +443,9 @@ const LogbookPlugin = () => {
         )}
 
         {showForm && (
-          <div className="field-form-panel space-y-4 slide-up transition-all" style={getColorPanelStyle(newColor)}>
+          <div className="field-form-panel space-y-4 slide-up transition-all" style={getPriorityPanelStyle(newPriority)}>
             <div>
-              <label className="field-label">Étiquette</label>
+              <label className="field-label">Urgence</label>
               <div className="field-choice-row">
                 {priorityOptions.map(p => (
                   <button key={p.value} onClick={() => setNewPriority(p.value)}
@@ -359,17 +456,6 @@ const LogbookPlugin = () => {
                     {p.value === "urgent" && <AlertTriangle size={10} className="inline mr-1" />}
                     {p.label}
                   </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="field-label">Couleur</label>
-              <div className="flex gap-2 flex-wrap">
-                {colorOptions.map(c => (
-                  <button key={c.value} type="button" onClick={() => setNewColor(c.value)} title={c.label}
-                    className="w-11 h-11 rounded-lg border-4 transition-all"
-                    style={getColorChoiceStyle(c.value, newColor)}
-                    aria-pressed={newColor === c.value} />
                 ))}
               </div>
             </div>
@@ -424,10 +510,10 @@ const LogbookPlugin = () => {
               return (
                 <div key={e.id}
                   className={`plugin-record space-y-2 ${selectMode ? "cursor-pointer" : ""} ${isSelected ? "ring-1 ring-primary/30" : ""} ${e.archived ? "opacity-70" : ""}`}
-                  style={{ "--record-color": `hsl(${e.color || "38 50% 58%"})` } as CSSProperties}
+                  style={{ "--record-color": `hsl(${getPriorityColor(e.priority)})` } as CSSProperties}
                   onClick={selectMode ? () => toggleSelect(e.id) : undefined}>
                   {editingId === e.id ? (
-                    <div className="space-y-3 rounded-xl border p-3 transition-all" style={getColorPanelStyle(editColor)} onClick={ev => ev.stopPropagation()}>
+                    <div className="space-y-3 rounded-xl border p-3 transition-all" style={getPriorityPanelStyle(editPriority)} onClick={ev => ev.stopPropagation()}>
                       <div className="flex gap-1.5">
                         {priorityOptions.map(p => (
                           <button key={p.value} onClick={() => setEditPriority(p.value)}
@@ -437,14 +523,6 @@ const LogbookPlugin = () => {
                             } ${p.cls && editPriority === p.value ? p.cls + " border-transparent" : ""}`}>
                             {p.label}
                           </button>
-                        ))}
-                      </div>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {colorOptions.map(c => (
-                          <button key={c.value} type="button" onClick={() => setEditColor(c.value)}
-                            className="w-11 h-11 rounded-lg border-4 transition-all"
-                            style={getColorChoiceStyle(c.value, editColor)}
-                            aria-pressed={editColor === c.value} />
                         ))}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
