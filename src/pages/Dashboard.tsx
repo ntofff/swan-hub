@@ -30,8 +30,13 @@ export default function Dashboard() {
 
   // Plugins accessibles par l'utilisateur
   const accessiblePlugins = useMemo(
-    () => ACTIVE_PLUGINS.filter((p) => hasAccessToPlugin(p.id)),
-    [hasAccessToPlugin]
+    () => {
+      const visibleIds = profile?.visible_plugin_ids?.length ? profile.visible_plugin_ids : null;
+      return ACTIVE_PLUGINS
+        .filter((p) => hasAccessToPlugin(p.id))
+        .filter((p) => profile?.plan !== 'pro' || !visibleIds || visibleIds.includes(p.id));
+    },
+    [hasAccessToPlugin, profile?.plan, profile?.visible_plugin_ids]
   );
 
   // ── Requête globale des KPIs ────────────────────────────

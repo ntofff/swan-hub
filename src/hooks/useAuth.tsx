@@ -26,6 +26,13 @@ export interface Profile {
   subscription_current_period_end: string | null;
   plan_updated_at: string | null;
   active_plugins: string[];
+  trial_plugin_ids: string[];
+  paid_plugin_ids: string[];
+  visible_plugin_ids: string[];
+  subscription_cancel_at_period_end: boolean;
+  trial_reminder_sent_at: string | null;
+  manual_access_until: string | null;
+  manual_access_note: string | null;
   trade: string | null;              // 'btp', 'services', etc.
   theme: string;
   is_vip: boolean;
@@ -236,14 +243,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!profile) return false;
       if (isAdmin) return true;
       if (profile.is_vip) return true;
-      const paidPlanUsable = !profile.subscription_status || ['active', 'trialing'].includes(profile.subscription_status);
+      const now = Date.now();
+      const trialActive = profile.trial_ends_at ? new Date(profile.trial_ends_at).getTime() > now : false;
+      const periodActive = profile.subscription_current_period_end
+        ? new Date(profile.subscription_current_period_end).getTime() > now
+        : false;
+      const manualActive = profile.manual_access_until
+        ? new Date(profile.manual_access_until).getTime() > now
+        : false;
+      const paidPlanUsable = manualActive || (
+        ['active', 'trialing'].includes(profile.subscription_status || '') &&
+        (!profile.subscription_current_period_end || periodActive)
+      );
+
       if (profile.plan === 'pro') return paidPlanUsable;
       if (profile.plan === 'free') {
-        // 3 plugins au choix pendant 2 mois
-        return (profile.active_plugins || []).includes(pluginId);
+        return trialActive && (profile.trial_plugin_ids || []).includes(pluginId);
       }
       if (profile.plan === 'carte') {
-        return paidPlanUsable && (profile.active_plugins || []).includes(pluginId);
+        return paidPlanUsable && (profile.paid_plugin_ids || []).includes(pluginId);
       }
       return false;
     },

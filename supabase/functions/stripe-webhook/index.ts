@@ -59,6 +59,17 @@ const normalizePlan = (plan?: string | null) =>
 const stripeId = (value: unknown) =>
   typeof value === "string" ? value : typeof value === "object" && value && "id" in value ? String((value as { id: string }).id) : "";
 
+const parsePluginIds = (value?: string | null) =>
+  value
+    ? [...new Set(value.split(",").map((id) => id.trim()).filter(Boolean))]
+    : [];
+
+const buildEntitlementUpdates = (plan: string, pluginIds: string[]) => ({
+  paid_plugin_ids: plan === "carte" ? pluginIds : [],
+  active_plugins: plan === "carte" ? pluginIds : pluginIds,
+  visible_plugin_ids: pluginIds,
+});
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -101,11 +112,14 @@ Deno.serve(async (req) => {
         const userId = String(session.metadata?.user_id || "");
         if (!userId) throw new Error("Session Stripe sans user_id.");
         const plan = normalizePlan(session.metadata?.plan_id);
+        const pluginIds = parsePluginIds(session.metadata?.plugin_ids);
         await updateByUser(userId, {
           plan,
           stripe_customer_id: stripeId(session.customer),
           stripe_subscription_id: stripeId(session.subscription),
           subscription_status: "active",
+          subscription_cancel_at_period_end: false,
+          ...buildEntitlementUpdates(plan, pluginIds),
         });
         break;
       }
@@ -114,6 +128,7 @@ Deno.serve(async (req) => {
       case "customer.subscription.updated": {
         const subscription = event.data.object;
         const plan = normalizePlan(subscription.metadata?.plan_id);
+        const pluginIds = parsePluginIds(subscription.metadata?.plugin_ids);
         const status = subscription.status;
         const isActive = status === "active" || status === "trialing";
         const isEnded = status === "canceled" || status === "unpaid" || status === "incomplete_expired";
@@ -122,6 +137,8 @@ Deno.serve(async (req) => {
           stripe_subscription_id: isEnded ? null : subscription.id,
           subscription_status: status,
           subscription_current_period_end: toDate(subscription.current_period_end),
+          subscription_cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+          ...(isEnded ? { paid_plugin_ids: [] } : buildEntitlementUpdates(plan, pluginIds)),
         };
 
         if (subscription.metadata?.user_id) await updateByUser(subscription.metadata.user_id, updates);
@@ -136,6 +153,8 @@ Deno.serve(async (req) => {
           stripe_subscription_id: null,
           subscription_status: "canceled",
           subscription_current_period_end: toDate(subscription.current_period_end),
+          subscription_cancel_at_period_end: false,
+          paid_plugin_ids: [],
         };
 
         if (subscription.metadata?.user_id) await updateByUser(subscription.metadata.user_id, updates);

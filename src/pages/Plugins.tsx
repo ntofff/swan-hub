@@ -3,7 +3,7 @@
 // Catalogue : outils actifs + outils à venir
 // ============================================================
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, CheckSquare, Target, Receipt, BookOpen, Car,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ACTIVE_PLUGINS, LOCKED_PLUGINS, TRADES } from '@/config/tokens';
+import { toast } from 'sonner';
 
 const ICON_MAP: Record<string, any> = {
   FileText, CheckSquare, Target, Receipt, BookOpen, Car,
@@ -20,7 +21,30 @@ const ICON_MAP: Record<string, any> = {
 
 export default function Plugins() {
   const navigate = useNavigate();
-  const { profile, hasAccessToPlugin } = useAuth();
+  const { profile, hasAccessToPlugin, updateProfile } = useAuth();
+  const [savingVisibility, setSavingVisibility] = useState<string | null>(null);
+  const visiblePluginIds = profile?.visible_plugin_ids?.length
+    ? profile.visible_plugin_ids
+    : profile?.plan === 'pro'
+      ? ACTIVE_PLUGINS.map((plugin) => plugin.id)
+      : profile?.paid_plugin_ids?.length
+        ? profile.paid_plugin_ids
+        : profile?.trial_plugin_ids || [];
+  const trialDaysLeft = profile?.trial_ends_at
+    ? Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / 86_400_000)
+    : null;
+  const trialIsActive = trialDaysLeft !== null && trialDaysLeft > 0;
+
+  const toggleProVisibility = async (pluginId: string) => {
+    if (profile?.plan !== 'pro') return;
+    setSavingVisibility(pluginId);
+    const next = visiblePluginIds.includes(pluginId)
+      ? visiblePluginIds.filter((id) => id !== pluginId)
+      : [...visiblePluginIds, pluginId];
+    const { error } = await updateProfile({ visible_plugin_ids: next });
+    setSavingVisibility(null);
+    if (error) toast.error(error.message);
+  };
 
   // Tri : outils pertinents pour le métier en premier
   const sortedActive = useMemo(() => {
@@ -62,10 +86,16 @@ export default function Plugins() {
             </div>
             <div style={{ minWidth: 0 }}>
               <h2 style={{ fontSize: 'var(--text-lg)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
-                3 outils gratuits, toujours
+                Vos outils disponibles
               </h2>
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.45 }}>
-                Ajoutez les autres à 1,20 € TTC par mois, activez ou désactivez à volonté.
+                {profile?.plan === 'pro'
+                  ? 'Pro illimité : tous les outils sont inclus. Choisissez ceux à afficher dans votre espace.'
+                  : profile?.plan === 'carte'
+                    ? `${profile.paid_plugin_ids?.length || 0} outil${(profile.paid_plugin_ids?.length || 0) > 1 ? 's' : ''} payé${(profile.paid_plugin_ids?.length || 0) > 1 ? 's' : ''} ce mois-ci.`
+                    : trialIsActive
+                      ? `Essai : ${trialDaysLeft} jour${trialDaysLeft && trialDaysLeft > 1 ? 's' : ''} restant${trialDaysLeft && trialDaysLeft > 1 ? 's' : ''} sur vos 3 outils.`
+                      : 'Votre essai est terminé. Choisissez les outils à conserver.'}
               </p>
             </div>
           </div>
@@ -116,6 +146,20 @@ export default function Plugins() {
                   <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.45, fontWeight: 600 }}>
                     {plugin.description}
                   </p>
+                  {profile?.plan === 'pro' && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleProVisibility(plugin.id);
+                      }}
+                      disabled={savingVisibility === plugin.id}
+                      className="btn btn-secondary btn-sm"
+                      style={{ marginTop: 'var(--space-2)' }}
+                    >
+                      {visiblePluginIds.includes(plugin.id) ? 'Masquer du menu' : 'Afficher'}
+                    </button>
+                  )}
                 </div>
 
                 {hasAccess ? (

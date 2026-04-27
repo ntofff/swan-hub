@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { planId, pluginCount } = await req.json();
+    const { planId, pluginCount, pluginIds } = await req.json();
     if (planId !== "carte" && planId !== "pro") {
       return json({ error: "Plan invalide" });
     }
@@ -68,8 +68,14 @@ Deno.serve(async (req) => {
     const priceId = planId === "pro" ? proPrice : pluginPrice;
     if (!priceId) throw new Error("Prix Stripe manquant pour ce plan.");
 
-    const paidPluginCount = Math.max(1, Number(pluginCount || 0) - 3);
+    const selectedPluginIds = Array.isArray(pluginIds)
+      ? [...new Set(pluginIds.map(String).filter(Boolean))]
+      : [];
+    const paidPluginCount = selectedPluginIds.length || Math.max(1, Number(pluginCount || 0) - 3);
     const quantity = planId === "carte" ? paidPluginCount : 1;
+    if (planId === "carte" && selectedPluginIds.length === 0) {
+      return json({ error: "Sélectionnez au moins un outil à payer." });
+    }
 
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
@@ -99,9 +105,11 @@ Deno.serve(async (req) => {
       "metadata[user_id]": user.id,
       "metadata[plan_id]": planId,
       "metadata[plugin_count]": String(pluginCount || ""),
+      "metadata[plugin_ids]": selectedPluginIds.join(","),
       "subscription_data[metadata][user_id]": user.id,
       "subscription_data[metadata][plan_id]": planId,
       "subscription_data[metadata][plugin_count]": String(pluginCount || ""),
+      "subscription_data[metadata][plugin_ids]": selectedPluginIds.join(","),
     });
 
     return json({ url: session.url });

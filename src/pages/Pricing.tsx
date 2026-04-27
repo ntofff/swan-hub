@@ -3,11 +3,11 @@
 // 3 plans : Découverte · À la carte · Pro illimité
 // ============================================================
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check, Sparkles, ChevronRight, ChevronLeft, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS, FREE_PLUGIN_ALLOWANCE } from '@/config/tokens';
+import { ACTIVE_PLUGINS, PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS } from '@/config/tokens';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,15 +17,27 @@ export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  const [pluginCount, setPluginCount] = useState(
-    Math.max(profile?.active_plugins?.length || FREE_PLUGIN_ALLOWANCE, FREE_PLUGIN_ALLOWANCE)
-  );
+  const [selectedPluginIds, setSelectedPluginIds] = useState<string[]>([]);
 
-  // Calcul coût à la carte : 3 outils restent gratuits, seuls les outils supplémentaires sont facturés.
-  const paidPluginCount = Math.max(0, pluginCount - FREE_PLUGIN_ALLOWANCE);
+  const maxCartePlugins = Math.floor(BUSINESS.PRO_PRICE_TTC / BUSINESS.PLUGIN_PRICE_TTC);
+  const paidPluginCount = selectedPluginIds.length;
   const carteCost = paidPluginCount * BUSINESS.PLUGIN_PRICE_TTC;
   const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
   const hasStripeSubscription = !!profile?.stripe_customer_id && profile?.plan !== 'free';
+  const availablePluginIds = useMemo(() => ACTIVE_PLUGINS.map((plugin) => plugin.id), []);
+  const trialEndsAt = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+  const trialDaysLeft = trialEndsAt ? Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000) : null;
+  const trialIsActive = trialDaysLeft !== null && trialDaysLeft > 0;
+
+  useEffect(() => {
+    if (!profile) return;
+    const baseSelection = profile.plan === 'carte' && profile.paid_plugin_ids?.length
+      ? profile.paid_plugin_ids
+      : profile.trial_plugin_ids?.length
+        ? profile.trial_plugin_ids
+        : profile.active_plugins || [];
+    setSelectedPluginIds(baseSelection.filter((id) => availablePluginIds.includes(id)).slice(0, maxCartePlugins));
+  }, [availablePluginIds, maxCartePlugins, profile]);
 
   const getBillingErrorMessage = (error: unknown) => {
     const message = error instanceof Error ? error.message : '';
@@ -56,9 +68,15 @@ export default function Pricing() {
       return;
     }
 
+    const pluginIds = plan.id === 'pro' ? availablePluginIds : selectedPluginIds;
+    if (plan.id === 'carte' && pluginIds.length === 0) {
+      toast.error('Sélectionnez au moins un outil à payer.');
+      return;
+    }
+
     setLoadingPlan(plan.id);
     supabase.functions.invoke('create-checkout-session', {
-      body: { planId: plan.id, pluginCount },
+      body: { planId: plan.id, pluginCount: pluginIds.length, pluginIds },
     }).then(({ data, error }) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -124,46 +142,80 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* ── Simulateur ── */}
+      {/* ── Sélection à la carte ── */}
       <section className="px-4" style={{ marginBottom: 'var(--space-6)' }}>
         <div className="card card-glow" style={{ padding: 'var(--space-5)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>
-            Combien d'outils utilisez-vous ?
+          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+            Choisir les outils à payer
           </h3>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
+            Chaque paiement valide une licence pour l'outil choisi. Vous pouvez annuler, le mois en cours reste acquis.
+          </p>
 
-          <div style={{ marginBottom: 'var(--space-4)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-              <button
-                onClick={() => setPluginCount(Math.max(FREE_PLUGIN_ALLOWANCE, pluginCount - 1))}
-                className="btn btn-icon btn-secondary"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <div
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 'var(--text-4xl)',
-                  fontWeight: 500,
-                  minWidth: 80,
-                  textAlign: 'center',
-                  color: 'var(--color-primary)',
-                }}
-              >
-                {pluginCount}
-              </div>
-              <button
-                onClick={() => setPluginCount(Math.min(13, pluginCount + 1))}
-                className="btn btn-icon btn-secondary"
-              >
-                <ChevronRight size={18} />
-              </button>
+          {trialIsActive && (
+            <div
+              className="card"
+              style={{
+                padding: 'var(--space-3)',
+                marginBottom: 'var(--space-4)',
+                background: trialDaysLeft <= 7 ? 'var(--color-warning-bg)' : 'var(--color-info-bg)',
+                borderColor: trialDaysLeft <= 7 ? 'var(--color-warning)' : 'var(--color-info)',
+              }}
+            >
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5 }}>
+                Essai Découverte actif : encore <strong>{trialDaysLeft} jour{trialDaysLeft && trialDaysLeft > 1 ? 's' : ''}</strong>.
+                {trialDaysLeft && trialDaysLeft <= 7 ? ' Pensez à choisir les outils à conserver.' : ' Vos 3 outils restent gratuits pendant cette période.'}
+              </p>
             </div>
-            <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)' }}>
-              {pluginCount} outil{pluginCount > 1 ? 's' : ''} activé{pluginCount > 1 ? 's' : ''}
-              <span style={{ color: 'var(--color-text-3)' }}>
-                {' '}· {paidPluginCount} facturé{paidPluginCount > 1 ? 's' : ''}
-              </span>
-            </p>
+          )}
+
+          <div style={{ display: 'grid', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+            {ACTIVE_PLUGINS.map((plugin) => {
+              const selected = selectedPluginIds.includes(plugin.id);
+              return (
+                <button
+                  key={plugin.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPluginIds((current) => {
+                      if (current.includes(plugin.id)) return current.filter((id) => id !== plugin.id);
+                      if (current.length >= maxCartePlugins) {
+                        toast.info('Au-delà, Pro illimité devient plus simple et plus avantageux.');
+                        return current;
+                      }
+                      return [...current, plugin.id];
+                    });
+                  }}
+                  className="card card-interactive"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-3)',
+                    border: `1.5px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: selected ? 'var(--color-primary-glow)' : 'var(--color-surface)',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 12,
+                      height: 36,
+                      borderRadius: 'var(--radius-sm)',
+                      background: `hsl(${plugin.color})`,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 800 }}>{plugin.name}</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.4 }}>
+                      {plugin.shortDesc}
+                    </div>
+                  </div>
+                  {selected && <Check size={18} style={{ color: 'var(--color-primary)' }} strokeWidth={3} />}
+                </button>
+              );
+            })}
           </div>
 
           {/* Comparaison visuelle */}
@@ -192,7 +244,7 @@ export default function Pricing() {
                 {carteCost.toFixed(2)} €
               </div>
               <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-3)', marginTop: 4 }}>
-                3 gratuits inclus
+                {paidPluginCount} outil{paidPluginCount > 1 ? 's' : ''}
               </div>
             </div>
             <div style={{ textAlign: 'center', borderLeft: '1px solid var(--color-border)' }}>
@@ -231,7 +283,9 @@ export default function Pricing() {
       {/* ── Plans ── */}
       <section className="px-4 field-responsive-grid field-responsive-grid-3">
         {PLANS.map((plan) => {
-          const isCurrent = profile?.plan === plan.id;
+          const currentPaidPlugins = [...(profile?.paid_plugin_ids || [])].sort().join(',');
+          const selectedPaidPlugins = [...selectedPluginIds].sort().join(',');
+          const isCurrent = profile?.plan === plan.id && (plan.id !== 'carte' || currentPaidPlugins === selectedPaidPlugins);
 
           return (
             <div

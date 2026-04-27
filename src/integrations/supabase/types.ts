@@ -736,18 +736,25 @@ export type Database = {
           id: string
           is_beta: boolean
           is_vip: boolean
+          manual_access_note: string | null
+          manual_access_until: string | null
+          paid_plugin_ids: string[]
           plan: string
           plan_updated_at: string | null
           phone: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          subscription_cancel_at_period_end: boolean
           subscription_current_period_end: string | null
           subscription_status: string | null
           theme: string
           trade: string | null
           trial_ends_at: string | null
+          trial_plugin_ids: string[]
+          trial_reminder_sent_at: string | null
           updated_at: string
           user_id: string
+          visible_plugin_ids: string[]
           vip_granted_at: string | null
         }
         Insert: {
@@ -760,18 +767,25 @@ export type Database = {
           id?: string
           is_beta?: boolean
           is_vip?: boolean
+          manual_access_note?: string | null
+          manual_access_until?: string | null
+          paid_plugin_ids?: string[]
           plan?: string
           plan_updated_at?: string | null
           phone?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_cancel_at_period_end?: boolean
           subscription_current_period_end?: string | null
           subscription_status?: string | null
           theme?: string
           trade?: string | null
           trial_ends_at?: string | null
+          trial_plugin_ids?: string[]
+          trial_reminder_sent_at?: string | null
           updated_at?: string
           user_id: string
+          visible_plugin_ids?: string[]
           vip_granted_at?: string | null
         }
         Update: {
@@ -784,18 +798,25 @@ export type Database = {
           id?: string
           is_beta?: boolean
           is_vip?: boolean
+          manual_access_note?: string | null
+          manual_access_until?: string | null
+          paid_plugin_ids?: string[]
           plan?: string
           plan_updated_at?: string | null
           phone?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_cancel_at_period_end?: boolean
           subscription_current_period_end?: string | null
           subscription_status?: string | null
           theme?: string
           trade?: string | null
           trial_ends_at?: string | null
+          trial_plugin_ids?: string[]
+          trial_reminder_sent_at?: string | null
           updated_at?: string
           user_id?: string
+          visible_plugin_ids?: string[]
           vip_granted_at?: string | null
         }
         Relationships: []

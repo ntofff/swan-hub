@@ -17,10 +17,9 @@ function run(command, fallback = "") {
 
 const commit = process.env.VERCEL_GIT_COMMIT_SHA || run("git rev-parse HEAD", "local");
 const shortCommit = commit.slice(0, 7);
-const count = process.env.VERCEL_GIT_COMMIT_REF
-  ? run("git rev-list --count HEAD", "0")
-  : run("git rev-list --count HEAD", "0");
-const buildNumber = Number(count) > 0 ? count : String(Date.now());
+const count = Number(run("git rev-list --count HEAD", "0"));
+const dirty = !process.env.VERCEL_GIT_COMMIT_SHA && run("git status --porcelain", "") !== "";
+const buildNumber = count > 0 ? count + (dirty ? 1 : 0) : String(Date.now());
 const builtAt = new Date().toISOString();
 const version = packageJson.version || "1.1.0";
 

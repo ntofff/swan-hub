@@ -5,13 +5,25 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Shield, Check, Sparkles, AlertCircle } from 'lucide-react';
+import {
+  ArrowRight, Shield, Check, Sparkles, AlertCircle,
+  FileText, CheckSquare, Target, Receipt, BookOpen, Car,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
-import { THEMES, TRADES } from '@/config/tokens';
+import { ACTIVE_PLUGINS, THEMES, TRADES } from '@/config/tokens';
 import { toast } from 'sonner';
 
-type Step = 'welcome' | 'trade' | 'theme' | 'phishing' | 'done';
+type Step = 'welcome' | 'trade' | 'plugins' | 'theme' | 'phishing' | 'done';
+
+const ICON_MAP: Record<string, any> = {
+  FileText,
+  CheckSquare,
+  Target,
+  Receipt,
+  BookOpen,
+  Car,
+};
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -20,21 +32,36 @@ export default function Onboarding() {
 
   const [step, setStep] = useState<Step>('welcome');
   const [selectedTrade, setSelectedTrade] = useState<string | null>(null);
+  const [selectedTrialPlugins, setSelectedTrialPlugins] = useState<string[]>([]);
   const [phishingCode, setPhishingCode]   = useState('');
   const [loading, setLoading] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] || '';
+  const selectedTradeConfig = TRADES.find((trade) => trade.id === selectedTrade);
 
   // ── Validation du code anti-phishing ──────────────────────
   const codeValid = phishingCode.length >= 4 && phishingCode.length <= 20 && !/\s/.test(phishingCode);
 
   // ── Finalisation ─────────────────────────────────────────
   const finish = async () => {
+    if (selectedTrialPlugins.length !== 3) {
+      toast.error('Choisissez exactement 3 outils pour démarrer.');
+      return;
+    }
+
     setLoading(true);
 
     // 1. Enregistrer le métier
-    if (selectedTrade) {
-      await updateProfile({ trade: selectedTrade });
+    const { error: profileError } = await updateProfile({
+      trade: selectedTrade,
+      active_plugins: selectedTrialPlugins,
+      trial_plugin_ids: selectedTrialPlugins,
+      visible_plugin_ids: selectedTrialPlugins,
+    });
+    if (profileError) {
+      toast.error(profileError.message);
+      setLoading(false);
+      return;
     }
 
     // 2. Enregistrer le code anti-phishing
@@ -117,7 +144,7 @@ export default function Onboarding() {
         <div className="fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Header
             step={1}
-            total={3}
+            total={4}
             title="Quel est votre métier ?"
             subtitle="J'adapterai les outils et suggestions à votre activité"
           />
@@ -130,7 +157,14 @@ export default function Onboarding() {
             {TRADES.map((trade) => (
               <button
                 key={trade.id}
-                onClick={() => setSelectedTrade(trade.id)}
+                onClick={() => {
+                  setSelectedTrade(trade.id);
+                  const recommended = ACTIVE_PLUGINS
+                    .filter((plugin) => trade.pluginIds.includes(plugin.id))
+                    .slice(0, 3)
+                    .map((plugin) => plugin.id);
+                  setSelectedTrialPlugins(recommended);
+                }}
                 className="card card-interactive"
                 style={{
                   display: 'flex',
@@ -161,8 +195,96 @@ export default function Onboarding() {
           </div>
 
           <button
-            onClick={() => setStep('theme')}
+            onClick={() => setStep('plugins')}
             disabled={!selectedTrade}
+            className="btn btn-primary btn-lg btn-full"
+            style={{ marginTop: 'auto' }}
+          >
+            Continuer
+            <ArrowRight size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* ═══ ÉTAPE : PLUGINS D'ESSAI ═══ */}
+      {step === 'plugins' && (
+        <div className="fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Header
+            step={2}
+            total={4}
+            title="Choisissez vos 3 outils"
+            subtitle="Ils sont offerts pendant 2 mois, puis restent payants uniquement si vous les validez"
+          />
+
+          <div
+            className="card"
+            style={{
+              padding: 'var(--space-3)',
+              marginBottom: 'var(--space-4)',
+              background: 'var(--color-primary-glow)',
+              borderColor: 'rgba(201,169,97,0.3)',
+            }}
+          >
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.55 }}>
+              Sélection : <strong>{selectedTrialPlugins.length}/3</strong>. Après l'essai, chaque outil gardé coûte 1,20 € TTC / mois.
+              Un paiement valide l'outil choisi pour le mois en cours.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-6)' }}>
+            {ACTIVE_PLUGINS.map((plugin) => {
+              const Icon = ICON_MAP[plugin.icon] || Sparkles;
+              const selected = selectedTrialPlugins.includes(plugin.id);
+              const recommended = selectedTradeConfig?.pluginIds.includes(plugin.id);
+              return (
+                <button
+                  key={plugin.id}
+                  onClick={() => {
+                    setSelectedTrialPlugins((current) => {
+                      if (current.includes(plugin.id)) return current.filter((id) => id !== plugin.id);
+                      if (current.length >= 3) {
+                        toast.info('Vous pouvez choisir 3 outils gratuits pour démarrer.');
+                        return current;
+                      }
+                      return [...current, plugin.id];
+                    });
+                  }}
+                  className="card card-interactive"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-4)',
+                    border: `1.5px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: selected ? 'var(--color-primary-glow)' : 'var(--color-surface)',
+                    textAlign: 'left',
+                    width: '100%',
+                    minHeight: 'var(--tap-comfort)',
+                  }}
+                >
+                  <div className="plugin-icon-wrapper" style={{ backgroundColor: `hsl(${plugin.color} / 0.12)`, flexShrink: 0 }}>
+                    <Icon size={22} style={{ color: `hsl(${plugin.color})` }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 3 }}>
+                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-text-1)' }}>
+                        {plugin.name}
+                      </span>
+                      {recommended && <span className="badge badge-info">recommandé</span>}
+                    </div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.45 }}>
+                      {plugin.description}
+                    </div>
+                  </div>
+                  {selected && <Check size={18} style={{ color: 'var(--color-primary)' }} strokeWidth={3} />}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setStep('theme')}
+            disabled={selectedTrialPlugins.length !== 3}
             className="btn btn-primary btn-lg btn-full"
             style={{ marginTop: 'auto' }}
           >
@@ -176,8 +298,8 @@ export default function Onboarding() {
       {step === 'theme' && (
         <div className="fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Header
-            step={2}
-            total={3}
+            step={3}
+            total={4}
             title="Quelle ambiance préférez-vous ?"
             subtitle="Vous pourrez la changer à tout moment"
           />
@@ -262,8 +384,8 @@ export default function Onboarding() {
       {step === 'phishing' && (
         <div className="fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Header
-            step={3}
-            total={3}
+            step={4}
+            total={4}
             title="Votre protection anti-phishing"
             subtitle="Une mesure de sécurité essentielle"
           />

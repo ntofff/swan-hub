@@ -8,14 +8,14 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Users, Megaphone, ShieldAlert, Gift, Search,
   Crown, Star, Ban, Plus, Send, Eye, EyeOff, TrendingUp,
-  AlertTriangle, CheckCircle2, Activity,
+  AlertTriangle, CheckCircle2, Activity, CreditCard, KeyRound,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVE_PLUGINS } from '@/config/tokens';
 import { toast } from 'sonner';
 
-type Tab = 'overview' | 'users' | 'broadcasts' | 'security';
+type Tab = 'overview' | 'users' | 'billing' | 'broadcasts' | 'security';
 
 export default function Admin() {
   const { isAdmin } = useAuth();
@@ -54,6 +54,7 @@ export default function Admin() {
         <div style={{ display: 'flex', gap: 'var(--space-2)', minWidth: 'max-content' }}>
           <TabButton active={tab === 'overview'}   onClick={() => setTab('overview')} icon={<Activity size={16} />}  label="Vue d'ensemble" />
           <TabButton active={tab === 'users'}      onClick={() => setTab('users')}    icon={<Users size={16} />}     label="Utilisateurs" />
+          <TabButton active={tab === 'billing'}    onClick={() => setTab('billing')}  icon={<CreditCard size={16} />} label="Abonnements" />
           <TabButton active={tab === 'broadcasts'} onClick={() => setTab('broadcasts')} icon={<Megaphone size={16} />} label="Messages" />
           <TabButton active={tab === 'security'}   onClick={() => setTab('security')} icon={<ShieldAlert size={16} />} label="Sécurité" />
         </div>
@@ -62,6 +63,7 @@ export default function Admin() {
       {/* ── Contenu ── */}
       {tab === 'overview'   && <AdminOverview />}
       {tab === 'users'      && <AdminUsers />}
+      {tab === 'billing'    && <AdminSubscriptions />}
       {tab === 'broadcasts' && <AdminBroadcasts />}
       {tab === 'security'   && <AdminSecurity />}
     </div>
@@ -256,6 +258,214 @@ function AdminUsers() {
             Aucun utilisateur trouvé.
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// ABONNEMENTS
+// ════════════════════════════════════════════════════════════
+
+function AdminSubscriptions() {
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [plan, setPlan] = useState<'carte' | 'pro'>('carte');
+  const [pluginIds, setPluginIds] = useState<string[]>(['report']);
+  const [months, setMonths] = useState(1);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
+
+  const { data: users = [], refetch } = useQuery({
+    queryKey: ['admin_subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('admin-subscriptions', {
+        body: { action: 'list' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data?.users ?? [];
+    },
+  });
+
+  const selectedUser = users.find((user: any) => user.user_id === selectedUserId);
+
+  const togglePlugin = (pluginId: string) => {
+    setPluginIds((current) => (
+      current.includes(pluginId)
+        ? current.filter((id) => id !== pluginId)
+        : [...current, pluginId]
+    ));
+  };
+
+  const grantAccess = async () => {
+    if (!selectedUserId) {
+      toast.error('Sélectionnez un utilisateur');
+      return;
+    }
+    if (plan === 'carte' && pluginIds.length === 0) {
+      toast.error('Sélectionnez au moins un plugin');
+      return;
+    }
+
+    setBusy(true);
+    const grantedPlugins = plan === 'pro' ? ACTIVE_PLUGINS.map((plugin) => plugin.id) : pluginIds;
+    const { data, error } = await supabase.functions.invoke('admin-subscriptions', {
+      body: {
+        action: 'grant',
+        userId: selectedUserId,
+        plan,
+        pluginIds: grantedPlugins,
+        months,
+        note,
+      },
+    });
+    setBusy(false);
+
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || 'Erreur abonnement');
+      return;
+    }
+
+    toast.success(`Accès accordé jusqu'au ${new Date(data.until).toLocaleDateString('fr-FR')}`);
+    refetch();
+  };
+
+  const resetPassword = async (userId: string) => {
+    if (!confirm('Créer un mot de passe temporaire pour cet utilisateur ?')) return;
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke('admin-subscriptions', {
+      body: { action: 'reset-password', userId },
+    });
+    setBusy(false);
+
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || 'Erreur mot de passe');
+      return;
+    }
+
+    setTemporaryPassword(data.temporaryPassword);
+    toast.success('Mot de passe temporaire généré');
+  };
+
+  return (
+    <div className="px-4" style={{ display: 'grid', gap: 'var(--space-4)' }}>
+      <div className="card" style={{ padding: 'var(--space-4)' }}>
+        <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>
+          Accorder un accès manuel
+        </h3>
+
+        <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+          <label>
+            <span className="field-label">Utilisateur</span>
+            <select className="input" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+              <option value="">Choisir un compte</option>
+              {users.map((user: any) => (
+                <option key={user.user_id} value={user.user_id}>
+                  {user.full_name || user.email || user.user_id}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+            <button className={`btn ${plan === 'carte' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPlan('carte')}>
+              À la carte
+            </button>
+            <button className={`btn ${plan === 'pro' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPlan('pro')}>
+              Pro illimité
+            </button>
+          </div>
+
+          {plan === 'carte' && (
+            <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+              <span className="field-label">Plugins payés</span>
+              {ACTIVE_PLUGINS.map((plugin) => (
+                <button
+                  key={plugin.id}
+                  type="button"
+                  onClick={() => togglePlugin(plugin.id)}
+                  className="card card-interactive"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 'var(--space-3)',
+                    border: `1.5px solid ${pluginIds.includes(plugin.id) ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: pluginIds.includes(plugin.id) ? 'var(--color-primary-glow)' : 'var(--color-surface)',
+                  }}
+                >
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>{plugin.name}</span>
+                  {pluginIds.includes(plugin.id) && <CheckCircle2 size={16} style={{ color: 'var(--color-primary)' }} />}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <label>
+            <span className="field-label">Durée</span>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              step={1}
+              value={months}
+              onChange={(e) => setMonths(Math.max(1, Number(e.target.value) || 1))}
+            />
+          </label>
+
+          <label>
+            <span className="field-label">Note admin</span>
+            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex: geste commercial, bêta..." />
+          </label>
+
+          <button className="btn btn-primary btn-full" disabled={busy || !selectedUserId} onClick={grantAccess}>
+            <CreditCard size={16} />
+            Accorder l'accès
+          </button>
+
+          {selectedUser && (
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: 1.5 }}>
+              Compte sélectionné : {selectedUser.email || selectedUser.full_name || selectedUser.user_id}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {temporaryPassword && (
+        <div className="card" style={{ padding: 'var(--space-4)', borderColor: 'var(--color-warning)', background: 'var(--color-warning-bg)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, marginBottom: 6 }}>Mot de passe temporaire</p>
+          <code style={{ fontSize: 'var(--text-sm)', wordBreak: 'break-all' }}>{temporaryPassword}</code>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+        {users.map((user: any) => (
+          <div key={user.user_id} className="card" style={{ padding: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 800 }}>
+                  {user.full_name || 'Sans nom'}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
+                  {user.email || user.user_id}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', marginTop: 6, lineHeight: 1.45 }}>
+                  Plan : {user.plan} · statut : {user.subscription_status || 'essai/local'}
+                  {user.subscription_current_period_end && ` · fin : ${new Date(user.subscription_current_period_end).toLocaleDateString('fr-FR')}`}
+                  {user.manual_access_until && ` · manuel : ${new Date(user.manual_access_until).toLocaleDateString('fr-FR')}`}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 4 }}>
+                  Essai : {(user.trial_plugin_ids || []).join(', ') || '-'} · Payés : {(user.paid_plugin_ids || []).join(', ') || '-'}
+                </div>
+              </div>
+              <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => resetPassword(user.user_id)}>
+                <KeyRound size={14} />
+                Reset MDP
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

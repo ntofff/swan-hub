@@ -70,13 +70,22 @@ function shortText(value?: string | null, fallback = 'Sans titre'): string {
 // ── Composant principal ───────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, hasAccessToPlugin } = useAuth();
   const { setTheme, isDark, toggleTextSize, isLargeText } = useTheme();
   const [activityOpen, setActivityOpen] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] || '';
   const greeting = getGreeting();
   const isVip = profile?.is_vip ?? false;
+  const trialDaysLeft = profile?.trial_ends_at
+    ? Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / 86_400_000)
+    : null;
+  const trialReminderVisible = profile?.plan === 'free' && trialDaysLeft !== null && trialDaysLeft <= 7;
+  const visibleToolIds = profile?.visible_plugin_ids?.length ? profile.visible_plugin_ids : null;
+  const displayedPlugins = ACTIVE_PLUGINS
+    .filter((plugin) => hasAccessToPlugin(plugin.id))
+    .filter((plugin) => !visibleToolIds || visibleToolIds.includes(plugin.id))
+    .slice(0, 6);
 
   // ── Brief SWAN : agrégat des données clés du jour ──────────
   const { data: briefData, isLoading: briefLoading } = useQuery({
@@ -408,6 +417,32 @@ export default function HomePage() {
         </div>
       </header>
 
+      {trialReminderVisible && (
+        <section className="px-4" style={{ marginBottom: 'var(--space-4)' }}>
+          <div
+            className="card"
+            style={{
+              padding: 'var(--space-4)',
+              background: trialDaysLeft && trialDaysLeft > 0 ? 'var(--color-warning-bg)' : 'var(--color-danger-bg)',
+              borderColor: trialDaysLeft && trialDaysLeft > 0 ? 'var(--color-warning)' : 'var(--color-danger)',
+            }}
+          >
+            <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, marginBottom: 4 }}>
+              {trialDaysLeft && trialDaysLeft > 0 ? 'Votre essai se termine bientôt' : 'Votre essai Découverte est terminé'}
+            </p>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>
+              {trialDaysLeft && trialDaysLeft > 0
+                ? `Il reste ${trialDaysLeft} jour${trialDaysLeft > 1 ? 's' : ''}. Choisissez les outils à conserver pour 1,20 € TTC par outil.`
+                : 'Choisissez les outils à conserver pour les réactiver.'}
+            </p>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/pricing')}>
+              Gérer mes outils
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* ── Brief SWAN ─────────────────────────── */}
       <section className="field-workspace" style={{ marginBottom: 'var(--space-6)' }}>
         <div className="field-zone-header">
@@ -447,7 +482,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid-3 stagger">
-          {ACTIVE_PLUGINS.slice(0, 6).map((plugin) => {
+          {displayedPlugins.map((plugin) => {
             const Icon = ICON_MAP[plugin.icon] || FileText;
             return (
               <button
@@ -466,6 +501,14 @@ export default function HomePage() {
               </button>
             );
           })}
+          {displayedPlugins.length === 0 && (
+            <button className="plugin-card" onClick={() => navigate('/pricing')}>
+              <div className="plugin-icon-wrapper" style={{ background: 'var(--color-primary-glow)' }}>
+                <Crown size={22} style={{ color: 'var(--color-primary)' }} />
+              </div>
+              <span className="plugin-name">Choisir mes outils</span>
+            </button>
+          )}
         </div>
       </section>
 
