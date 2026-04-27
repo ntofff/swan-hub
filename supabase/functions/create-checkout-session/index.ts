@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   try {
     const { planId, pluginCount } = await req.json();
     if (planId !== "carte" && planId !== "pro") {
-      return json({ error: "Plan invalide" }, 400);
+      return json({ error: "Plan invalide" });
     }
 
     const supabaseAdmin = createClient(
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) return json({ error: "Non authentifié" }, 401);
+    if (authError || !user) return json({ error: "Non authentifié" });
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
@@ -107,6 +107,6 @@ Deno.serve(async (req) => {
     return json({ url: session.url });
   } catch (e) {
     console.error("create-checkout-session error:", e);
-    return json({ error: e instanceof Error ? e.message : "Erreur interne" }, 400);
+    return json({ error: e instanceof Error ? e.message : "Erreur interne" });
   }
 });
