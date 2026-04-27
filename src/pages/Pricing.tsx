@@ -3,16 +3,19 @@
 // 3 plans : Découverte · À la carte · Pro illimité
 // ============================================================
 
-import { useState } from 'react';
-import { Check, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, Sparkles, ChevronRight, ChevronLeft, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS, FREE_PLUGIN_ALLOWANCE } from '@/config/tokens';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Pricing() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const [pluginCount, setPluginCount] = useState(
     Math.max(profile?.active_plugins?.length || FREE_PLUGIN_ALLOWANCE, FREE_PLUGIN_ALLOWANCE)
@@ -22,6 +25,20 @@ export default function Pricing() {
   const paidPluginCount = Math.max(0, pluginCount - FREE_PLUGIN_ALLOWANCE);
   const carteCost = paidPluginCount * BUSINESS.PLUGIN_PRICE_TTC;
   const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
+  const hasStripeSubscription = !!profile?.stripe_customer_id && profile?.plan !== 'free';
+
+  useEffect(() => {
+    const checkoutStatus = new URLSearchParams(window.location.search).get('checkout');
+    if (checkoutStatus === 'success') {
+      toast.success('Paiement validé. Votre abonnement va se synchroniser dans quelques instants.');
+      refreshProfile();
+      window.history.replaceState({}, '', '/pricing');
+    }
+    if (checkoutStatus === 'cancel') {
+      toast.info('Paiement annulé. Aucun changement appliqué.');
+      window.history.replaceState({}, '', '/pricing');
+    }
+  }, [refreshProfile]);
 
   const handlePlanClick = (plan: (typeof PLANS)[number], isCurrent: boolean) => {
     if (isCurrent) return;
@@ -31,7 +48,31 @@ export default function Pricing() {
       return;
     }
 
-    toast.info('Paiement Stripe en préparation. Les offres sont prêtes, le branchement sécurisé arrive à l’étape monétisation.');
+    setLoadingPlan(plan.id);
+    supabase.functions.invoke('create-checkout-session', {
+      body: { planId: plan.id, pluginCount },
+    }).then(({ data, error }) => {
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.url) throw new Error('Session de paiement introuvable.');
+      window.location.href = data.url;
+    }).catch((error) => {
+      toast.error(error.message || 'Impossible d’ouvrir le paiement.');
+      setLoadingPlan(null);
+    });
+  };
+
+  const handlePortalClick = () => {
+    setPortalLoading(true);
+    supabase.functions.invoke('create-portal-session').then(({ data, error }) => {
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.url) throw new Error('Portail client introuvable.');
+      window.location.href = data.url;
+    }).catch((error) => {
+      toast.error(error.message || 'Impossible d’ouvrir la gestion de l’abonnement.');
+      setPortalLoading(false);
+    });
   };
 
   return (
@@ -56,11 +97,22 @@ export default function Pricing() {
           }}
         >
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-1)', fontWeight: 700, marginBottom: 4 }}>
-            Paiement sécurisé à finaliser
+            Paiement sécurisé
           </p>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: 1.5 }}>
-            La grille tarifaire est posée. Stripe sera branché ensuite pour activer les abonnements sans engagement.
+            Les abonnements sont gérés par Stripe. Vous pouvez changer de plan ou résilier depuis votre espace client.
           </p>
+          {hasStripeSubscription && (
+            <button
+              onClick={handlePortalClick}
+              disabled={portalLoading}
+              className="btn btn-secondary btn-full btn-sm"
+              style={{ marginTop: 'var(--space-3)' }}
+            >
+              <CreditCard size={16} />
+              {portalLoading ? 'Ouverture...' : 'Gérer mon abonnement'}
+            </button>
+          )}
         </div>
       </section>
 
@@ -277,12 +329,12 @@ export default function Pricing() {
 
               {/* CTA */}
               <button
-                disabled={isCurrent}
+                disabled={isCurrent || loadingPlan === plan.id}
                 className={`btn btn-full btn-lg ${plan.id === 'pro' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => handlePlanClick(plan, isCurrent)}
               >
-                {isCurrent ? 'Plan actuel' : plan.priceTTC === null ? 'Commencer' : 'Choisir ce plan'}
-                {!isCurrent && <ChevronRight size={16} />}
+                {isCurrent ? 'Plan actuel' : loadingPlan === plan.id ? 'Ouverture...' : plan.priceTTC === null ? 'Commencer' : 'Choisir ce plan'}
+                {!isCurrent && loadingPlan !== plan.id && <ChevronRight size={16} />}
               </button>
             </div>
           );

@@ -20,6 +20,11 @@ export interface Profile {
   phone: string | null;
   plan: 'free' | 'carte' | 'pro';
   trial_ends_at: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  subscription_status: string | null;
+  subscription_current_period_end: string | null;
+  plan_updated_at: string | null;
   active_plugins: string[];
   trade: string | null;              // 'btp', 'services', etc.
   theme: string;
@@ -231,13 +236,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!profile) return false;
       if (isAdmin) return true;
       if (profile.is_vip) return true;
-      if (profile.plan === 'pro') return true;
+      const paidPlanUsable = !profile.subscription_status || ['active', 'trialing'].includes(profile.subscription_status);
+      if (profile.plan === 'pro') return paidPlanUsable;
       if (profile.plan === 'free') {
         // 3 plugins au choix pendant 2 mois
         return (profile.active_plugins || []).includes(pluginId);
       }
       if (profile.plan === 'carte') {
-        return (profile.active_plugins || []).includes(pluginId);
+        return paidPlanUsable && (profile.active_plugins || []).includes(pluginId);
       }
       return false;
     },

@@ -737,7 +737,12 @@ export type Database = {
           is_beta: boolean
           is_vip: boolean
           plan: string
+          plan_updated_at: string | null
           phone: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_current_period_end: string | null
+          subscription_status: string | null
           theme: string
           trade: string | null
           trial_ends_at: string | null
@@ -756,7 +761,12 @@ export type Database = {
           is_beta?: boolean
           is_vip?: boolean
           plan?: string
+          plan_updated_at?: string | null
           phone?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           theme?: string
           trade?: string | null
           trial_ends_at?: string | null
@@ -775,7 +785,12 @@ export type Database = {
           is_beta?: boolean
           is_vip?: boolean
           plan?: string
+          plan_updated_at?: string | null
           phone?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           theme?: string
           trade?: string | null
           trial_ends_at?: string | null
