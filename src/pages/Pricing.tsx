@@ -27,6 +27,14 @@ export default function Pricing() {
   const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
   const hasStripeSubscription = !!profile?.stripe_customer_id && profile?.plan !== 'free';
 
+  const getBillingErrorMessage = (error: unknown) => {
+    const message = error instanceof Error ? error.message : '';
+    if (message.includes('Failed to send a request to the Edge Function')) {
+      return 'Paiement indisponible : la fonction Stripe est non joignable. Vérifiez le déploiement Supabase et les secrets Stripe.';
+    }
+    return message || 'Impossible d’ouvrir le paiement.';
+  };
+
   useEffect(() => {
     const checkoutStatus = new URLSearchParams(window.location.search).get('checkout');
     if (checkoutStatus === 'success') {
@@ -57,7 +65,7 @@ export default function Pricing() {
       if (!data?.url) throw new Error('Session de paiement introuvable.');
       window.location.href = data.url;
     }).catch((error) => {
-      toast.error(error.message || 'Impossible d’ouvrir le paiement.');
+      toast.error(getBillingErrorMessage(error));
       setLoadingPlan(null);
     });
   };
@@ -70,7 +78,7 @@ export default function Pricing() {
       if (!data?.url) throw new Error('Portail client introuvable.');
       window.location.href = data.url;
     }).catch((error) => {
-      toast.error(error.message || 'Impossible d’ouvrir la gestion de l’abonnement.');
+      toast.error(getBillingErrorMessage(error));
       setPortalLoading(false);
     });
   };
