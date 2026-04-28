@@ -79,9 +79,35 @@ export const parseAmount = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+export const normalizeCurrency = (value?: string | null) => {
+  const raw = String(value || "").trim();
+  const normalized = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (!normalized || normalized === "€" || normalized === "eur" || normalized === "euro" || normalized === "euros") {
+    return "EUR";
+  }
+  if (normalized === "$" || normalized === "usd" || normalized === "dollar" || normalized === "dollars") {
+    return "USD";
+  }
+  if (normalized === "£" || normalized === "gbp" || normalized === "pound" || normalized === "pounds" || normalized === "livre") {
+    return "GBP";
+  }
+
+  const candidate = raw.toUpperCase();
+  try {
+    new Intl.NumberFormat("fr-FR", { style: "currency", currency: candidate }).format(1);
+    return candidate;
+  } catch {
+    return "EUR";
+  }
+};
+
 export const money = (value?: number | null, currency = "EUR") =>
   typeof value === "number"
-    ? new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(value)
+    ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: normalizeCurrency(currency) }).format(value)
     : "—";
 
 export const formatDate = (value?: string | null) =>

@@ -21,6 +21,26 @@ const asNumber = (value: unknown) => {
   return null;
 };
 
+const normalizeCurrency = (value: unknown) => {
+  const raw = String(value || "").trim();
+  const normalized = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (!normalized || normalized === "€" || normalized === "eur" || normalized === "euro" || normalized === "euros") {
+    return "EUR";
+  }
+  if (normalized === "$" || normalized === "usd" || normalized === "dollar" || normalized === "dollars") {
+    return "USD";
+  }
+  if (normalized === "£" || normalized === "gbp" || normalized === "pound" || normalized === "pounds" || normalized === "livre") {
+    return "GBP";
+  }
+
+  return /^[a-zA-Z]{3}$/.test(raw) ? raw.toUpperCase() : "EUR";
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -132,7 +152,7 @@ serve(async (req) => {
       vendor: typeof extracted.vendor === "string" ? extracted.vendor : receipt.vendor,
       expense_date: typeof extracted.expense_date === "string" ? extracted.expense_date : receipt.expense_date,
       category: typeof extracted.category === "string" ? extracted.category : receipt.category,
-      currency: typeof extracted.currency === "string" ? extracted.currency : receipt.currency,
+      currency: normalizeCurrency(extracted.currency || receipt.currency),
       amount_ht: amountHt ?? receipt.amount_ht,
       amount_ttc: amountTtc ?? receipt.amount_ttc,
       vat_amount: vatAmount ?? receipt.vat_amount,

@@ -4,8 +4,10 @@
 // ============================================================
 
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, BarChart3, User, Shield, FileText, CheckSquare, Receipt, Coffee } from 'lucide-react';
+import { Home, LayoutGrid, BarChart3, User, Shield, FileText, CheckSquare, Receipt, Coffee, Bell } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 // ── Items de navigation ───────────────────────────────────────
 interface NavItem {
@@ -41,8 +43,22 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { data: feedbackCount = 0 } = useQuery({
+    queryKey: ['feedback_notifications_count'],
+    enabled: isAdmin,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('feedback')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'open');
+      if (error) throw error;
+      return count || 0;
+    },
+  });
 
-  const sidebarItems = isAdmin ? [...NAV_ITEMS, PRICING_ITEM, ADMIN_ITEM] : [...NAV_ITEMS, PRICING_ITEM];
+  const NOTIFICATION_ITEM: NavItem = { path: '/notifications', label: 'Retours', icon: Bell, adminOnly: true };
+  const sidebarItems = isAdmin ? [...NAV_ITEMS, PRICING_ITEM, NOTIFICATION_ITEM, ADMIN_ITEM] : [...NAV_ITEMS, PRICING_ITEM];
   const bottomItems = NAV_ITEMS;
 
   const isActive = (path: string) => {
@@ -87,6 +103,11 @@ export function AppLayout() {
             >
               <item.icon size={18} strokeWidth={2} />
               <span>{item.label}</span>
+              {item.path === '/notifications' && feedbackCount > 0 && (
+                <span className="ml-auto rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5">
+                  {feedbackCount > 99 ? '99+' : feedbackCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -139,6 +160,25 @@ export function AppLayout() {
             <span className="nav-dot" aria-hidden="true" />
           </button>
         ))}
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/notifications')}
+            className={`bottom-nav-item ${isActive('/notifications') ? 'active' : ''}`}
+            aria-label="Retours"
+            aria-current={isActive('/notifications') ? 'page' : undefined}
+          >
+            <span className="relative">
+              <Bell size={20} strokeWidth={2} />
+              {feedbackCount > 0 && (
+                <span className="absolute -right-2 -top-2 rounded-full bg-primary text-primary-foreground text-[9px] font-bold px-1">
+                  {feedbackCount > 9 ? '9+' : feedbackCount}
+                </span>
+              )}
+            </span>
+            <span>Retours</span>
+            <span className="nav-dot" aria-hidden="true" />
+          </button>
+        )}
       </nav>
     </div>
   );

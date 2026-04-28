@@ -25,10 +25,25 @@ import {
   downloadCsv,
   formatDate,
   money,
+  normalizeCurrency,
   parseAmount,
 } from "@/lib/businessTools";
 
-const db = supabase as any;
+type QueryResponse<T> = { data: T | null; error: { message: string } | null };
+type DbQuery<T = unknown> = PromiseLike<QueryResponse<T>> & {
+  select: (columns?: string) => DbQuery<T[]>;
+  order: (column: string, options?: { ascending?: boolean }) => DbQuery<T>;
+  insert: (values: Record<string, unknown>) => DbQuery<T>;
+  update: (values: Record<string, unknown>) => DbQuery<T>;
+  delete: () => DbQuery<T>;
+  eq: (column: string, value: unknown) => DbQuery<T>;
+};
+type BusinessDb = { from: (table: string) => DbQuery };
+
+const db = supabase as unknown as BusinessDb;
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 const emptyForm = {
   title: "",
@@ -73,11 +88,12 @@ export default function ExpensesPlugin() {
       const rows = (data || []) as ExpenseReceipt[];
       return Promise.all(
         rows.map(async (receipt) => {
-          if (!receipt.document_path) return { ...receipt, signedUrl: null };
+          const normalizedReceipt = { ...receipt, currency: normalizeCurrency(receipt.currency) };
+          if (!receipt.document_path) return { ...normalizedReceipt, signedUrl: null };
           const { data: signed } = await supabase.storage
             .from("business-documents")
             .createSignedUrl(receipt.document_path, 3600);
-          return { ...receipt, signedUrl: signed?.signedUrl || null };
+          return { ...normalizedReceipt, signedUrl: signed?.signedUrl || null };
         })
       );
     },
@@ -130,6 +146,7 @@ export default function ExpensesPlugin() {
         amount_ht: amountHt,
         amount_ttc: amountTtc,
         vat_amount: vat,
+        currency: "EUR",
         annotation: form.annotation.trim() || null,
         document_path: documentPath,
         document_name: file?.name || null,
@@ -146,16 +163,17 @@ export default function ExpensesPlugin() {
       queryClient.invalidateQueries({ queryKey: ["home_activity"] });
       toast.success("Note de frais enregistrée");
     },
-    onError: (error: any) => toast.error(error.message || "Enregistrement impossible"),
+    onError: (error: unknown) => toast.error(getErrorMessage(error, "Enregistrement impossible")),
   });
 
   const updateReceipt = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<ExpenseReceipt> }) => {
-      const { error } = await db.from("expense_receipts").update(patch).eq("id", id);
+      const nextPatch = patch.currency ? { ...patch, currency: normalizeCurrency(patch.currency) } : patch;
+      const { error } = await db.from("expense_receipts").update(nextPatch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["expense_receipts"] }),
-    onError: (error: any) => toast.error(error.message || "Modification impossible"),
+    onError: (error: unknown) => toast.error(getErrorMessage(error, "Modification impossible")),
   });
 
   const deleteReceipt = useMutation({
@@ -179,13 +197,14 @@ export default function ExpensesPlugin() {
       const { data, error } = await supabase.functions.invoke("analyze-expense-receipt", {
         body: { receipt_id: receipt.id },
       });
-      if (error || (data as any)?.error) throw new Error(error?.message || (data as any)?.error);
+      const result = data as { error?: string } | null;
+      if (error || result?.error) throw new Error(error?.message || result?.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expense_receipts"] });
       toast.success("Analyse terminée. Vérifiez les montants avant export.");
     },
-    onError: (error: any) => toast.error(error.message || "Analyse impossible"),
+    onError: (error: unknown) => toast.error(getErrorMessage(error, "Analyse impossible")),
   });
 
   const exportReceipts = () => {
