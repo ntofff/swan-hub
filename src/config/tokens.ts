@@ -123,6 +123,7 @@ export type PluginId =
   | 'quotes'
   | 'logbook'
   | 'vehicle'
+  | 'inventory'
   | 'crm'
   | 'budget'
   | 'booking'
@@ -300,15 +301,32 @@ export const PLUGINS: Plugin[] = [
   {
     id: 'expenses',
     name: 'Notes de Frais',
-    description: 'Photo ticket → catégorie → export pour comptable',
-    shortDesc: 'Frais & dépenses',
+    description: 'Photographiez vos justificatifs, extrayez HT/TTC et préparez un export comptable',
+    shortDesc: 'Frais & justificatifs',
     icon: 'Banknote',
     color: '330 70% 55%',
     route: '/plugins/expenses',
-    available: false,
-    eta: '2026',
+    available: true,
     trades: ['all'],
-    kpis: [],
+    kpis: [
+      { id: 'expenses_month', label: 'Notes ce mois', unit: '', period: 'month', query: 'kpi_expenses_month', importance: 1 },
+      { id: 'expenses_ttc', label: 'Total TTC', unit: '€', period: 'month', query: 'kpi_expenses_ttc', importance: 1 },
+    ],
+  },
+  {
+    id: 'inventory',
+    name: 'Inventaire Matériel',
+    description: 'Répertoriez votre matériel, affectations, lieux, statuts et entretiens',
+    shortDesc: 'Stock & matériel',
+    icon: 'Package',
+    color: '199 89% 48%',
+    route: '/plugins/inventory',
+    available: true,
+    trades: ['btp', 'services', 'transport', 'logistique', 'all'],
+    kpis: [
+      { id: 'inventory_total', label: 'Matériels suivis', unit: '', period: 'total', query: 'kpi_inventory_total', importance: 1 },
+      { id: 'inventory_maintenance', label: 'À contrôler', unit: '', period: 'total', query: 'kpi_inventory_maintenance', importance: 2 },
+    ],
   },
   {
     id: 'time-tracker',
@@ -367,13 +385,13 @@ export const TRADES: Trade[] = [
     id: 'btp',
     label: 'Artisan / BTP',
     icon: '🔨',
-    pluginIds: ['report', 'tasks', 'missions', 'quotes', 'vehicle', 'checklist'],
+    pluginIds: ['report', 'tasks', 'missions', 'quotes', 'vehicle', 'inventory', 'checklist'],
   },
   {
     id: 'services',
     label: 'Services terrain',
     icon: '🛠️',
-    pluginIds: ['report', 'tasks', 'missions', 'quotes', 'logbook', 'vehicle'],
+    pluginIds: ['report', 'tasks', 'missions', 'quotes', 'logbook', 'vehicle', 'expenses', 'inventory'],
   },
   {
     id: 'commercial',
@@ -391,13 +409,13 @@ export const TRADES: Trade[] = [
     id: 'transport',
     label: 'Transport / Logistique',
     icon: '🚚',
-    pluginIds: ['vehicle', 'tasks', 'logbook', 'delivery'],
+    pluginIds: ['vehicle', 'tasks', 'logbook', 'inventory', 'delivery'],
   },
   {
     id: 'freelance',
     label: 'Freelance / Indépendant',
     icon: '💻',
-    pluginIds: ['tasks', 'quotes', 'logbook', 'time-tracker', 'expenses'],
+    pluginIds: ['tasks', 'quotes', 'logbook', 'time-tracker', 'expenses', 'inventory'],
   },
   {
     id: 'sante',
@@ -409,7 +427,7 @@ export const TRADES: Trade[] = [
     id: 'autre',
     label: 'Autre',
     icon: '✨',
-    pluginIds: ['tasks', 'report', 'quotes'],
+    pluginIds: ['tasks', 'report', 'quotes', 'expenses', 'inventory'],
   },
 ];
 

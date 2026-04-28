@@ -8,6 +8,8 @@ import {
   Users,
   Wallet,
   Calendar,
+  Banknote,
+  Package,
 } from "lucide-react";
 
 export const ACTIVE_PLUGINS = [
@@ -70,6 +72,26 @@ export const ACTIVE_PLUGINS = [
     iconName: "Car",
     path: "/plugins/vehicle",
     color: "38 92% 50%",
+  },
+  {
+    id: "expenses",
+    name: "Notes de frais",
+    label: "Notes de frais",
+    desc: "Frais & justificatifs",
+    icon: Banknote,
+    iconName: "Banknote",
+    path: "/plugins/expenses",
+    color: "330 70% 55%",
+  },
+  {
+    id: "inventory",
+    name: "Inventaire matériel",
+    label: "Inventaire matériel",
+    desc: "Stock & matériel",
+    icon: Package,
+    iconName: "Package",
+    path: "/plugins/inventory",
+    color: "199 89% 48%",
   },
 ];
 

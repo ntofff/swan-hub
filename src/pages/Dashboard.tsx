@@ -46,7 +46,7 @@ export default function Dashboard() {
       const periodStart = getPeriodStart(period);
       const periodStartISO = periodStart.toISOString();
 
-      const [tasks, reports, missions, quotes, invoices, trips, logbook] = await Promise.all([
+      const [tasks, reports, missions, quotes, invoices, trips, logbook, expenses, inventory] = await Promise.allSettled([
         supabase.from('tasks').select('done, archived, updated_at, deadline, created_at'),
         supabase.from('reports').select('created_at'),
         supabase.from('missions').select('status, quote_amount, created_at, end_date'),
@@ -54,16 +54,23 @@ export default function Dashboard() {
         supabase.from('invoices').select('amount_ht, tva_rate, status, issue_date, payment_terms, created_at'),
         supabase.from('trips').select('distance, date, created_at'),
         supabase.from('logbook').select('created_at'),
+        (supabase as any).from('expense_receipts').select('amount_ttc, expense_date, created_at, updated_at, status'),
+        (supabase as any).from('inventory_items').select('status, next_maintenance_at, created_at, updated_at'),
       ]);
+      const dataOf = (result: PromiseSettledResult<any>) => (
+        result.status === 'fulfilled' && !result.value.error ? result.value.data ?? [] : []
+      );
 
       return {
-        tasks:    tasks.data ?? [],
-        reports:  reports.data ?? [],
-        missions: missions.data ?? [],
-        quotes:   quotes.data ?? [],
-        invoices: invoices.data ?? [],
-        trips:    trips.data ?? [],
-        logbook:  logbook.data ?? [],
+        tasks:    dataOf(tasks),
+        reports:  dataOf(reports),
+        missions: dataOf(missions),
+        quotes:   dataOf(quotes),
+        invoices: dataOf(invoices),
+        trips:    dataOf(trips),
+        logbook:  dataOf(logbook),
+        expenses: dataOf(expenses),
+        inventory: dataOf(inventory),
         periodStart,
       };
     },
@@ -133,6 +140,22 @@ export default function Dashboard() {
       (l: any) => new Date(l.created_at).getTime() >= startMs
     ).length;
 
+    const expensesInPeriod = kpiData.expenses.filter(
+      (e: any) => new Date(e.expense_date || e.created_at).getTime() >= startMs
+    );
+    const expensesTtc = expensesInPeriod.reduce(
+      (sum: number, e: any) => sum + (Number(e.amount_ttc) || 0),
+      0
+    );
+    const inventoryTotal = kpiData.inventory.length;
+    const inventoryToControl = kpiData.inventory.filter((item: any) =>
+      ['a_controler', 'maintenance', 'hors_service'].includes(item.status)
+    ).length;
+    const inventoryMaintenanceSoon = kpiData.inventory.filter((item: any) => {
+      if (!item.next_maintenance_at) return false;
+      return new Date(item.next_maintenance_at).getTime() <= now + 30 * 86_400_000;
+    }).length;
+
     return {
       // Business critiques
       caPeriod,
@@ -154,6 +177,11 @@ export default function Dashboard() {
       reportsInPeriod,
       kmInPeriod,
       logbookInPeriod,
+      expensesCount: expensesInPeriod.length,
+      expensesTtc,
+      inventoryTotal,
+      inventoryToControl,
+      inventoryMaintenanceSoon,
     };
   }, [kpiData]);
 
@@ -319,6 +347,16 @@ export default function Dashboard() {
             <KpiCard label="Km parcourus" value={Math.round(kpis.kmInPeriod).toString()} unit="km" />
             <KpiCard label="Entrées journal" value={kpis.logbookInPeriod.toString()} unit="" />
             <KpiCard label="Missions terminées" value={kpis.missionsDoneInPeriod.toString()} unit="" />
+            <KpiCard label="Notes de frais" value={kpis.expensesCount.toString()} unit="" />
+            <KpiCard label="Frais TTC" value={formatAmount(kpis.expensesTtc)} unit="€" />
+            <KpiCard label="Matériel suivi" value={kpis.inventoryTotal.toString()} unit="" />
+            <KpiCard
+              label="Matériel à contrôler"
+              value={kpis.inventoryToControl.toString()}
+              unit=""
+              subtitle={`${kpis.inventoryMaintenanceSoon} entretien${kpis.inventoryMaintenanceSoon > 1 ? 's' : ''} à 30j`}
+              tone={kpis.inventoryToControl > 0 ? 'warning' : 'neutral'}
+            />
           </div>
         </div>
       )}

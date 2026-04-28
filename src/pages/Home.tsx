@@ -85,7 +85,7 @@ export default function HomePage() {
   const displayedPlugins = ACTIVE_PLUGINS
     .filter((plugin) => hasAccessToPlugin(plugin.id))
     .filter((plugin) => !visibleToolIds || visibleToolIds.includes(plugin.id))
-    .slice(0, 6);
+    .slice(0, 8);
 
   // ── Brief SWAN : agrégat des données clés du jour ──────────
   const { data: briefData, isLoading: briefLoading } = useQuery({
@@ -179,6 +179,8 @@ export default function HomePage() {
         vehicles,
         drivers,
         routes,
+        expenses,
+        inventory,
       ] = await Promise.allSettled([
         supabase
           .from('reports')
@@ -239,6 +241,18 @@ export default function HomePage() {
           .select('id, name, start_location, end_location, created_at')
           .eq('user_id', user!.id)
           .order('created_at', { ascending: false })
+          .limit(8),
+        (supabase as any)
+          .from('expense_receipts')
+          .select('id, title, vendor, amount_ttc, status, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('updated_at', { ascending: false })
+          .limit(8),
+        (supabase as any)
+          .from('inventory_items')
+          .select('id, name, category, assigned_to, location, status, created_at, updated_at')
+          .eq('user_id', user!.id)
+          .order('updated_at', { ascending: false })
           .limit(8),
       ]);
 
@@ -357,6 +371,28 @@ export default function HomePage() {
           timestamp: getTimestamp(route.created_at),
           label: 'Itinéraire',
           color: getToolColor('vehicle'),
+        })),
+        ...dataOf(expenses).map((expense: any) => ({
+          id: `expense-${expense.id}`,
+          text: shortText(`${expense.title || 'Note de frais'}${expense.vendor ? ` - ${expense.vendor}` : ''}`),
+          type: 'expense',
+          icon: Banknote,
+          path: '/plugins/expenses',
+          time: formatRelativeTime(expense.updated_at || expense.created_at),
+          timestamp: getTimestamp(expense.updated_at || expense.created_at),
+          label: 'Note de frais',
+          color: getToolColor('expenses'),
+        })),
+        ...dataOf(inventory).map((item: any) => ({
+          id: `inventory-${item.id}`,
+          text: shortText(`${item.name || 'Matériel'}${item.assigned_to ? ` - ${item.assigned_to}` : ''}`),
+          type: 'inventory',
+          icon: Package,
+          path: '/plugins/inventory',
+          time: formatRelativeTime(item.updated_at || item.created_at),
+          timestamp: getTimestamp(item.updated_at || item.created_at),
+          label: 'Inventaire',
+          color: getToolColor('inventory'),
         })),
       ];
       return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30);
