@@ -2,8 +2,10 @@ import { type CSSProperties, type MouseEvent, type ReactNode, useMemo, useRef, u
 import {
   Calendar,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   FileSpreadsheet,
   FileText,
   Folder,
@@ -281,6 +283,7 @@ export default function PlanningPlugin() {
   const [profileName, setProfileName] = useState("");
   const [projectName, setProjectName] = useState("");
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
 
   const range = useMemo(() => buildRange(view, cursor), [cursor, view]);
 
@@ -724,56 +727,71 @@ export default function PlanningPlugin() {
       )}
 
       <section className="px-4" style={{ marginBottom: "var(--space-4)" }}>
-        <div className="card" style={{ padding: "var(--space-4)" }}>
-          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-            <QuickCreate
-              icon={<Users size={16} />}
-              placeholder="Nouveau profil"
-              value={profileName}
-              onChange={setProfileName}
-              onSubmit={() => createProfile.mutate()}
-              disabled={createProfile.isPending}
-            />
-            <QuickCreate
-              icon={<Folder size={16} />}
-              placeholder="Nouveau projet"
-              value={projectName}
-              onChange={setProjectName}
-              onSubmit={() => createProject.mutate()}
-              disabled={createProject.isPending}
-            />
-          </div>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => setResourcesOpen((current) => !current)}
+          aria-expanded={resourcesOpen}
+        >
+          <Users size={14} />
+          Profils {profiles.length}
+          <span style={{ color: "var(--color-text-3)" }}>·</span>
+          <Folder size={14} />
+          Projets {projects.length}
+          {resourcesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
 
-          {(profiles.length > 0 || projects.length > 0) && (
-            <div className="grid gap-4 mt-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-              <ResourcePanel title="Profils" icon={<Users size={15} />}>
-                {profiles.map((profile) => (
-                  <ProfileRow
-                    key={profile.id}
-                    profile={profile}
-                    onSave={(draft) => updateProfile.mutate({ id: profile.id, draft })}
-                    onDelete={() => deleteProfile.mutate(profile)}
-                    saving={updateProfile.isPending}
-                    deleting={deleteProfile.isPending}
-                  />
-                ))}
-              </ResourcePanel>
-
-              <ResourcePanel title="Projets" icon={<Folder size={15} />}>
-                {projects.map((project) => (
-                  <ProjectRow
-                    key={project.id}
-                    project={project}
-                    onSave={(draft) => updateProject.mutate({ id: project.id, draft })}
-                    onDelete={() => deleteProject.mutate(project)}
-                    saving={updateProject.isPending}
-                    deleting={deleteProject.isPending}
-                  />
-                ))}
-              </ResourcePanel>
+        {resourcesOpen && (
+          <div className="card slide-up" style={{ padding: "var(--space-4)", marginTop: "var(--space-3)" }}>
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+              <QuickCreate
+                icon={<Users size={16} />}
+                placeholder="Nouveau profil"
+                value={profileName}
+                onChange={setProfileName}
+                onSubmit={() => createProfile.mutate()}
+                disabled={createProfile.isPending}
+              />
+              <QuickCreate
+                icon={<Folder size={16} />}
+                placeholder="Nouveau projet"
+                value={projectName}
+                onChange={setProjectName}
+                onSubmit={() => createProject.mutate()}
+                disabled={createProject.isPending}
+              />
             </div>
-          )}
-        </div>
+
+            {(profiles.length > 0 || projects.length > 0) && (
+              <div className="grid gap-4 mt-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+                <ResourcePanel title="Profils" icon={<Users size={15} />}>
+                  {profiles.map((profile) => (
+                    <ProfileRow
+                      key={profile.id}
+                      profile={profile}
+                      onSave={(draft) => updateProfile.mutate({ id: profile.id, draft })}
+                      onDelete={() => deleteProfile.mutate(profile)}
+                      saving={updateProfile.isPending}
+                      deleting={deleteProfile.isPending}
+                    />
+                  ))}
+                </ResourcePanel>
+
+                <ResourcePanel title="Projets" icon={<Folder size={15} />}>
+                  {projects.map((project) => (
+                    <ProjectRow
+                      key={project.id}
+                      project={project}
+                      onSave={(draft) => updateProject.mutate({ id: project.id, draft })}
+                      onDelete={() => deleteProject.mutate(project)}
+                      saving={updateProject.isPending}
+                      deleting={deleteProject.isPending}
+                    />
+                  ))}
+                </ResourcePanel>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="px-4" style={{ marginBottom: "var(--space-4)" }}>
@@ -813,19 +831,6 @@ export default function PlanningPlugin() {
             <option value={ALL_PROJECTS}>Tous les projets</option>
             {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
           </select>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mt-3">
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              onClick={() => setProjectFilter(projectFilter === project.id ? ALL_PROJECTS : project.id)}
-              className={`badge ${projectFilter === project.id ? "ring-2 ring-primary/30" : ""}`}
-              style={{ background: `hsl(${project.color} / 0.14)`, color: `hsl(${project.color})`, border: `1px solid hsl(${project.color} / 0.3)` }}
-            >
-              {project.name}
-            </button>
-          ))}
         </div>
       </section>
 
