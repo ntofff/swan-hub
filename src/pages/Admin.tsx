@@ -9,13 +9,16 @@ import {
   Users, Megaphone, ShieldAlert, Gift, Search,
   Crown, Star, Ban, Plus, Send, Eye, EyeOff, TrendingUp,
   AlertTriangle, CheckCircle2, Activity, CreditCard, KeyRound,
+  Server, Bug, Database, Cloud,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVE_PLUGINS } from '@/config/tokens';
+import { APP_BUILD_LABEL, APP_BUILT_AT, APP_COMMIT, APP_VERSION } from '@/config/build';
+import { getLocalFrontendErrors } from '@/lib/monitoring';
 import { toast } from 'sonner';
 
-type Tab = 'overview' | 'users' | 'billing' | 'broadcasts' | 'security';
+type Tab = 'overview' | 'users' | 'billing' | 'broadcasts' | 'security' | 'status';
 
 export default function Admin() {
   const { isAdmin } = useAuth();
@@ -57,6 +60,7 @@ export default function Admin() {
           <TabButton active={tab === 'billing'}    onClick={() => setTab('billing')}  icon={<CreditCard size={16} />} label="Abonnements" />
           <TabButton active={tab === 'broadcasts'} onClick={() => setTab('broadcasts')} icon={<Megaphone size={16} />} label="Messages" />
           <TabButton active={tab === 'security'}   onClick={() => setTab('security')} icon={<ShieldAlert size={16} />} label="Sécurité" />
+          <TabButton active={tab === 'status'}     onClick={() => setTab('status')} icon={<Server size={16} />} label="Statut" />
         </div>
       </div>
 
@@ -66,6 +70,7 @@ export default function Admin() {
       {tab === 'billing'    && <AdminSubscriptions />}
       {tab === 'broadcasts' && <AdminBroadcasts />}
       {tab === 'security'   && <AdminSecurity />}
+      {tab === 'status'     && <AdminStatus />}
     </div>
   );
 }
@@ -487,7 +492,7 @@ function AdminBroadcasts() {
       return;
     }
     setSending(true);
-    const { error } = await supabase.from('broadcasts').insert({
+    const { error } = await (supabase as any).from('broadcasts').insert({
       title,
       body,
       category,
@@ -577,7 +582,7 @@ function AdminSecurity() {
   const { data: events = [] } = useQuery({
     queryKey: ['admin_security_events'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('security_events')
         .select('*')
         .order('created_at', { ascending: false })
@@ -641,6 +646,141 @@ function AdminSecurity() {
 }
 
 // ════════════════════════════════════════════════════════════
+// STATUT TECHNIQUE
+// ════════════════════════════════════════════════════════════
+
+function AdminStatus() {
+  const { data: status } = useQuery({
+    queryKey: ['admin_status'],
+    queryFn: async () => {
+      const localErrors = getLocalFrontendErrors();
+      const [profiles, frontendErrors, securityEvents, auditLogs, vercelStatus] = await Promise.allSettled([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        (supabase as any)
+          .from('frontend_error_events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20),
+        (supabase as any)
+          .from('security_events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('audit_logs')
+          .select('id, action, table_name, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10),
+        fetch('/api/status', { cache: 'no-store' }).then((response) => {
+          if (!response.ok) throw new Error(`Vercel status ${response.status}`);
+          return response.json();
+        }),
+      ]);
+
+      const resultOf = (result: PromiseSettledResult<any>) => (
+        result.status === 'fulfilled' && !result.value.error ? result.value : null
+      );
+
+      const profileResult = resultOf(profiles);
+      const errorResult = resultOf(frontendErrors);
+      const securityResult = resultOf(securityEvents);
+      const auditResult = resultOf(auditLogs);
+      const vercelResult = vercelStatus.status === 'fulfilled' ? vercelStatus.value : null;
+
+      return {
+        supabaseOk: !!profileResult,
+        profileCount: profileResult?.count ?? 0,
+        frontendErrors: errorResult?.data ?? localErrors,
+        frontendSource: errorResult ? 'Supabase' : 'Local',
+        securityEvents: securityResult?.data ?? [],
+        auditLogs: auditResult?.data ?? [],
+        frontendLogOk: !!errorResult,
+        auditOk: !!auditResult,
+        vercelStatus: vercelResult,
+      };
+    },
+    refetchInterval: 30_000,
+  });
+
+  const frontendErrors = status?.frontendErrors ?? [];
+  const criticalErrors = frontendErrors.filter((event: any) => {
+    const source = String(event.source || '').toLowerCase();
+    const message = String(event.message || '').toLowerCase();
+    return source.includes('boundary') || message.includes('rangeerror') || message.includes('syntaxerror');
+  }).length;
+
+  return (
+    <div className="px-4" style={{ display: 'grid', gap: 'var(--space-4)' }}>
+      <div className="grid-2">
+        <StatusCard
+          label="Frontend"
+          value={criticalErrors > 0 ? `${criticalErrors} critique${criticalErrors > 1 ? 's' : ''}` : 'Stable'}
+          ok={criticalErrors === 0}
+          icon={<Bug size={15} />}
+        />
+        <StatusCard
+          label="Supabase"
+          value={status?.supabaseOk ? `${status.profileCount} profils` : 'Indisponible'}
+          ok={!!status?.supabaseOk}
+          icon={<Database size={15} />}
+        />
+        <StatusCard
+          label="Logs app"
+          value={status?.frontendLogOk ? status.frontendSource : 'Local'}
+          ok={!!status?.frontendLogOk}
+          icon={<Activity size={15} />}
+        />
+        <StatusCard
+          label="Vercel"
+          value={status?.vercelStatus?.environment ? `Runtime ${status.vercelStatus.environment}` : APP_BUILD_LABEL}
+          ok={!!status?.vercelStatus}
+          icon={<Cloud size={15} />}
+        />
+      </div>
+
+      <div className="card" style={{ padding: 'var(--space-4)' }}>
+        <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>
+          Build & déploiement
+        </h3>
+        <div style={{ display: 'grid', gap: 'var(--space-2)', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)' }}>
+          <span>Version : {APP_VERSION}</span>
+          <span>Commit : {APP_COMMIT}</span>
+          <span>Build : {new Date(APP_BUILT_AT).toLocaleString('fr-FR')}</span>
+          <span>Vercel : {status?.vercelStatus?.deployment_id || status?.vercelStatus?.commit || 'runtime non confirmé'}</span>
+          <span>Host : {typeof window !== 'undefined' ? window.location.host : 'swan-hub.vercel.app'}</span>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 'var(--space-4)' }}>
+        <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>
+          Erreurs frontend récentes
+        </h3>
+        {frontendErrors.length === 0 ? (
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>Aucune erreur capturée.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+            {frontendErrors.slice(0, 8).map((event: any, index: number) => (
+              <LogLine
+                key={event.id || `${event.created_at}-${index}`}
+                title={event.message || 'Erreur sans message'}
+                date={event.created_at}
+                meta={`${event.source || 'frontend'} · ${event.route || '/'}`}
+                tone="danger"
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="grid-2">
+        <LogPanel title="Sécurité Supabase" events={status?.securityEvents ?? []} tone="warning" />
+        <LogPanel title="Audit Supabase" events={status?.auditLogs ?? []} tone="info" />
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
 // COMPOSANTS
 // ════════════════════════════════════════════════════════════
 
@@ -685,6 +825,63 @@ function OverviewCard({ label, value, trend, icon }: { label: string; value: str
           {trend}
         </div>
       )}
+    </div>
+  );
+}
+
+function StatusCard({ label, value, ok, icon }: { label: string; value: string; ok: boolean; icon: React.ReactNode }) {
+  return (
+    <div className="kpi-card" style={{ borderColor: ok ? 'var(--color-success)' : 'var(--color-warning)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: ok ? 'var(--color-success)' : 'var(--color-warning)' }}>
+        {icon}
+        <span className="kpi-label" style={{ margin: 0 }}>{label}</span>
+      </div>
+      <div className="kpi-value" style={{ fontSize: 'var(--text-xl)' }}>{value}</div>
+    </div>
+  );
+}
+
+function LogPanel({ title, events, tone }: { title: string; events: any[]; tone: 'warning' | 'info' }) {
+  return (
+    <div className="card" style={{ padding: 'var(--space-4)' }}>
+      <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>{title}</h3>
+      {events.length === 0 ? (
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>Aucun log récent.</p>
+      ) : (
+        <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+          {events.slice(0, 6).map((event: any, index: number) => (
+            <LogLine
+              key={event.id || `${event.created_at}-${index}`}
+              title={event.event_type || event.action || 'Événement'}
+              date={event.created_at}
+              meta={event.table_name || event.severity || 'log'}
+              tone={tone}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LogLine({ title, date, meta, tone }: { title: string; date?: string; meta?: string; tone: 'danger' | 'warning' | 'info' }) {
+  const color = tone === 'danger' ? 'var(--color-danger)' : tone === 'warning' ? 'var(--color-warning)' : 'var(--color-info)';
+  return (
+    <div
+      style={{
+        borderLeft: `3px solid ${color}`,
+        padding: 'var(--space-2) var(--space-3)',
+        background: 'var(--color-surface-2)',
+        borderRadius: 'var(--radius-md)',
+        minWidth: 0,
+      }}
+    >
+      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-text-1)', wordBreak: 'break-word' }}>
+        {title}
+      </div>
+      <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-3)', marginTop: 3 }}>
+        {date ? new Date(date).toLocaleString('fr-FR') : 'Date inconnue'} · {meta || '-'}
+      </div>
     </div>
   );
 }

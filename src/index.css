@@ -1710,6 +1710,39 @@ select.input {
     font-size: var(--text-base);
   }
 
+  .app-container,
+  .main-content,
+  .card,
+  .field-form-panel,
+  .field-zone,
+  .page-header > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .main-content {
+    overflow-x: hidden;
+  }
+
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  .field-zone-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .btn,
+  .field-input,
+  .input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
+
   .text-\[9px\],
   .text-\[10px\] {
     font-size: 13px !important;
@@ -1731,6 +1764,10 @@ select.input {
   }
 
   .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1766,5 +1803,12 @@ select.input {
 
   [data-text-size="large"] .text-sm {
     font-size: 17px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
   }
 }

@@ -53,7 +53,7 @@ export default function Dashboard() {
         supabase.from('quotes').select('amount_ht, tva_rate, status, created_at'),
         supabase.from('invoices').select('amount_ht, tva_rate, status, issue_date, payment_terms, created_at'),
         supabase.from('trips').select('distance, date, created_at'),
-        supabase.from('logbook').select('created_at'),
+        (supabase as any).from('logbook').select('created_at'),
         (supabase as any).from('expense_receipts').select('amount_ttc, expense_date, created_at, updated_at, status'),
         (supabase as any).from('inventory_items').select('status, next_maintenance_at, created_at, updated_at'),
       ]);

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Sparkles, ChevronRight, ChevronLeft, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ACTIVE_PLUGINS, PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS } from '@/config/tokens';
+import { ACTIVE_PLUGINS, PLANS, PLAN_BREAKEVEN_PLUGINS, BUSINESS, type PluginId } from '@/config/tokens';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,14 +17,14 @@ export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  const [selectedPluginIds, setSelectedPluginIds] = useState<string[]>([]);
+  const [selectedPluginIds, setSelectedPluginIds] = useState<PluginId[]>([]);
 
   const maxCartePlugins = Math.floor(BUSINESS.PRO_PRICE_TTC / BUSINESS.PLUGIN_PRICE_TTC);
   const paidPluginCount = selectedPluginIds.length;
   const carteCost = paidPluginCount * BUSINESS.PLUGIN_PRICE_TTC;
   const proIsCheaper = carteCost >= BUSINESS.PRO_PRICE_TTC;
   const hasStripeSubscription = !!profile?.stripe_customer_id && profile?.plan !== 'free';
-  const availablePluginIds = useMemo(() => ACTIVE_PLUGINS.map((plugin) => plugin.id), []);
+  const availablePluginIds = useMemo<PluginId[]>(() => ACTIVE_PLUGINS.map((plugin) => plugin.id), []);
   const trialEndsAt = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
   const trialDaysLeft = trialEndsAt ? Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000) : null;
   const trialIsActive = trialDaysLeft !== null && trialDaysLeft > 0;
@@ -36,7 +36,11 @@ export default function Pricing() {
       : profile.trial_plugin_ids?.length
         ? profile.trial_plugin_ids
         : profile.active_plugins || [];
-    setSelectedPluginIds(baseSelection.filter((id) => availablePluginIds.includes(id)).slice(0, maxCartePlugins));
+    setSelectedPluginIds(
+      baseSelection
+        .filter((id): id is PluginId => availablePluginIds.includes(id as PluginId))
+        .slice(0, maxCartePlugins)
+    );
   }, [availablePluginIds, maxCartePlugins, profile]);
 
   const getBillingErrorMessage = (error: unknown) => {

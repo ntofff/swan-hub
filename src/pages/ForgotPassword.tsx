@@ -181,7 +181,7 @@ export function UnlockAccount() {
     }
 
     (async () => {
-      const { data, error } = await supabase.rpc('unlock_with_token', { token });
+      const { data, error } = await (supabase as any).rpc('unlock_with_token', { token });
       if (error || !data?.[0]?.success) {
         setStatus('error');
         setMessage(data?.[0]?.message || 'Lien invalide ou expiré');

@@ -565,7 +565,7 @@ const QuotesPlugin = () => {
       return;
     }
 
-    const { error } = await supabase.from("invoice_settings").update(patch).eq("id", settings.id);
+    const { error } = await supabase.from("invoice_settings").update(patch as any).eq("id", settings.id);
     if (!error) return;
     if (!isMissingInvoiceSettingsTable(error)) throw error;
 

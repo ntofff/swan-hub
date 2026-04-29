@@ -43,6 +43,8 @@ export interface Profile {
   created_at: string;
 }
 
+type ProfileUpdates = Partial<Omit<Profile, 'id' | 'user_id' | 'email' | 'created_at'>>;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -59,7 +61,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
 
-  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
+  updateProfile: (updates: ProfileUpdates) => Promise<{ error: Error | null }>;
   setAntiPhishingCode: (code: string) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
 }
@@ -75,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   // ── Récupération du profil ─────────────────────────────────
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string, email?: string | null) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -86,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Erreur fetchProfile:', error);
       return;
     }
-    if (data) setProfile(data as Profile);
+    if (data) setProfile({ ...(data as unknown as Omit<Profile, 'email'>), email: email ?? null } as Profile);
   }, []);
 
   // ── Vérification admin ─────────────────────────────────────
@@ -98,6 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(data?.some((r: any) => r.role === 'admin') ?? false);
   }, []);
 
+  const loadUserData = useCallback(async (sessionUser: User) => {
+    await Promise.all([
+      fetchProfile(sessionUser.id, sessionUser.email ?? null),
+      checkAdmin(sessionUser.id),
+    ]);
+  }, [checkAdmin, fetchProfile]);
+
   // ── Initialisation session ─────────────────────────────────
   useEffect(() => {
     // Écoute changements auth (login, logout, refresh)
@@ -108,16 +117,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        setLoading(true);
         // Déferre les fetches pour éviter deadlock supabase
         setTimeout(() => {
-          fetchProfile(session.user.id);
-          checkAdmin(session.user.id);
+          loadUserData(session.user).finally(() => setLoading(false));
         }, 0);
       } else {
         setProfile(null);
         setIsAdmin(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     // Récupère la session existante
@@ -125,14 +134,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
-        checkAdmin(session.user.id);
+        loadUserData(session.user).finally(() => setLoading(false));
+        return;
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, checkAdmin]);
+  }, [loadUserData]);
 
   // ── Signup ─────────────────────────────────────────────────
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -194,13 +203,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Update profile ─────────────────────────────────────────
-  const updateProfile = async (updates: Partial<Profile>) => {
+  const updateProfile = async (updates: ProfileUpdates) => {
     if (!user) return { error: new Error('Non connecté') };
+    const { email, id, user_id, created_at, ...profileUpdates } = updates as Partial<Profile>;
     const { error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update(profileUpdates)
       .eq('user_id', user.id);
-    if (!error) await fetchProfile(user.id);
+    void email;
+    void id;
+    void user_id;
+    void created_at;
+    if (!error) await fetchProfile(user.id, user.email ?? null);
     return { error };
   };
 
@@ -227,14 +241,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.from('anti_phishing_history').insert({
         user_id: user.id,
       });
-      await fetchProfile(user.id);
+      await fetchProfile(user.id, user.email ?? null);
     }
     return { error };
   };
 
   // ── Refresh profile ────────────────────────────────────────
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    if (user) await fetchProfile(user.id, user.email ?? null);
   };
 
   // ── Vérifier accès à un plugin ─────────────────────────────

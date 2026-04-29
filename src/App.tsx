@@ -12,6 +12,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // ── Pages chargées immédiatement (critique) ──────────────────
 import Home from '@/pages/Home';
@@ -95,89 +96,91 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <AuthProvider>
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: 'var(--color-bg-elevated)',
-              color: 'var(--color-text-1)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)',
-              fontSize: 'var(--text-sm)',
-            },
-          }}
-        />
+      <ErrorBoundary>
+        <AuthProvider>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: 'var(--color-bg-elevated)',
+                color: 'var(--color-text-1)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: 'var(--text-sm)',
+              },
+            }}
+          />
 
-        <BrowserRouter>
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              {/* ─── Routes publiques ─────────────────────── */}
-              <Route path="/login"           element={<GuestOnly><Login /></GuestOnly>} />
-              <Route path="/signup"          element={<GuestOnly><Signup /></GuestOnly>} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password"  element={<ResetPassword />} />
-              <Route path="/unlock"          element={<UnlockAccount />} />
-              <Route path="/legal/:type"     element={<Legal />} />
-              <Route path="/security"        element={<Security />} />
+          <BrowserRouter>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                {/* ─── Routes publiques ─────────────────────── */}
+                <Route path="/login"           element={<GuestOnly><Login /></GuestOnly>} />
+                <Route path="/signup"          element={<GuestOnly><Signup /></GuestOnly>} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password"  element={<ResetPassword />} />
+                <Route path="/unlock"          element={<UnlockAccount />} />
+                <Route path="/legal/:type"     element={<Legal />} />
+                <Route path="/security"        element={<Security />} />
 
-              {/* ─── Onboarding (obligatoire après signup) ── */}
-              <Route
-                path="/onboarding"
-                element={
-                  <AuthGuard>
-                    <Onboarding />
-                  </AuthGuard>
-                }
-              />
+                {/* ─── Onboarding (obligatoire après signup) ── */}
+                <Route
+                  path="/onboarding"
+                  element={
+                    <AuthGuard>
+                      <Onboarding />
+                    </AuthGuard>
+                  }
+                />
 
-              {/* ─── Routes authentifiées ─────────────────── */}
-              <Route
-                element={
-                  <AuthGuard>
-                    <OnboardingGuard>
+                {/* ─── Routes authentifiées ─────────────────── */}
+                <Route
+                  element={
+                    <AuthGuard>
+                      <OnboardingGuard>
+                        <AppLayout />
+                      </OnboardingGuard>
+                    </AuthGuard>
+                  }
+                >
+                  <Route path="/"                    element={<Home />} />
+                  <Route path="/plugins"             element={<Plugins />} />
+                  <Route path="/dashboard"           element={<Dashboard />} />
+                  <Route path="/profile"             element={<Profile />} />
+                  <Route path="/pricing"             element={<Pricing />} />
+                  <Route path="/notifications"       element={<Notifications />} />
+
+                  {/* Plugins */}
+                  <Route path="/plugins/report"      element={<ReportPlugin />} />
+                  <Route path="/plugins/tasks"       element={<TasksPlugin />} />
+                  <Route path="/plugins/missions"    element={<MissionsPlugin />} />
+                  <Route path="/plugins/quotes"      element={<QuotesPlugin />} />
+                  <Route path="/plugins/logbook"     element={<LogbookPlugin />} />
+                  <Route path="/plugins/vehicle"     element={<VehiclePlugin />} />
+                  <Route path="/plugins/expenses"    element={<ExpensesPlugin />} />
+                  <Route path="/plugins/inventory"   element={<InventoryPlugin />} />
+                  <Route path="/plugins/planning"    element={<PlanningPlugin />} />
+                </Route>
+
+                {/* ─── Routes admin ─────────────────────────── */}
+                <Route
+                  path="/admin/*"
+                  element={
+                    <AdminGuard>
                       <AppLayout />
-                    </OnboardingGuard>
-                  </AuthGuard>
-                }
-              >
-                <Route path="/"                    element={<Home />} />
-                <Route path="/plugins"             element={<Plugins />} />
-                <Route path="/dashboard"           element={<Dashboard />} />
-                <Route path="/profile"             element={<Profile />} />
-                <Route path="/pricing"             element={<Pricing />} />
-                <Route path="/notifications"       element={<Notifications />} />
+                    </AdminGuard>
+                  }
+                >
+                  <Route index element={<Admin />} />
+                </Route>
 
-                {/* Plugins */}
-                <Route path="/plugins/report"      element={<ReportPlugin />} />
-                <Route path="/plugins/tasks"       element={<TasksPlugin />} />
-                <Route path="/plugins/missions"    element={<MissionsPlugin />} />
-                <Route path="/plugins/quotes"      element={<QuotesPlugin />} />
-                <Route path="/plugins/logbook"     element={<LogbookPlugin />} />
-                <Route path="/plugins/vehicle"     element={<VehiclePlugin />} />
-                <Route path="/plugins/expenses"    element={<ExpensesPlugin />} />
-                <Route path="/plugins/inventory"   element={<InventoryPlugin />} />
-                <Route path="/plugins/planning"    element={<PlanningPlugin />} />
-              </Route>
-
-              {/* ─── Routes admin ─────────────────────────── */}
-              <Route
-                path="/admin/*"
-                element={
-                  <AdminGuard>
-                    <AppLayout />
-                  </AdminGuard>
-                }
-              >
-                <Route index element={<Admin />} />
-              </Route>
-
-              {/* ─── 404 ──────────────────────────────────── */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </AuthProvider>
+                {/* ─── 404 ──────────────────────────────────── */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   </QueryClientProvider>
 );

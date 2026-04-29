@@ -59,7 +59,7 @@ export function Notifications() {
   const { data: broadcasts = [] } = useQuery({
     queryKey: ['broadcasts'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('broadcasts')
         .select('*')
         .not('sent_at', 'is', null)

@@ -482,6 +482,12 @@ export default function PlanningPlugin() {
   });
 
   const range = useMemo(() => customRange ? buildCustomRange(customRange) : buildRange(view, cursor), [cursor, customRange, view]);
+  const profileColumnWidth = 112;
+  const timelineBodyWidth = useMemo(() => {
+    const tickWidth = view === "month" ? 96 : view === "year" ? 86 : 82;
+    const minimum = view === "month" ? 820 : view === "year" ? 960 : 520;
+    return Math.max(minimum, range.ticks.length * tickWidth);
+  }, [range.ticks.length, view]);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ["planning_profiles"],
@@ -1375,7 +1381,7 @@ export default function PlanningPlugin() {
             }} aria-label="Période suivante">
               <ChevronRight size={17} />
             </button>
-            <div style={{ fontWeight: 900, fontFamily: "var(--font-display)", minWidth: 150 }}>{range.title}</div>
+            <div style={{ fontWeight: 900, fontFamily: "var(--font-display)", flex: "1 1 120px", minWidth: 0 }}>{range.title}</div>
             <button className="btn btn-secondary btn-sm" onClick={openPeriodDialog}>
               <Calendar size={14} />
               Période
@@ -1436,24 +1442,24 @@ export default function PlanningPlugin() {
           <div
             className="grid"
             style={{
-              gridTemplateColumns: "132px minmax(720px, 1fr)",
+              gridTemplateColumns: `${profileColumnWidth}px minmax(${timelineBodyWidth}px, 1fr)`,
               overflowX: "auto",
             }}
           >
             <div className="bg-muted/40 border-r border-border">
               <div style={{ height: 44, borderBottom: "1px solid var(--color-border)" }} />
               {timelineProfiles.map((profile) => (
-                <div key={profile.id || NO_PROFILE_ID} className="flex items-center gap-2 px-3" style={{ height: 92, borderBottom: "1px solid var(--color-border)" }}>
+                <div key={profile.id || NO_PROFILE_ID} className="flex items-center gap-2" style={{ height: 92, borderBottom: "1px solid var(--color-border)", paddingInline: 10 }}>
                   <span style={{ width: 9, height: 9, borderRadius: 99, background: `hsl(${profile.color})`, flexShrink: 0 }} />
                   <div className="min-w-0">
-                    <div style={{ fontWeight: 800, fontSize: "var(--text-sm)" }} className="truncate">{profile.name}</div>
-                    <div style={{ color: "var(--color-text-3)", fontSize: "var(--text-xs)" }} className="truncate">{profile.role || "Profil"}</div>
+                    <div style={{ fontWeight: 800, fontSize: "clamp(14px, var(--text-sm), 16px)", lineHeight: 1.15 }} className="truncate">{profile.name}</div>
+                    <div style={{ color: "var(--color-text-3)", fontSize: "clamp(12px, var(--text-xs), 14px)", lineHeight: 1.2 }} className="truncate">{profile.role || "Profil"}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ minWidth: 720 }}>
+            <div style={{ minWidth: timelineBodyWidth }}>
               <div className="relative" style={{ height: 44, borderBottom: "1px solid var(--color-border)" }}>
                 {range.ticks.map((tick, index) => {
                   const left = ((tick.date.getTime() - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * 100;
@@ -1475,11 +1481,11 @@ export default function PlanningPlugin() {
                         overflow: "hidden",
                       }}
                     >
-                      <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-2)", fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: "clamp(12px, var(--text-xs), 14px)", color: "var(--color-text-2)", fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {tick.label}
                       </div>
                       {tick.subLabel && (
-                        <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div style={{ fontSize: "clamp(12px, var(--text-xs), 14px)", color: "var(--color-text-3)", fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {tick.subLabel}
                         </div>
                       )}
@@ -1529,7 +1535,7 @@ export default function PlanningPlugin() {
                             left: `${left}%`,
                             top: 12 + (index % 3) * 24,
                             width: `${width}%`,
-                            minWidth: 104,
+                            minWidth: 92,
                             maxWidth: "calc(100% - 8px)",
                             height: 28,
                             borderRadius: 7,
@@ -1537,7 +1543,7 @@ export default function PlanningPlugin() {
                             background: `linear-gradient(135deg, hsl(${project?.color || "217 91% 60"} / 0.88), hsl(${project?.color || "217 91% 60"} / 0.68))`,
                             color: "white",
                             padding: "4px 8px",
-                            fontSize: "var(--text-xs)",
+                            fontSize: "clamp(12px, var(--text-xs), 14px)",
                             fontWeight: 800,
                             boxShadow: "var(--shadow-sm)",
                             overflow: "hidden",
