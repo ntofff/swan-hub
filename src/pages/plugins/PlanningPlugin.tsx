@@ -27,7 +27,6 @@ import { TutorialButton } from "@/components/TutorialButton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { downloadCsv } from "@/lib/businessTools";
 
 type QueryResponse<T> = { data: T | null; error: { message: string } | null };
 type DbQuery<T = unknown> = PromiseLike<QueryResponse<T>> & {
@@ -113,9 +112,54 @@ type CustomRange = {
   end: string;
 };
 
+type ExportFormat = "calendar" | "pdf" | "excel" | "mail";
+
+type ExportSelection = {
+  start: string;
+  end: string;
+  profileIds: string[];
+  projectIds: string[];
+};
+
+type ExportColumn = {
+  id: string;
+  label: string;
+  subLabel: string;
+  start: Date;
+  end: Date;
+};
+
+type ExportProfileRow = {
+  id: string;
+  profileId: string | null;
+  name: string;
+  role: string | null;
+  color: string;
+};
+
+type ExportProjectRow = {
+  id: string;
+  projectId: string | null;
+  name: string;
+  client: string | null;
+  color: string;
+};
+
+type ExportPlanningData = {
+  title: string;
+  start: Date;
+  end: Date;
+  columns: ExportColumn[];
+  profileRows: ExportProfileRow[];
+  projectRows: ExportProjectRow[];
+  events: PlanningEvent[];
+};
+
 const db = supabase as unknown as BusinessDb;
 const NO_PROFILE_ID = "sans-profil";
+const NO_PROJECT_ID = "sans-projet";
 const ALL_PROJECTS = "all";
+const EXPORT_SHEET_WIDTH = 1280;
 const PROJECT_COLORS = ["217 91% 60%", "142 64% 38%", "38 92% 50%", "330 70% 55%", "270 50% 60%", "0 72% 51%"];
 const PROFILE_COLORS = ["199 89% 48%", "38 50% 58%", "142 71% 45%", "25 95% 53%", "217 91% 60%", "330 70% 55%"];
 const STATUSES = ["Planifié", "En cours", "Terminé", "Annulé"];
@@ -258,6 +302,67 @@ const buildCustomRange = (range: CustomRange) => {
   return { start, end, ticks, title: `${dateLabel(start)} - ${dateLabel(addDays(end, -1))}` };
 };
 
+const parseExportRange = (selection: ExportSelection) => {
+  if (!selection.start || !selection.end) return null;
+  const start = startOfDay(new Date(`${selection.start}T00:00:00`));
+  const requestedEnd = startOfDay(new Date(`${selection.end}T00:00:00`));
+  if (Number.isNaN(start.getTime()) || Number.isNaN(requestedEnd.getTime())) return null;
+  if (requestedEnd.getTime() < start.getTime()) return null;
+  const end = addDays(requestedEnd, 1);
+  return { start, end, title: `${dateLabel(start)} - ${dateLabel(addDays(end, -1))}` };
+};
+
+const buildExportColumns = (start: Date, end: Date): ExportColumn[] => {
+  const dayCount = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000));
+
+  if (dayCount <= 14) {
+    return Array.from({ length: dayCount }, (_, index) => {
+      const columnStart = addDays(start, index);
+      const columnEnd = addDays(columnStart, 1);
+      return {
+        id: columnStart.toISOString(),
+        label: columnStart.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit" }),
+        subLabel: columnStart.toLocaleDateString("fr-FR", { month: "short" }),
+        start: columnStart,
+        end: columnEnd,
+      };
+    });
+  }
+
+  if (dayCount <= 120) {
+    const columns: ExportColumn[] = [];
+    for (let columnStart = new Date(start); columnStart.getTime() < end.getTime(); columnStart = addDays(columnStart, 7)) {
+      const columnEnd = new Date(Math.min(addDays(columnStart, 7).getTime(), end.getTime()));
+      columns.push({
+        id: columnStart.toISOString(),
+        label: `Sem. ${dateLabel(columnStart)}`,
+        subLabel: `${dateLabel(columnStart)} - ${dateLabel(addDays(columnEnd, -1))}`,
+        start: columnStart,
+        end: columnEnd,
+      });
+    }
+    return columns;
+  }
+
+  const columns: ExportColumn[] = [];
+  for (
+    let monthCursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    monthCursor.getTime() < end.getTime();
+    monthCursor = addMonths(monthCursor, 1)
+  ) {
+    const columnStart = new Date(Math.max(monthCursor.getTime(), start.getTime()));
+    const columnEnd = new Date(Math.min(addMonths(monthCursor, 1).getTime(), end.getTime()));
+    columns.push({
+      id: monthCursor.toISOString(),
+      label: monthCursor.toLocaleDateString("fr-FR", { month: "short" }),
+      subLabel: String(monthCursor.getFullYear()),
+      start: columnStart,
+      end: columnEnd,
+    });
+  }
+  return columns;
+};
+
 const shiftCursor = (cursor: Date, view: PlanningView, dir: -1 | 1) => {
   if (view === "day") return addDays(cursor, dir);
   if (view === "week") return addDays(cursor, dir * 7);
@@ -275,6 +380,45 @@ const escapeIcs = (value?: string | null) =>
     .replace(/,/g, "\\,")
     .replace(/;/g, "\\;");
 
+const escapeHtml = (value?: string | number | null) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const eventProfileKey = (event: PlanningEvent) => event.profile_id || NO_PROFILE_ID;
+const eventProjectKey = (event: PlanningEvent) => event.project_id || NO_PROJECT_ID;
+
+const rangesOverlap = (startA: Date, endA: Date, startB: Date, endB: Date) =>
+  startA.getTime() < endB.getTime() && endA.getTime() > startB.getTime();
+
+const eventOverlaps = (event: PlanningEvent, start: Date, end: Date) =>
+  rangesOverlap(new Date(event.start_at), new Date(event.end_at), start, end);
+
+const exportEventTime = (event: PlanningEvent) => {
+  const start = new Date(event.start_at);
+  const end = new Date(event.end_at);
+  if (formatDateInput(start) === formatDateInput(end)) return `${formatTimeInput(start)}-${formatTimeInput(end)}`;
+  return `${dateLabel(start)} ${formatTimeInput(start)} - ${dateLabel(end)} ${formatTimeInput(end)}`;
+};
+
+const hslToHex = (value: string) => {
+  const match = value.match(/([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/);
+  if (!match) return "#3b82f6";
+  const hue = (Number(match[1]) % 360) / 360;
+  const saturation = Number(match[2]) / 100;
+  const lightness = Number(match[3]) / 100;
+  const chroma = saturation * Math.min(lightness, 1 - lightness);
+  const channel = (offset: number) => {
+    const position = (offset + hue * 12) % 12;
+    const color = lightness - chroma * Math.max(-1, Math.min(position - 3, Math.min(9 - position, 1)));
+    return Math.round(255 * color).toString(16).padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+};
+
 const downloadFile = (filename: string, content: string, type: string) => {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -290,7 +434,7 @@ const downloadFile = (filename: string, content: string, type: string) => {
 export default function PlanningPlugin() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const exportSheetRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<PlanningView>("week");
   const [cursor, setCursor] = useState(new Date());
   const [projectFilter, setProjectFilter] = useState(ALL_PROJECTS);
@@ -303,10 +447,21 @@ export default function PlanningPlugin() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
   const [customRange, setCustomRange] = useState<CustomRange | null>(null);
   const [periodDraft, setPeriodDraft] = useState<CustomRange>(() => {
     const start = startOfWeek(new Date());
     return { start: formatDateInput(start), end: formatDateInput(addDays(start, 6)) };
+  });
+  const [exportDraft, setExportDraft] = useState<ExportSelection>(() => {
+    const start = startOfWeek(new Date());
+    return {
+      start: formatDateInput(start),
+      end: formatDateInput(addDays(start, 6)),
+      profileIds: [],
+      projectIds: [],
+    };
   });
 
   const range = useMemo(() => customRange ? buildCustomRange(customRange) : buildRange(view, cursor), [cursor, customRange, view]);
@@ -345,6 +500,78 @@ export default function PlanningPlugin() {
   const profileMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
 
   const timelineProfiles: TimelineProfile[] = useMemo(() => profiles, [profiles]);
+
+  const exportProfileOptions: ExportProfileRow[] = useMemo(() => {
+    const options: ExportProfileRow[] = profiles.map((profile) => ({
+      id: profile.id,
+      profileId: profile.id,
+      name: profile.name,
+      role: profile.role,
+      color: profile.color,
+    }));
+    if (events.some((event) => !event.profile_id)) {
+      options.push({
+        id: NO_PROFILE_ID,
+        profileId: null,
+        name: "Non affecté",
+        role: "Non assigné",
+        color: "217 91% 60%",
+      });
+    }
+    return options;
+  }, [events, profiles]);
+
+  const exportProjectOptions: ExportProjectRow[] = useMemo(() => {
+    const options: ExportProjectRow[] = projects.map((project) => ({
+      id: project.id,
+      projectId: project.id,
+      name: project.name,
+      client: project.client,
+      color: project.color,
+    }));
+    if (events.some((event) => !event.project_id)) {
+      options.push({
+        id: NO_PROJECT_ID,
+        projectId: null,
+        name: "Sans projet",
+        client: "Non classé",
+        color: "215 16% 47%",
+      });
+    }
+    return options;
+  }, [events, projects]);
+
+  const exportRange = useMemo(() => parseExportRange(exportDraft), [exportDraft]);
+  const exportProfileRows = useMemo(() => {
+    const selected = new Set(exportDraft.profileIds);
+    return exportProfileOptions.filter((profile) => selected.has(profile.id));
+  }, [exportDraft.profileIds, exportProfileOptions]);
+  const exportProjectRows = useMemo(() => {
+    const selected = new Set(exportDraft.projectIds);
+    return exportProjectOptions.filter((project) => selected.has(project.id));
+  }, [exportDraft.projectIds, exportProjectOptions]);
+  const exportEvents = useMemo(() => {
+    if (!exportRange) return [];
+    const profileIds = new Set(exportDraft.profileIds);
+    const projectIds = new Set(exportDraft.projectIds);
+    return events.filter((event) =>
+      eventOverlaps(event, exportRange.start, exportRange.end) &&
+      profileIds.has(eventProfileKey(event)) &&
+      projectIds.has(eventProjectKey(event))
+    );
+  }, [events, exportDraft.profileIds, exportDraft.projectIds, exportRange]);
+  const exportData = useMemo<ExportPlanningData | null>(() => {
+    if (!exportRange) return null;
+    return {
+      title: exportRange.title,
+      start: exportRange.start,
+      end: exportRange.end,
+      columns: buildExportColumns(exportRange.start, exportRange.end),
+      profileRows: exportProfileRows,
+      projectRows: exportProjectRows,
+      events: exportEvents,
+    };
+  }, [exportEvents, exportProfileRows, exportProjectRows, exportRange]);
 
   const visibleEvents = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -412,6 +639,42 @@ export default function PlanningPlugin() {
     if (end.getTime() < start.getTime()) return toast.error("La date d'arrivée doit être après le départ");
     setCustomRange(periodDraft);
     setPeriodOpen(false);
+  };
+
+  const openExportDialog = (format: ExportFormat) => {
+    const profileIds = exportProfileOptions.map((profile) => profile.id);
+    const projectIds = projectFilter === ALL_PROJECTS
+      ? exportProjectOptions.map((project) => project.id)
+      : exportProjectOptions.some((project) => project.id === projectFilter)
+        ? [projectFilter]
+        : exportProjectOptions.map((project) => project.id);
+
+    setExportFormat(format);
+    setExportDraft({
+      start: formatDateInput(range.start),
+      end: formatDateInput(addDays(range.end, -1)),
+      profileIds,
+      projectIds,
+    });
+    setExportOpen(true);
+  };
+
+  const toggleExportProfile = (profileId: string) => {
+    setExportDraft((current) => ({
+      ...current,
+      profileIds: current.profileIds.includes(profileId)
+        ? current.profileIds.filter((id) => id !== profileId)
+        : [...current.profileIds, profileId],
+    }));
+  };
+
+  const toggleExportProject = (projectId: string) => {
+    setExportDraft((current) => ({
+      ...current,
+      projectIds: current.projectIds.includes(projectId)
+        ? current.projectIds.filter((id) => id !== projectId)
+        : [...current.projectIds, projectId],
+    }));
   };
 
   const handleLaneClick = (event: MouseEvent<HTMLDivElement>, profileId: string | null) => {
@@ -576,14 +839,33 @@ export default function PlanningPlugin() {
     onError: (error: unknown) => toast.error(getErrorMessage(error, "Suppression impossible")),
   });
 
-  const exportCalendar = () => {
-    if (visibleEvents.length === 0) return toast.info("Aucun élément à exporter");
+  const getReadyExportData = (format: ExportFormat) => {
+    if (!exportData) {
+      toast.error("Sélectionnez une période valide");
+      return null;
+    }
+    if (exportData.profileRows.length === 0) {
+      toast.error("Sélectionnez au moins un profil");
+      return null;
+    }
+    if (exportProjectOptions.length > 0 && exportData.projectRows.length === 0) {
+      toast.error("Sélectionnez au moins un projet");
+      return null;
+    }
+    if ((format === "calendar" || format === "mail") && exportData.events.length === 0) {
+      toast.info("Aucun élément à exporter sur cette sélection");
+      return null;
+    }
+    return exportData;
+  };
+
+  const downloadCalendarExport = (data: ExportPlanningData) => {
     const lines = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
       "PRODID:-//SWAN HUB//Planning//FR",
       "CALSCALE:GREGORIAN",
-      ...visibleEvents.flatMap((event) => {
+      ...data.events.flatMap((event) => {
         const project = event.project_id ? projectMap.get(event.project_id) : null;
         const profile = event.profile_id ? profileMap.get(event.profile_id) : null;
         return [
@@ -600,39 +882,125 @@ export default function PlanningPlugin() {
       }),
       "END:VCALENDAR",
     ];
-    downloadFile(`planning-swan-${formatDateInput(new Date())}.ics`, lines.join("\r\n"), "text/calendar;charset=utf-8");
+    downloadFile(`planning-swan-${formatDateInput(data.start)}-${formatDateInput(addDays(data.end, -1))}.ics`, lines.join("\r\n"), "text/calendar;charset=utf-8");
     toast.success("Calendrier exporté");
+    return true;
   };
 
-  const exportExcel = () => {
-    if (visibleEvents.length === 0) return toast.info("Aucun élément à exporter");
-    downloadCsv(
-      `planning-swan-${formatDateInput(new Date())}.csv`,
-      visibleEvents.map((event) => ({
-        titre: event.title,
-        profil: event.profile_id ? profileMap.get(event.profile_id)?.name : "",
-        projet: event.project_id ? projectMap.get(event.project_id)?.name : "",
-        debut: new Date(event.start_at).toLocaleString("fr-FR"),
-        fin: new Date(event.end_at).toLocaleString("fr-FR"),
-        lieu: event.location,
-        statut: event.status,
-        notes: event.notes,
-      }))
+  const downloadExcelExport = (data: ExportPlanningData) => {
+    const projectById = new Map(data.projectRows.map((project) => [project.id, project]));
+    const headerCells = data.columns
+      .map((column) => `<th class="date-col"><strong>${escapeHtml(column.label)}</strong><br><span>${escapeHtml(column.subLabel)}</span></th>`)
+      .join("");
+    const bodyRows = data.profileRows.map((profile) => {
+      const cells = data.columns.map((column) => {
+        const cellEvents = data.events.filter((event) =>
+          eventProfileKey(event) === profile.id && eventOverlaps(event, column.start, column.end)
+        );
+        if (cellEvents.length === 0) return "<td class=\"empty\"></td>";
+        const content = cellEvents.map((event) => {
+          const project = projectById.get(eventProjectKey(event));
+          const projectColor = hslToHex(project?.color || "217 91% 60%");
+          return `
+            <div class="event" style="border-left-color:${projectColor};">
+              <strong>${escapeHtml(event.title)}</strong>
+              <span>${escapeHtml(exportEventTime(event))}</span>
+              <span>${escapeHtml(project?.name || "Sans projet")}${event.location ? ` · ${escapeHtml(event.location)}` : ""}</span>
+            </div>
+          `;
+        }).join("");
+        return `<td>${content}</td>`;
+      }).join("");
+      return `
+        <tr>
+          <th class="profile-cell">
+            <span class="dot" style="background:${hslToHex(profile.color)};"></span>
+            <strong>${escapeHtml(profile.name)}</strong>
+            <small>${escapeHtml(profile.role || "Profil")}</small>
+          </th>
+          ${cells}
+        </tr>
+      `;
+    }).join("");
+    const legend = data.projectRows.map((project) => `
+      <span class="legend-item">
+        <span class="dot" style="background:${hslToHex(project.color)};"></span>
+        ${escapeHtml(project.name)}
+      </span>
+    `).join("");
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: Arial, sans-serif; color: #171512; background: #ffffff; }
+            .title { background: #171512; color: #ffffff; padding: 18px 20px; border-radius: 10px; }
+            .title h1 { margin: 0; font-size: 24px; }
+            .title p { margin: 6px 0 0; color: #f3df9d; font-weight: 700; }
+            .summary { margin: 16px 0; font-weight: 700; color: #4b473f; }
+            .legend { margin: 10px 0 16px; }
+            .legend-item { display: inline-block; margin-right: 16px; font-weight: 700; color: #312d27; }
+            .dot { display: inline-block; width: 10px; height: 10px; border-radius: 10px; margin-right: 6px; vertical-align: middle; }
+            table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+            th, td { border: 1px solid #ded8cb; padding: 8px; vertical-align: top; background: #ffffff; }
+            thead th { background: #f7f2e8; color: #2b2925; font-size: 12px; }
+            .profile-cell { width: 160px; text-align: left; background: #fbfaf7; color: #171512; }
+            .profile-cell small { display: block; margin-top: 4px; color: #746c60; font-weight: 600; }
+            .date-col span { color: #756d5f; font-weight: 700; }
+            .empty { background: #fbfaf8; }
+            .event { margin: 0 0 6px; padding: 7px 8px; border-left: 4px solid #3b82f6; background: #f8fafc; border-radius: 6px; }
+            .event strong { display: block; color: #171512; font-size: 12px; }
+            .event span { display: block; color: #5c554b; font-size: 11px; margin-top: 2px; }
+          </style>
+        </head>
+        <body>
+          <div class="title">
+            <h1>Planning SWAN HUB</h1>
+            <p>${escapeHtml(data.title)}</p>
+          </div>
+          <div class="summary">${data.events.length} créneau(x) · ${data.profileRows.length} profil(s) · ${data.projectRows.length} projet(s)</div>
+          <div class="legend">${legend}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Profil</th>
+                ${headerCells}
+              </tr>
+            </thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    downloadFile(
+      `planning-swan-${formatDateInput(data.start)}-${formatDateInput(addDays(data.end, -1))}.xls`,
+      html,
+      "application/vnd.ms-excel;charset=utf-8"
     );
     toast.success("Export Excel généré");
+    return true;
   };
 
-  const exportPdf = async () => {
-    if (visibleEvents.length === 0) return toast.info("Aucun élément à exporter");
-    if (!timelineRef.current) return toast.error("Tableau indisponible pour l'export PDF");
+  const downloadPdfExport = async (data: ExportPlanningData) => {
+    if (!exportSheetRef.current) {
+      toast.error("Tableau indisponible pour l'export PDF");
+      return false;
+    }
 
     setIsExportingPdf(true);
     try {
-      const canvas = await html2canvas(timelineRef.current, {
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      const target = exportSheetRef.current;
+      const canvas = await html2canvas(target, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        width: target.scrollWidth,
+        height: target.scrollHeight,
+        windowWidth: target.scrollWidth,
+        windowHeight: target.scrollHeight,
       });
       const pdf = new jsPDF("l", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -656,18 +1024,19 @@ export default function PlanningPlugin() {
         heightLeft -= pageHeight - margin * 2;
       }
 
-      pdf.save(`planning-swan-${formatDateInput(new Date())}.pdf`);
+      pdf.save(`planning-swan-${formatDateInput(data.start)}-${formatDateInput(addDays(data.end, -1))}.pdf`);
       toast.success("PDF généré");
+      return true;
     } catch (error) {
       toast.error(getErrorMessage(error, "Export PDF impossible"));
+      return false;
     } finally {
       setIsExportingPdf(false);
     }
   };
 
-  const sendMail = () => {
-    if (visibleEvents.length === 0) return toast.info("Aucun élément à envoyer");
-    const body = visibleEvents
+  const sendMailExport = (data: ExportPlanningData) => {
+    const body = data.events
       .slice(0, 25)
       .map((event) => {
         const project = event.project_id ? projectMap.get(event.project_id)?.name : "Sans projet";
@@ -676,10 +1045,25 @@ export default function PlanningPlugin() {
       })
       .join("\n");
     window.open(
-      `mailto:?subject=${encodeURIComponent(`Planning SWAN - ${range.title}`)}&body=${encodeURIComponent(body)}`,
+      `mailto:?subject=${encodeURIComponent(`Planning SWAN - ${data.title}`)}&body=${encodeURIComponent(body)}`,
       "_blank",
       "noopener,noreferrer"
     );
+    return true;
+  };
+
+  const runExport = async (format: ExportFormat) => {
+    const data = getReadyExportData(format);
+    if (!data) return;
+    const success =
+      format === "calendar"
+        ? downloadCalendarExport(data)
+        : format === "excel"
+          ? downloadExcelExport(data)
+          : format === "mail"
+            ? sendMailExport(data)
+            : await downloadPdfExport(data);
+    if (success) setExportOpen(false);
   };
 
   return (
@@ -870,6 +1254,89 @@ export default function PlanningPlugin() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[860px] max-h-[86dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogHeader className="pr-8">
+            <DialogTitle>Exporter le planning</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="field-label">Départ</label>
+              <input
+                className="field-input"
+                type="date"
+                value={exportDraft.start}
+                onChange={(event) => setExportDraft((current) => ({ ...current, start: event.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="field-label">Arrivée</label>
+              <input
+                className="field-input"
+                type="date"
+                value={exportDraft.end}
+                onChange={(event) => setExportDraft((current) => ({ ...current, end: event.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ExportOptionPanel
+              title="Profils"
+              options={exportProfileOptions.map((profile) => ({
+                id: profile.id,
+                name: profile.name,
+                meta: profile.role || "Profil",
+                color: profile.color,
+              }))}
+              selectedIds={exportDraft.profileIds}
+              onToggle={toggleExportProfile}
+              onSelectAll={() => setExportDraft((current) => ({ ...current, profileIds: exportProfileOptions.map((profile) => profile.id) }))}
+              onClear={() => setExportDraft((current) => ({ ...current, profileIds: [] }))}
+            />
+            <ExportOptionPanel
+              title="Projets"
+              options={exportProjectOptions.map((project) => ({
+                id: project.id,
+                name: project.name,
+                meta: project.client || "Projet",
+                color: project.color,
+              }))}
+              selectedIds={exportDraft.projectIds}
+              onToggle={toggleExportProject}
+              onSelectAll={() => setExportDraft((current) => ({ ...current, projectIds: exportProjectOptions.map((project) => project.id) }))}
+              onClear={() => setExportDraft((current) => ({ ...current, projectIds: [] }))}
+            />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <ExportSummaryCard label="Période" value={exportData?.title || "Dates invalides"} />
+            <ExportSummaryCard label="Créneaux" value={String(exportData?.events.length || 0)} />
+            <ExportSummaryCard label="Colonnes PDF" value={String(exportData?.columns.length || 0)} />
+          </div>
+
+          <div className="flex flex-wrap gap-2 justify-end">
+            <button className={`btn btn-sm ${exportFormat === "calendar" ? "btn-primary" : "btn-secondary"}`} onClick={() => runExport("calendar")}>
+              <Calendar size={14} />
+              Calendrier
+            </button>
+            <button className={`btn btn-sm ${exportFormat === "pdf" ? "btn-primary" : "btn-secondary"}`} onClick={() => runExport("pdf")} disabled={isExportingPdf}>
+              <FileText size={14} />
+              {isExportingPdf ? "PDF..." : "PDF"}
+            </button>
+            <button className={`btn btn-sm ${exportFormat === "excel" ? "btn-primary" : "btn-secondary"}`} onClick={() => runExport("excel")}>
+              <FileSpreadsheet size={14} />
+              Excel
+            </button>
+            <button className={`btn btn-sm ${exportFormat === "mail" ? "btn-primary" : "btn-secondary"}`} onClick={() => runExport("mail")}>
+              <Mail size={14} />
+              Mail
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <section className="px-4" style={{ marginBottom: "var(--space-4)" }}>
         <div className="flex flex-wrap items-center gap-2 justify-between">
           <div className="flex items-center gap-2">
@@ -928,19 +1395,19 @@ export default function PlanningPlugin() {
 
       <section className="px-4" style={{ marginBottom: "var(--space-4)" }}>
         <div className="flex flex-wrap gap-2">
-          <button className="btn btn-secondary btn-sm" onClick={exportCalendar}>
+          <button className="btn btn-secondary btn-sm" onClick={() => openExportDialog("calendar")}>
             <Calendar size={14} />
             Calendrier
           </button>
-          <button className="btn btn-secondary btn-sm" onClick={exportPdf} disabled={isExportingPdf}>
+          <button className="btn btn-secondary btn-sm" onClick={() => openExportDialog("pdf")} disabled={isExportingPdf}>
             <FileText size={14} />
             {isExportingPdf ? "PDF..." : "PDF"}
           </button>
-          <button className="btn btn-secondary btn-sm" onClick={exportExcel}>
+          <button className="btn btn-secondary btn-sm" onClick={() => openExportDialog("excel")}>
             <FileSpreadsheet size={14} />
             Excel
           </button>
-          <button className="btn btn-primary btn-sm" onClick={sendMail}>
+          <button className="btn btn-primary btn-sm" onClick={() => openExportDialog("mail")}>
             <Mail size={14} />
             Mail
           </button>
@@ -948,7 +1415,7 @@ export default function PlanningPlugin() {
       </section>
 
       <section className="px-4">
-        <div ref={timelineRef} className="card" style={{ padding: 0, overflow: "hidden", background: "var(--color-bg-elevated)" }}>
+        <div className="card" style={{ padding: 0, overflow: "hidden", background: "var(--color-bg-elevated)" }}>
           <div
             className="grid"
             style={{
@@ -1062,6 +1529,310 @@ export default function PlanningPlugin() {
         <StatCard label="Profils mobilisés" value={String(stats.profilesUsed)} icon={<Users size={18} />} />
         <StatCard label="Projets visibles" value={String(stats.projectsUsed)} icon={<Folder size={18} />} />
       </section>
+
+      {exportData && (
+        <div
+          ref={exportSheetRef}
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            left: -10000,
+            top: 0,
+            width: EXPORT_SHEET_WIDTH,
+            background: "#ffffff",
+            pointerEvents: "none",
+          }}
+        >
+          <ExportPlanningSheet data={exportData} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExportSummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border p-3" style={{ background: "var(--color-surface)" }}>
+      <div style={{ color: "var(--color-text-3)", fontSize: "var(--text-xs)", fontWeight: 800 }}>{label}</div>
+      <div style={{ color: "var(--color-text-1)", fontSize: "var(--text-lg)", fontWeight: 900 }}>{value}</div>
+    </div>
+  );
+}
+
+function ExportOptionPanel({
+  title,
+  options,
+  selectedIds,
+  onToggle,
+  onSelectAll,
+  onClear,
+}: {
+  title: string;
+  options: Array<{ id: string; name: string; meta: string; color: string }>;
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+}) {
+  const selected = new Set(selectedIds);
+
+  return (
+    <div className="rounded-lg border border-border p-3" style={{ background: "var(--color-bg-elevated)" }}>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div style={{ fontSize: "var(--text-sm)", fontWeight: 900 }}>{title}</div>
+        <div className="flex gap-1">
+          <button className="btn btn-ghost btn-sm" onClick={onSelectAll}>Tous</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClear}>Aucun</button>
+        </div>
+      </div>
+
+      <div className="grid gap-2" style={{ maxHeight: 220, overflowY: "auto", paddingRight: 2 }}>
+        {options.length === 0 && (
+          <div style={{ color: "var(--color-text-3)", fontSize: "var(--text-sm)", fontWeight: 700 }}>Aucun élément</div>
+        )}
+        {options.map((option) => (
+          <label
+            key={option.id}
+            className="flex min-w-0 items-center gap-2 rounded-lg border border-border p-2"
+            style={{ background: selected.has(option.id) ? "hsl(42 54% 59% / 0.1)" : "var(--color-surface)" }}
+          >
+            <input
+              type="checkbox"
+              checked={selected.has(option.id)}
+              onChange={() => onToggle(option.id)}
+              style={{ width: 18, height: 18, flexShrink: 0 }}
+            />
+            <span style={{ width: 10, height: 10, borderRadius: 99, background: `hsl(${option.color})`, flexShrink: 0 }} />
+            <span className="min-w-0">
+              <span className="block truncate" style={{ fontWeight: 850 }}>{option.name}</span>
+              <span className="block truncate" style={{ color: "var(--color-text-3)", fontSize: "var(--text-xs)", fontWeight: 700 }}>{option.meta}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ExportPlanningSheet({ data }: { data: ExportPlanningData }) {
+  const projectById = useMemo(() => new Map(data.projectRows.map((project) => [project.id, project])), [data.projectRows]);
+
+  const sheetStyles: Record<string, CSSProperties> = {
+    page: {
+      width: EXPORT_SHEET_WIDTH,
+      padding: 34,
+      background: "#ffffff",
+      color: "#191714",
+      fontFamily: "Inter, Arial, sans-serif",
+    },
+    header: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 24,
+      padding: "24px 26px",
+      borderRadius: 18,
+      background: "linear-gradient(135deg, #171512 0%, #2b2620 100%)",
+      color: "#ffffff",
+      boxShadow: "0 18px 45px rgba(23, 21, 18, 0.16)",
+    },
+    badge: {
+      display: "inline-flex",
+      alignItems: "center",
+      minHeight: 28,
+      padding: "5px 11px",
+      borderRadius: 999,
+      background: "rgba(201, 169, 97, 0.18)",
+      color: "#f2d88f",
+      fontSize: 12,
+      fontWeight: 900,
+      letterSpacing: 0.4,
+    },
+    h1: {
+      margin: "12px 0 0",
+      fontSize: 34,
+      lineHeight: 1,
+      fontWeight: 950,
+    },
+    subtitle: {
+      marginTop: 8,
+      color: "#eadbb8",
+      fontSize: 15,
+      fontWeight: 800,
+    },
+    statGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3, minmax(110px, 1fr))",
+      gap: 10,
+      minWidth: 390,
+    },
+    stat: {
+      padding: "12px 14px",
+      borderRadius: 14,
+      background: "rgba(255,255,255,0.08)",
+      border: "1px solid rgba(255,255,255,0.12)",
+    },
+    statLabel: {
+      color: "#d7c7a6",
+      fontSize: 11,
+      fontWeight: 800,
+      textTransform: "uppercase",
+    },
+    statValue: {
+      marginTop: 4,
+      fontSize: 24,
+      fontWeight: 950,
+    },
+    legend: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 8,
+      margin: "18px 0 16px",
+    },
+    legendItem: {
+      display: "flex",
+      alignItems: "center",
+      gap: 7,
+      padding: "7px 10px",
+      borderRadius: 999,
+      border: "1px solid #ded8cb",
+      background: "#fbfaf7",
+      fontSize: 12,
+      fontWeight: 850,
+      color: "#332f28",
+    },
+    table: {
+      width: "100%",
+      borderCollapse: "separate",
+      borderSpacing: 0,
+      tableLayout: "fixed",
+      border: "1px solid #d9d2c5",
+      borderRadius: 16,
+      overflow: "hidden",
+      boxShadow: "0 16px 36px rgba(31, 28, 23, 0.08)",
+    },
+    th: {
+      padding: "12px 10px",
+      background: "#f6efe0",
+      borderRight: "1px solid #ddd3c2",
+      borderBottom: "1px solid #d9d2c5",
+      textAlign: "left",
+      verticalAlign: "top",
+      fontSize: 12,
+      color: "#29251f",
+      fontWeight: 950,
+    },
+    profileTh: {
+      width: 168,
+      padding: "14px 12px",
+      background: "#fbfaf7",
+      borderRight: "1px solid #d9d2c5",
+      borderBottom: "1px solid #d9d2c5",
+      textAlign: "left",
+      verticalAlign: "top",
+    },
+    td: {
+      minHeight: 92,
+      padding: 8,
+      borderRight: "1px solid #e8e1d4",
+      borderBottom: "1px solid #e8e1d4",
+      background: "#ffffff",
+      verticalAlign: "top",
+    },
+  };
+
+  return (
+    <div style={sheetStyles.page}>
+      <div style={sheetStyles.header}>
+        <div>
+          <div style={sheetStyles.badge}>SWAN HUB</div>
+          <h1 style={sheetStyles.h1}>Planning</h1>
+          <div style={sheetStyles.subtitle}>{data.title}</div>
+        </div>
+        <div style={sheetStyles.statGrid}>
+          <div style={sheetStyles.stat}>
+            <div style={sheetStyles.statLabel}>Créneaux</div>
+            <div style={sheetStyles.statValue}>{data.events.length}</div>
+          </div>
+          <div style={sheetStyles.stat}>
+            <div style={sheetStyles.statLabel}>Profils</div>
+            <div style={sheetStyles.statValue}>{data.profileRows.length}</div>
+          </div>
+          <div style={sheetStyles.stat}>
+            <div style={sheetStyles.statLabel}>Projets</div>
+            <div style={sheetStyles.statValue}>{data.projectRows.length}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={sheetStyles.legend}>
+        {data.projectRows.map((project) => (
+          <div key={project.id} style={sheetStyles.legendItem}>
+            <span style={{ width: 10, height: 10, borderRadius: 99, background: `hsl(${project.color})` }} />
+            {project.name}
+          </div>
+        ))}
+      </div>
+
+      <table style={sheetStyles.table}>
+        <thead>
+          <tr>
+            <th style={sheetStyles.th}>Profil</th>
+            {data.columns.map((column) => (
+              <th key={column.id} style={sheetStyles.th}>
+                <div>{column.label}</div>
+                <div style={{ marginTop: 3, color: "#776d5d", fontSize: 11, fontWeight: 800 }}>{column.subLabel}</div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.profileRows.map((profile) => (
+            <tr key={profile.id}>
+              <th style={sheetStyles.profileTh}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <span style={{ width: 11, height: 11, borderRadius: 99, background: `hsl(${profile.color})`, flexShrink: 0 }} />
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontSize: 14, fontWeight: 950, color: "#201d19" }}>{profile.name}</span>
+                    <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "#7a7062", fontWeight: 800 }}>{profile.role || "Profil"}</span>
+                  </span>
+                </div>
+              </th>
+              {data.columns.map((column) => {
+                const cellEvents = data.events.filter((event) =>
+                  eventProfileKey(event) === profile.id && eventOverlaps(event, column.start, column.end)
+                );
+                return (
+                  <td key={column.id} style={sheetStyles.td}>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {cellEvents.map((event) => {
+                        const project = projectById.get(eventProjectKey(event));
+                        const color = project?.color || "217 91% 60%";
+                        return (
+                          <div
+                            key={`${column.id}-${event.id}`}
+                            style={{
+                              padding: "7px 8px",
+                              borderRadius: 9,
+                              border: `1px solid hsl(${color} / 0.28)`,
+                              borderLeft: `4px solid hsl(${color})`,
+                              background: `linear-gradient(135deg, hsl(${color} / 0.12), #ffffff)`,
+                              boxShadow: "0 5px 14px rgba(35, 31, 25, 0.06)",
+                            }}
+                          >
+                            <div style={{ color: "#171512", fontSize: 12, fontWeight: 950, lineHeight: 1.15 }}>{event.title}</div>
+                            <div style={{ marginTop: 3, color: "#6f6659", fontSize: 10.5, fontWeight: 800 }}>{exportEventTime(event)}</div>
+                            <div style={{ marginTop: 2, color: "#6f6659", fontSize: 10.5, fontWeight: 750 }}>{project?.name || "Sans projet"}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
