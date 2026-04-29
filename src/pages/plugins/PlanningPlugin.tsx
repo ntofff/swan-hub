@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useMemo, useState } from "react";
+import { type CSSProperties, type MouseEvent, type ReactNode, useMemo, useRef, useState } from "react";
 import {
   Calendar,
   CalendarDays,
@@ -16,6 +16,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -93,6 +94,18 @@ type TimelineProfile = {
   color: string;
 };
 
+type ProfileDraft = {
+  name: string;
+  role: string;
+  color: string;
+};
+
+type ProjectDraft = {
+  name: string;
+  client: string;
+  color: string;
+};
+
 const db = supabase as unknown as BusinessDb;
 const NO_PROFILE_ID = "sans-profil";
 const ALL_PROJECTS = "all";
@@ -124,6 +137,20 @@ const startOfWeek = (date: Date) => {
 };
 const endOfLocalInput = (date: string, time: string) => new Date(`${date}T${time || "18:00"}`);
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const snapDate = (date: Date, view: PlanningView) => {
+  const next = new Date(date);
+  if (view === "day") {
+    const minutes = Math.round(next.getMinutes() / 30) * 30;
+    next.setMinutes(minutes, 0, 0);
+    return next;
+  }
+  if (view === "week") {
+    next.setMinutes(0, 0, 0);
+    return next;
+  }
+  next.setHours(9, 0, 0, 0);
+  return next;
+};
 
 const defaultForm = (): PlanningForm => {
   const start = new Date();
@@ -243,6 +270,7 @@ const downloadFile = (filename: string, content: string, type: string) => {
 export default function PlanningPlugin() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const timelineRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<PlanningView>("week");
   const [cursor, setCursor] = useState(new Date());
   const [projectFilter, setProjectFilter] = useState(ALL_PROJECTS);
@@ -252,6 +280,7 @@ export default function PlanningPlugin() {
   const [form, setForm] = useState<PlanningForm>(() => defaultForm());
   const [profileName, setProfileName] = useState("");
   const [projectName, setProjectName] = useState("");
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const range = useMemo(() => buildRange(view, cursor), [cursor, view]);
 
@@ -322,10 +351,34 @@ export default function PlanningPlugin() {
     setShowForm(true);
   };
 
+  const openNewFormAt = (profileId: string | null, start: Date) => {
+    const snappedStart = snapDate(start, view);
+    const end = new Date(snappedStart);
+    end.setHours(snappedStart.getHours() + 1);
+    setEditingEventId(null);
+    setForm({
+      ...defaultForm(),
+      profile_id: profileId || "",
+      project_id: projectFilter === ALL_PROJECTS ? "" : projectFilter,
+      start_date: formatDateInput(snappedStart),
+      start_time: formatTimeInput(snappedStart),
+      end_date: formatDateInput(end),
+      end_time: formatTimeInput(end),
+    });
+    setShowForm(true);
+  };
+
   const openEditForm = (event: PlanningEvent) => {
     setEditingEventId(event.id);
     setForm(formFromEvent(event));
     setShowForm(true);
+  };
+
+  const handleLaneClick = (event: MouseEvent<HTMLDivElement>, profileId: string | null) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 0.999);
+    const startMs = range.start.getTime() + ratio * (range.end.getTime() - range.start.getTime());
+    openNewFormAt(profileId, new Date(startMs));
   };
 
   const createProfile = useMutation({
@@ -360,6 +413,71 @@ export default function PlanningPlugin() {
       toast.success("Projet ajouté");
     },
     onError: (error: unknown) => toast.error(getErrorMessage(error, "Création du projet impossible")),
+  });
+
+  const updateProfile = useMutation({
+    mutationFn: async ({ id, draft }: { id: string; draft: ProfileDraft }) => {
+      if (!draft.name.trim()) throw new Error("Nom du profil requis");
+      const { error } = await db.from("planning_profiles").update({
+        name: draft.name.trim(),
+        role: draft.role.trim() || null,
+        color: draft.color,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planning_profiles"] });
+      toast.success("Profil modifié");
+    },
+    onError: (error: unknown) => toast.error(getErrorMessage(error, "Modification du profil impossible")),
+  });
+
+  const updateProject = useMutation({
+    mutationFn: async ({ id, draft }: { id: string; draft: ProjectDraft }) => {
+      if (!draft.name.trim()) throw new Error("Nom du projet requis");
+      const { error } = await db.from("planning_projects").update({
+        name: draft.name.trim(),
+        client: draft.client.trim() || null,
+        color: draft.color,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planning_projects"] });
+      toast.success("Projet modifié");
+    },
+    onError: (error: unknown) => toast.error(getErrorMessage(error, "Modification du projet impossible")),
+  });
+
+  const deleteProfile = useMutation({
+    mutationFn: async (profile: PlanningProfile) => {
+      const confirmed = window.confirm(`Supprimer le profil "${profile.name}" ? Les créneaux resteront dans "Sans profil".`);
+      if (!confirmed) return;
+      const { error } = await db.from("planning_profiles").delete().eq("id", profile.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planning_profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["planning_events"] });
+      toast.success("Profil supprimé");
+    },
+    onError: (error: unknown) => toast.error(getErrorMessage(error, "Suppression du profil impossible")),
+  });
+
+  const deleteProject = useMutation({
+    mutationFn: async (project: PlanningProject) => {
+      const confirmed = window.confirm(`Supprimer le projet "${project.name}" ? Les créneaux resteront sans projet.`);
+      if (!confirmed) return;
+      const { error } = await db.from("planning_projects").delete().eq("id", project.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planning_projects"] });
+      queryClient.invalidateQueries({ queryKey: ["planning_events"] });
+      setProjectFilter(ALL_PROJECTS);
+      toast.success("Projet supprimé");
+    },
+    onError: (error: unknown) => toast.error(getErrorMessage(error, "Suppression du projet impossible")),
   });
 
   const saveEvent = useMutation({
@@ -464,34 +582,47 @@ export default function PlanningPlugin() {
     toast.success("Export Excel généré");
   };
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     if (visibleEvents.length === 0) return toast.info("Aucun élément à exporter");
-    const pdf = new jsPDF("l", "mm", "a4");
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text(`Planning SWAN - ${range.title}`, 14, 16);
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    let y = 28;
-    visibleEvents.slice(0, 42).forEach((event) => {
-      const project = event.project_id ? projectMap.get(event.project_id)?.name : "Sans projet";
-      const profile = event.profile_id ? profileMap.get(event.profile_id)?.name : "Sans profil";
-      pdf.setFont("helvetica", "bold");
-      pdf.text(event.title.slice(0, 55), 14, y);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(`${eventDateLabel(event)} · ${profile} · ${project} · ${event.status}`, 82, y);
-      y += 7;
-      if (event.notes) {
-        pdf.text(event.notes.slice(0, 130), 18, y);
-        y += 6;
-      }
-      if (y > 190) {
+    if (!timelineRef.current) return toast.error("Tableau indisponible pour l'export PDF");
+
+    setIsExportingPdf(true);
+    try {
+      const canvas = await html2canvas(timelineRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+      const pdf = new jsPDF("l", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgData = canvas.toDataURL("image/png");
+      let position = margin;
+      let heightLeft = imgHeight;
+
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, 0, pageWidth, pageHeight, "F");
+      pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - margin * 2;
+
+      while (heightLeft > 0) {
         pdf.addPage();
-        y = 18;
+        position = margin - (imgHeight - heightLeft);
+        pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - margin * 2;
       }
-    });
-    pdf.save(`planning-swan-${formatDateInput(new Date())}.pdf`);
-    toast.success("PDF généré");
+
+      pdf.save(`planning-swan-${formatDateInput(new Date())}.pdf`);
+      toast.success("PDF généré");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Export PDF impossible"));
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const sendMail = () => {
@@ -612,6 +743,36 @@ export default function PlanningPlugin() {
               disabled={createProject.isPending}
             />
           </div>
+
+          {(profiles.length > 0 || projects.length > 0) && (
+            <div className="grid gap-4 mt-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+              <ResourcePanel title="Profils" icon={<Users size={15} />}>
+                {profiles.map((profile) => (
+                  <ProfileRow
+                    key={profile.id}
+                    profile={profile}
+                    onSave={(draft) => updateProfile.mutate({ id: profile.id, draft })}
+                    onDelete={() => deleteProfile.mutate(profile)}
+                    saving={updateProfile.isPending}
+                    deleting={deleteProfile.isPending}
+                  />
+                ))}
+              </ResourcePanel>
+
+              <ResourcePanel title="Projets" icon={<Folder size={15} />}>
+                {projects.map((project) => (
+                  <ProjectRow
+                    key={project.id}
+                    project={project}
+                    onSave={(draft) => updateProject.mutate({ id: project.id, draft })}
+                    onDelete={() => deleteProject.mutate(project)}
+                    saving={updateProject.isPending}
+                    deleting={deleteProject.isPending}
+                  />
+                ))}
+              </ResourcePanel>
+            </div>
+          )}
         </div>
       </section>
 
@@ -674,9 +835,9 @@ export default function PlanningPlugin() {
             <Calendar size={14} />
             Calendrier
           </button>
-          <button className="btn btn-secondary btn-sm" onClick={exportPdf}>
+          <button className="btn btn-secondary btn-sm" onClick={exportPdf} disabled={isExportingPdf}>
             <FileText size={14} />
-            PDF
+            {isExportingPdf ? "PDF..." : "PDF"}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={exportExcel}>
             <FileSpreadsheet size={14} />
@@ -690,7 +851,7 @@ export default function PlanningPlugin() {
       </section>
 
       <section className="px-4">
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div ref={timelineRef} className="card" style={{ padding: 0, overflow: "hidden", background: "var(--color-bg-elevated)" }}>
           <div
             className="grid"
             style={{
@@ -726,7 +887,17 @@ export default function PlanningPlugin() {
               {timelineProfiles.map((profile) => {
                 const laneEvents = visibleEvents.filter((event) => (event.profile_id || NO_PROFILE_ID) === (profile.id || NO_PROFILE_ID));
                 return (
-                  <div key={profile.id || NO_PROFILE_ID} className="relative" style={{ height: 92, borderBottom: "1px solid var(--color-border)" }}>
+                  <div
+                    key={profile.id || NO_PROFILE_ID}
+                    className="relative"
+                    onClick={(event) => handleLaneClick(event, profile.id)}
+                    style={{
+                      height: 92,
+                      borderBottom: "1px solid var(--color-border)",
+                      cursor: "crosshair",
+                      background: "linear-gradient(180deg, transparent, hsl(217 91% 60% / 0.025))",
+                    }}
+                  >
                     {range.ticks.map((tick) => {
                       const left = ((tick.date.getTime() - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * 100;
                       return <div key={tick.date.toISOString()} style={{ position: "absolute", left: `${clamp(left, 0, 100)}%`, top: 0, bottom: 0, borderLeft: "1px solid var(--color-border)" }} />;
@@ -743,7 +914,10 @@ export default function PlanningPlugin() {
                       return (
                         <button
                           key={event.id}
-                          onClick={() => openEditForm(event)}
+                          onClick={(clickEvent) => {
+                            clickEvent.stopPropagation();
+                            openEditForm(event);
+                          }}
                           className="text-left"
                           style={{
                             position: "absolute",
@@ -835,6 +1009,123 @@ function QuickCreate({
       <button className="btn btn-icon-sm btn-secondary" onClick={onSubmit} disabled={disabled} aria-label={placeholder}>
         <Send size={16} />
       </button>
+    </div>
+  );
+}
+
+function ResourcePanel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+  return (
+    <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: "var(--space-3)" }}>
+      <div className="flex items-center gap-2 mb-2" style={{ fontSize: "var(--text-sm)", fontWeight: 900 }}>
+        {icon}
+        {title}
+      </div>
+      <div className="grid gap-2">{children}</div>
+    </div>
+  );
+}
+
+function ProfileRow({
+  profile,
+  onSave,
+  onDelete,
+  saving,
+  deleting,
+}: {
+  profile: PlanningProfile;
+  onSave: (draft: ProfileDraft) => void;
+  onDelete: () => void;
+  saving?: boolean;
+  deleting?: boolean;
+}) {
+  const [draft, setDraft] = useState<ProfileDraft>({
+    name: profile.name,
+    role: profile.role || "",
+    color: profile.color,
+  });
+
+  return (
+    <div className="grid gap-2 rounded-lg border border-border p-2" style={{ background: "var(--color-surface)" }}>
+      <div className="flex items-center gap-2">
+        <span style={{ width: 10, height: 10, borderRadius: 99, background: `hsl(${draft.color})`, flexShrink: 0 }} />
+        <input className="field-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Nom du profil" />
+      </div>
+      <input className="field-input" value={draft.role} onChange={(event) => setDraft({ ...draft, role: event.target.value })} placeholder="Rôle / métier" />
+      <div className="flex items-center justify-between gap-2">
+        <ColorPicker colors={PROFILE_COLORS} value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
+        <div className="flex gap-1">
+          <button className="btn btn-icon-sm btn-secondary" onClick={() => onSave(draft)} disabled={saving} aria-label="Enregistrer le profil">
+            <Save size={15} />
+          </button>
+          <button className="btn btn-icon-sm btn-ghost" onClick={onDelete} disabled={deleting} aria-label="Supprimer le profil">
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectRow({
+  project,
+  onSave,
+  onDelete,
+  saving,
+  deleting,
+}: {
+  project: PlanningProject;
+  onSave: (draft: ProjectDraft) => void;
+  onDelete: () => void;
+  saving?: boolean;
+  deleting?: boolean;
+}) {
+  const [draft, setDraft] = useState<ProjectDraft>({
+    name: project.name,
+    client: project.client || "",
+    color: project.color,
+  });
+
+  return (
+    <div className="grid gap-2 rounded-lg border border-border p-2" style={{ background: "var(--color-surface)" }}>
+      <div className="flex items-center gap-2">
+        <span style={{ width: 10, height: 10, borderRadius: 99, background: `hsl(${draft.color})`, flexShrink: 0 }} />
+        <input className="field-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Nom du projet" />
+      </div>
+      <input className="field-input" value={draft.client} onChange={(event) => setDraft({ ...draft, client: event.target.value })} placeholder="Client / dossier" />
+      <div className="flex items-center justify-between gap-2">
+        <ColorPicker colors={PROJECT_COLORS} value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
+        <div className="flex gap-1">
+          <button className="btn btn-icon-sm btn-secondary" onClick={() => onSave(draft)} disabled={saving} aria-label="Enregistrer le projet">
+            <Save size={15} />
+          </button>
+          <button className="btn btn-icon-sm btn-ghost" onClick={onDelete} disabled={deleting} aria-label="Supprimer le projet">
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColorPicker({ colors, value, onChange }: { colors: string[]; value: string; onChange: (color: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {colors.map((color) => (
+        <button
+          key={color}
+          type="button"
+          onClick={() => onChange(color)}
+          aria-label={`Couleur ${color}`}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 999,
+            background: `hsl(${color})`,
+            border: value === color ? "2px solid var(--color-text-1)" : "1px solid var(--color-border)",
+            boxShadow: value === color ? "var(--shadow-sm)" : "none",
+          }}
+        />
+      ))}
     </div>
   );
 }
