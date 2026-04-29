@@ -44,6 +44,16 @@ export const ACTIVE_PLUGINS = [
     color: "142 71% 45%",
   },
   {
+    id: "planning",
+    name: "Plannings",
+    label: "Plannings",
+    desc: "Timeline profils & projets",
+    icon: Calendar,
+    iconName: "Calendar",
+    path: "/plugins/planning",
+    color: "199 89% 48%",
+  },
+  {
     id: "missions",
     name: "Gestionnaire de missions",
     label: "Gestionnaire de missions",

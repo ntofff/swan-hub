@@ -119,6 +119,7 @@ export const PLAN_BREAKEVEN_PLUGINS = 12; // 3 gratuits + 9 outils payants = Pro
 export type PluginId =
   | 'report'
   | 'tasks'
+  | 'planning'
   | 'missions'
   | 'quotes'
   | 'logbook'
@@ -187,6 +188,21 @@ export const PLUGINS: Plugin[] = [
       { id: 'tasks_pending',      label: 'En attente',          unit: '',  period: 'total', query: 'kpi_tasks_pending', importance: 1 },
       { id: 'tasks_overdue',      label: 'En retard',           unit: '',  period: 'total', query: 'kpi_tasks_overdue', importance: 2 },
       { id: 'tasks_completion',   label: 'Taux de complétion',  unit: '%', period: 'month', query: 'kpi_tasks_rate',    importance: 2 },
+    ],
+  },
+  {
+    id: 'planning',
+    name: 'Plannings',
+    description: 'Planifiez profils, équipes et projets sur une timeline jour, semaine, mois ou année',
+    shortDesc: 'Timeline projets & équipes',
+    icon: 'Calendar',
+    color: '199 89% 48%',
+    route: '/plugins/planning',
+    available: true,
+    trades: ['all'],
+    kpis: [
+      { id: 'planning_week', label: 'Créneaux semaine', unit: '', period: 'week', query: 'kpi_planning_week', importance: 1 },
+      { id: 'planning_profiles', label: 'Profils mobilisés', unit: '', period: 'week', query: 'kpi_planning_profiles', importance: 2 },
     ],
   },
   {
@@ -385,49 +401,49 @@ export const TRADES: Trade[] = [
     id: 'btp',
     label: 'Artisan / BTP',
     icon: '🔨',
-    pluginIds: ['report', 'tasks', 'missions', 'quotes', 'vehicle', 'inventory', 'checklist'],
+    pluginIds: ['report', 'tasks', 'planning', 'missions', 'quotes', 'vehicle', 'inventory', 'checklist'],
   },
   {
     id: 'services',
     label: 'Services terrain',
     icon: '🛠️',
-    pluginIds: ['report', 'tasks', 'missions', 'quotes', 'logbook', 'vehicle', 'expenses', 'inventory'],
+    pluginIds: ['report', 'tasks', 'planning', 'missions', 'quotes', 'logbook', 'vehicle', 'expenses', 'inventory'],
   },
   {
     id: 'commercial',
     label: 'Commercial / VRP',
     icon: '💼',
-    pluginIds: ['tasks', 'missions', 'quotes', 'crm', 'vehicle', 'logbook'],
+    pluginIds: ['tasks', 'planning', 'missions', 'quotes', 'crm', 'vehicle', 'logbook'],
   },
   {
     id: 'immobilier',
     label: 'Agent immobilier',
     icon: '🏠',
-    pluginIds: ['report', 'tasks', 'missions', 'quotes', 'crm', 'vehicle'],
+    pluginIds: ['report', 'tasks', 'planning', 'missions', 'quotes', 'crm', 'vehicle'],
   },
   {
     id: 'transport',
     label: 'Transport / Logistique',
     icon: '🚚',
-    pluginIds: ['vehicle', 'tasks', 'logbook', 'inventory', 'delivery'],
+    pluginIds: ['vehicle', 'tasks', 'planning', 'logbook', 'inventory', 'delivery'],
   },
   {
     id: 'freelance',
     label: 'Freelance / Indépendant',
     icon: '💻',
-    pluginIds: ['tasks', 'quotes', 'logbook', 'time-tracker', 'expenses', 'inventory'],
+    pluginIds: ['tasks', 'planning', 'quotes', 'logbook', 'time-tracker', 'expenses', 'inventory'],
   },
   {
     id: 'sante',
     label: 'Santé / Services à la personne',
     icon: '🩺',
-    pluginIds: ['tasks', 'logbook', 'booking', 'missions'],
+    pluginIds: ['tasks', 'planning', 'logbook', 'booking', 'missions'],
   },
   {
     id: 'autre',
     label: 'Autre',
     icon: '✨',
-    pluginIds: ['tasks', 'report', 'quotes', 'expenses', 'inventory'],
+    pluginIds: ['tasks', 'planning', 'report', 'quotes', 'expenses', 'inventory'],
   },
 ];
 

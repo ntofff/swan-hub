@@ -40,6 +40,7 @@ const LogbookPlugin     = lazy(() => import('@/pages/plugins/LogbookPlugin'));
 const VehiclePlugin     = lazy(() => import('@/pages/plugins/VehiclePlugin'));
 const ExpensesPlugin    = lazy(() => import('@/pages/plugins/ExpensesPlugin'));
 const InventoryPlugin   = lazy(() => import('@/pages/plugins/InventoryPlugin'));
+const PlanningPlugin    = lazy(() => import('@/pages/plugins/PlanningPlugin'));
 
 const NotFound          = lazy(() => import('@/pages/NotFound'));
 const Legal             = lazy(() => import('@/pages/Legal'));
@@ -156,6 +157,7 @@ const App = () => (
                 <Route path="/plugins/vehicle"     element={<VehiclePlugin />} />
                 <Route path="/plugins/expenses"    element={<ExpensesPlugin />} />
                 <Route path="/plugins/inventory"   element={<InventoryPlugin />} />
+                <Route path="/plugins/planning"    element={<PlanningPlugin />} />
               </Route>
 
               {/* ─── Routes admin ─────────────────────────── */}
