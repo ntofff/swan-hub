@@ -81,7 +81,11 @@ export default function HomePage() {
     ? Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / 86_400_000)
     : null;
   const trialReminderVisible = profile?.plan === 'free' && trialDaysLeft !== null && trialDaysLeft <= 7;
-  const visibleToolIds = profile?.visible_plugin_ids?.length ? profile.visible_plugin_ids : null;
+  const visibleToolIds = profile?.is_vip
+    ? null
+    : profile?.visible_plugin_ids?.length
+      ? profile.visible_plugin_ids
+      : null;
   const displayedPlugins = ACTIVE_PLUGINS
     .filter((plugin) => hasAccessToPlugin(plugin.id))
     .filter((plugin) => !visibleToolIds || visibleToolIds.includes(plugin.id))
