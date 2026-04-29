@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   FileSpreadsheet,
   FileText,
   Folder,
@@ -25,6 +24,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { TutorialButton } from "@/components/TutorialButton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCsv } from "@/lib/businessTools";
@@ -672,12 +672,6 @@ export default function PlanningPlugin() {
         }
       />
 
-      <section className="px-4 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", marginBottom: "var(--space-4)" }}>
-        <StatCard label="Créneaux visibles" value={String(stats.active)} icon={<CalendarDays size={18} />} />
-        <StatCard label="Profils mobilisés" value={String(stats.profilesUsed)} icon={<Users size={18} />} />
-        <StatCard label="Projets visibles" value={String(stats.projectsUsed)} icon={<Folder size={18} />} />
-      </section>
-
       {showForm && (
         <section className="px-4 slide-up" style={{ marginBottom: "var(--space-5)" }}>
           <div className="field-form-panel">
@@ -729,7 +723,7 @@ export default function PlanningPlugin() {
       <section className="px-4" style={{ marginBottom: "var(--space-4)" }}>
         <button
           className="btn btn-secondary btn-sm"
-          onClick={() => setResourcesOpen((current) => !current)}
+          onClick={() => setResourcesOpen(true)}
           aria-expanded={resourcesOpen}
         >
           <Users size={14} />
@@ -737,62 +731,66 @@ export default function PlanningPlugin() {
           <span style={{ color: "var(--color-text-3)" }}>·</span>
           <Folder size={14} />
           Projets {projects.length}
-          {resourcesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          <ChevronDown size={14} />
         </button>
-
-        {resourcesOpen && (
-          <div className="card slide-up" style={{ padding: "var(--space-4)", marginTop: "var(--space-3)" }}>
-            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-              <QuickCreate
-                icon={<Users size={16} />}
-                placeholder="Nouveau profil"
-                value={profileName}
-                onChange={setProfileName}
-                onSubmit={() => createProfile.mutate()}
-                disabled={createProfile.isPending}
-              />
-              <QuickCreate
-                icon={<Folder size={16} />}
-                placeholder="Nouveau projet"
-                value={projectName}
-                onChange={setProjectName}
-                onSubmit={() => createProject.mutate()}
-                disabled={createProject.isPending}
-              />
-            </div>
-
-            {(profiles.length > 0 || projects.length > 0) && (
-              <div className="grid gap-4 mt-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-                <ResourcePanel title="Profils" icon={<Users size={15} />}>
-                  {profiles.map((profile) => (
-                    <ProfileRow
-                      key={profile.id}
-                      profile={profile}
-                      onSave={(draft) => updateProfile.mutate({ id: profile.id, draft })}
-                      onDelete={() => deleteProfile.mutate(profile)}
-                      saving={updateProfile.isPending}
-                      deleting={deleteProfile.isPending}
-                    />
-                  ))}
-                </ResourcePanel>
-
-                <ResourcePanel title="Projets" icon={<Folder size={15} />}>
-                  {projects.map((project) => (
-                    <ProjectRow
-                      key={project.id}
-                      project={project}
-                      onSave={(draft) => updateProject.mutate({ id: project.id, draft })}
-                      onDelete={() => deleteProject.mutate(project)}
-                      saving={updateProject.isPending}
-                      deleting={deleteProject.isPending}
-                    />
-                  ))}
-                </ResourcePanel>
-              </div>
-            )}
-          </div>
-        )}
       </section>
+
+      <Dialog open={resourcesOpen} onOpenChange={setResourcesOpen}>
+        <DialogContent className="max-w-4xl max-h-[86vh] overflow-y-auto">
+          <DialogHeader className="pr-8">
+            <DialogTitle>Profils & projets</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            <QuickCreate
+              icon={<Users size={16} />}
+              placeholder="Nouveau profil"
+              value={profileName}
+              onChange={setProfileName}
+              onSubmit={() => createProfile.mutate()}
+              disabled={createProfile.isPending}
+            />
+            <QuickCreate
+              icon={<Folder size={16} />}
+              placeholder="Nouveau projet"
+              value={projectName}
+              onChange={setProjectName}
+              onSubmit={() => createProject.mutate()}
+              disabled={createProject.isPending}
+            />
+          </div>
+
+          {(profiles.length > 0 || projects.length > 0) && (
+            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+              <ResourcePanel title="Profils" icon={<Users size={15} />}>
+                {profiles.map((profile) => (
+                  <ProfileRow
+                    key={profile.id}
+                    profile={profile}
+                    onSave={(draft) => updateProfile.mutate({ id: profile.id, draft })}
+                    onDelete={() => deleteProfile.mutate(profile)}
+                    saving={updateProfile.isPending}
+                    deleting={deleteProfile.isPending}
+                  />
+                ))}
+              </ResourcePanel>
+
+              <ResourcePanel title="Projets" icon={<Folder size={15} />}>
+                {projects.map((project) => (
+                  <ProjectRow
+                    key={project.id}
+                    project={project}
+                    onSave={(draft) => updateProject.mutate({ id: project.id, draft })}
+                    onDelete={() => deleteProject.mutate(project)}
+                    saving={updateProject.isPending}
+                    deleting={deleteProject.isPending}
+                  />
+                ))}
+              </ResourcePanel>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <section className="px-4" style={{ marginBottom: "var(--space-4)" }}>
         <div className="flex flex-wrap items-center gap-2 justify-between">
@@ -963,6 +961,12 @@ export default function PlanningPlugin() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="px-4 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", marginTop: "var(--space-5)" }}>
+        <StatCard label="Créneaux visibles" value={String(stats.active)} icon={<CalendarDays size={18} />} />
+        <StatCard label="Profils mobilisés" value={String(stats.profilesUsed)} icon={<Users size={18} />} />
+        <StatCard label="Projets visibles" value={String(stats.projectsUsed)} icon={<Folder size={18} />} />
       </section>
     </div>
   );
