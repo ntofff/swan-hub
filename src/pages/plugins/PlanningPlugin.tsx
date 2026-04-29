@@ -112,6 +112,19 @@ type CustomRange = {
   end: string;
 };
 
+type RangeTick = {
+  date: Date;
+  label: string;
+  subLabel?: string;
+};
+
+type PlanningRange = {
+  start: Date;
+  end: Date;
+  ticks: RangeTick[];
+  title: string;
+};
+
 type ExportFormat = "calendar" | "pdf" | "excel" | "mail";
 
 type ExportSelection = {
@@ -241,12 +254,18 @@ const formFromEvent = (event: PlanningEvent): PlanningForm => {
 };
 
 const dateLabel = (date: Date) => date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
-const fullDateLabel = (date: Date) => date.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
+const weekdayLabel = (date: Date) => date.toLocaleDateString("fr-FR", { weekday: "short" });
 const timeLabel = (value: string) => new Date(value).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 const eventDateLabel = (event: PlanningEvent) =>
   `${new Date(event.start_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} · ${timeLabel(event.start_at)}-${timeLabel(event.end_at)}`;
 
-const buildRange = (view: PlanningView, cursor: Date) => {
+const dateTick = (date: Date): RangeTick => ({
+  date,
+  label: weekdayLabel(date),
+  subLabel: dateLabel(date),
+});
+
+const buildRange = (view: PlanningView, cursor: Date): PlanningRange => {
   if (view === "day") {
     const start = startOfDay(cursor);
     const end = addDays(start, 1);
@@ -261,10 +280,7 @@ const buildRange = (view: PlanningView, cursor: Date) => {
   if (view === "week") {
     const start = startOfWeek(cursor);
     const end = addDays(start, 7);
-    const ticks = Array.from({ length: 7 }, (_, index) => {
-      const date = addDays(start, index);
-      return { date, label: fullDateLabel(date) };
-    });
+    const ticks = Array.from({ length: 7 }, (_, index) => dateTick(addDays(start, index)));
     return { start, end, ticks, title: `${dateLabel(start)} - ${dateLabel(addDays(end, -1))}` };
   }
 
@@ -275,7 +291,7 @@ const buildRange = (view: PlanningView, cursor: Date) => {
     const step = days > 30 ? 5 : 4;
     const ticks = Array.from({ length: Math.ceil(days / step) + 1 }, (_, index) => {
       const date = addDays(start, index * step);
-      return { date, label: date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) };
+      return { date, label: date.toLocaleDateString("fr-FR", { day: "2-digit" }), subLabel: date.toLocaleDateString("fr-FR", { month: "short" }) };
     });
     return { start, end, ticks, title: cursor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) };
   }
@@ -289,7 +305,7 @@ const buildRange = (view: PlanningView, cursor: Date) => {
   return { start, end, ticks, title: String(cursor.getFullYear()) };
 };
 
-const buildCustomRange = (range: CustomRange) => {
+const buildCustomRange = (range: CustomRange): PlanningRange => {
   const start = startOfDay(new Date(`${range.start}T00:00:00`));
   const requestedEnd = startOfDay(new Date(`${range.end}T00:00:00`));
   const end = addDays(requestedEnd.getTime() >= start.getTime() ? requestedEnd : start, 1);
@@ -297,7 +313,8 @@ const buildCustomRange = (range: CustomRange) => {
   const step = days <= 14 ? 1 : days <= 70 ? 7 : Math.max(14, Math.ceil(days / 10));
   const ticks = Array.from({ length: Math.ceil(days / step) + 1 }, (_, index) => {
     const date = addDays(start, index * step);
-    return { date, label: days <= 1 ? `${pad(date.getHours())}h` : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) };
+    if (days <= 14) return dateTick(date);
+    return { date, label: date.toLocaleDateString("fr-FR", { day: "2-digit" }), subLabel: date.toLocaleDateString("fr-FR", { month: "short" }) };
   });
   return { start, end, ticks, title: `${dateLabel(start)} - ${dateLabel(addDays(end, -1))}` };
 };
@@ -1438,11 +1455,34 @@ export default function PlanningPlugin() {
 
             <div style={{ minWidth: 720 }}>
               <div className="relative" style={{ height: 44, borderBottom: "1px solid var(--color-border)" }}>
-                {range.ticks.map((tick) => {
+                {range.ticks.map((tick, index) => {
                   const left = ((tick.date.getTime() - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * 100;
+                  if (left < 0 || left >= 100) return null;
+                  const nextDate = range.ticks[index + 1]?.date || range.end;
+                  const right = ((Math.min(nextDate.getTime(), range.end.getTime()) - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * 100;
                   return (
-                    <div key={`${tick.label}-${tick.date.toISOString()}`} style={{ position: "absolute", left: `${clamp(left, 0, 100)}%`, top: 0, bottom: 0, borderLeft: "1px solid var(--color-border)", paddingLeft: 6 }}>
-                      <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-2)", fontWeight: 800 }}>{tick.label}</span>
+                    <div
+                      key={`${tick.label}-${tick.date.toISOString()}`}
+                      style={{
+                        position: "absolute",
+                        left: `${clamp(left, 0, 100)}%`,
+                        top: 0,
+                        bottom: 0,
+                        width: `${Math.max(4, clamp(right, 0, 100) - clamp(left, 0, 100))}%`,
+                        borderLeft: "1px solid var(--color-border)",
+                        paddingLeft: 8,
+                        paddingRight: 4,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-2)", fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {tick.label}
+                      </div>
+                      {tick.subLabel && (
+                        <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {tick.subLabel}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1464,6 +1504,7 @@ export default function PlanningPlugin() {
                   >
                     {range.ticks.map((tick) => {
                       const left = ((tick.date.getTime() - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * 100;
+                      if (left < 0 || left >= 100) return null;
                       return <div key={tick.date.toISOString()} style={{ position: "absolute", left: `${clamp(left, 0, 100)}%`, top: 0, bottom: 0, borderLeft: "1px solid var(--color-border)" }} />;
                     })}
                     {laneEvents.map((event, index) => {
