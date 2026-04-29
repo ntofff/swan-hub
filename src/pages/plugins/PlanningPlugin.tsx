@@ -108,6 +108,11 @@ type ProjectDraft = {
   color: string;
 };
 
+type CustomRange = {
+  start: string;
+  end: string;
+};
+
 const db = supabase as unknown as BusinessDb;
 const NO_PROFILE_ID = "sans-profil";
 const ALL_PROJECTS = "all";
@@ -240,6 +245,19 @@ const buildRange = (view: PlanningView, cursor: Date) => {
   return { start, end, ticks, title: String(cursor.getFullYear()) };
 };
 
+const buildCustomRange = (range: CustomRange) => {
+  const start = startOfDay(new Date(`${range.start}T00:00:00`));
+  const requestedEnd = startOfDay(new Date(`${range.end}T00:00:00`));
+  const end = addDays(requestedEnd.getTime() >= start.getTime() ? requestedEnd : start, 1);
+  const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000));
+  const step = days <= 14 ? 1 : days <= 70 ? 7 : Math.max(14, Math.ceil(days / 10));
+  const ticks = Array.from({ length: Math.ceil(days / step) + 1 }, (_, index) => {
+    const date = addDays(start, index * step);
+    return { date, label: days <= 1 ? `${pad(date.getHours())}h` : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) };
+  });
+  return { start, end, ticks, title: `${dateLabel(start)} - ${dateLabel(addDays(end, -1))}` };
+};
+
 const shiftCursor = (cursor: Date, view: PlanningView, dir: -1 | 1) => {
   if (view === "day") return addDays(cursor, dir);
   if (view === "week") return addDays(cursor, dir * 7);
@@ -284,8 +302,14 @@ export default function PlanningPlugin() {
   const [projectName, setProjectName] = useState("");
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [customRange, setCustomRange] = useState<CustomRange | null>(null);
+  const [periodDraft, setPeriodDraft] = useState<CustomRange>(() => {
+    const start = startOfWeek(new Date());
+    return { start: formatDateInput(start), end: formatDateInput(addDays(start, 6)) };
+  });
 
-  const range = useMemo(() => buildRange(view, cursor), [cursor, view]);
+  const range = useMemo(() => customRange ? buildCustomRange(customRange) : buildRange(view, cursor), [cursor, customRange, view]);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ["planning_profiles"],
@@ -320,10 +344,7 @@ export default function PlanningPlugin() {
   const projectMap = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects]);
   const profileMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
 
-  const timelineProfiles: TimelineProfile[] = useMemo(() => ([
-    { id: null, name: "Sans profil", role: "Affectation libre", color: "217 91% 60%" },
-    ...profiles,
-  ]), [profiles]);
+  const timelineProfiles: TimelineProfile[] = useMemo(() => profiles, [profiles]);
 
   const visibleEvents = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -375,6 +396,22 @@ export default function PlanningPlugin() {
     setEditingEventId(event.id);
     setForm(formFromEvent(event));
     setShowForm(true);
+  };
+
+  const openPeriodDialog = () => {
+    const start = customRange?.start || formatDateInput(range.start);
+    const end = customRange?.end || formatDateInput(addDays(range.end, -1));
+    setPeriodDraft({ start, end });
+    setPeriodOpen(true);
+  };
+
+  const applyPeriod = () => {
+    if (!periodDraft.start || !periodDraft.end) return toast.error("Sélectionnez une date de départ et une date d'arrivée");
+    const start = new Date(`${periodDraft.start}T00:00:00`);
+    const end = new Date(`${periodDraft.end}T00:00:00`);
+    if (end.getTime() < start.getTime()) return toast.error("La date d'arrivée doit être après le départ");
+    setCustomRange(periodDraft);
+    setPeriodOpen(false);
   };
 
   const handleLaneClick = (event: MouseEvent<HTMLDivElement>, profileId: string | null) => {
@@ -792,27 +829,84 @@ export default function PlanningPlugin() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={periodOpen} onOpenChange={setPeriodOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="pr-8">
+            <DialogTitle>Période du planning</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+            <div>
+              <label className="field-label">Départ</label>
+              <input
+                className="field-input"
+                type="date"
+                value={periodDraft.start}
+                onChange={(event) => setPeriodDraft((current) => ({ ...current, start: event.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="field-label">Arrivée</label>
+              <input
+                className="field-input"
+                type="date"
+                value={periodDraft.end}
+                onChange={(event) => setPeriodDraft((current) => ({ ...current, end: event.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 justify-end">
+            <button className="btn btn-ghost btn-sm" onClick={() => {
+              setCustomRange(null);
+              setPeriodOpen(false);
+            }}>
+              Réinitialiser
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={applyPeriod}>
+              Appliquer
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <section className="px-4" style={{ marginBottom: "var(--space-4)" }}>
         <div className="flex flex-wrap items-center gap-2 justify-between">
           <div className="flex items-center gap-2">
-            <button className="btn btn-icon-sm btn-secondary" onClick={() => setCursor(shiftCursor(cursor, view, -1))} aria-label="Période précédente">
+            <button className="btn btn-icon-sm btn-secondary" onClick={() => {
+              setCustomRange(null);
+              setCursor(shiftCursor(cursor, view, -1));
+            }} aria-label="Période précédente">
               <ChevronLeft size={17} />
             </button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setCursor(new Date())}>
+            <button className="btn btn-secondary btn-sm" onClick={() => {
+              setCustomRange(null);
+              setCursor(new Date());
+            }}>
               Aujourd'hui
             </button>
-            <button className="btn btn-icon-sm btn-secondary" onClick={() => setCursor(shiftCursor(cursor, view, 1))} aria-label="Période suivante">
+            <button className="btn btn-icon-sm btn-secondary" onClick={() => {
+              setCustomRange(null);
+              setCursor(shiftCursor(cursor, view, 1));
+            }} aria-label="Période suivante">
               <ChevronRight size={17} />
             </button>
             <div style={{ fontWeight: 900, fontFamily: "var(--font-display)", minWidth: 150 }}>{range.title}</div>
+            <button className="btn btn-secondary btn-sm" onClick={openPeriodDialog}>
+              <Calendar size={14} />
+              Période
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-1 p-1 rounded-lg bg-muted">
             {VIEWS.map((option) => (
               <button
                 key={option.value}
-                onClick={() => setView(option.value)}
-                className={`btn btn-sm ${view === option.value ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => {
+                  setCustomRange(null);
+                  setView(option.value);
+                }}
+                className={`btn btn-sm ${!customRange && view === option.value ? "btn-primary" : "btn-ghost"}`}
               >
                 {option.label}
               </button>
