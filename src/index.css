@@ -1668,11 +1668,12 @@ select.input {
 
 .tutorial-dialog {
   z-index: var(--z-modal) !important;
-  left: 50% !important;
+  position: relative !important;
+  left: auto !important;
   right: auto !important;
-  top: 50% !important;
+  top: auto !important;
   bottom: auto !important;
-  transform: translate(-50%, -50%) !important;
+  transform: none !important;
   display: block !important;
   width: min(440px, calc(100vw - 2rem)) !important;
   max-height: calc(100dvh - 2rem) !important;
@@ -1691,10 +1692,7 @@ select.input {
 
 @media (max-width: 640px) {
   .tutorial-dialog {
-    top: max(1rem, env(safe-area-inset-top)) !important;
-    bottom: calc(64px + env(safe-area-inset-bottom) + var(--space-2)) !important;
-    transform: translateX(-50%) !important;
-    max-height: none !important;
+    max-height: calc(100dvh - 7rem - env(safe-area-inset-bottom)) !important;
   }
 }
 
