@@ -62,38 +62,69 @@ serve(async (req) => {
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData.user) return json({ error: "Non authentifié" }, 401);
 
-    const { receipt_id } = await req.json();
-    if (!receipt_id || typeof receipt_id !== "string") return json({ error: "receipt_id requis" }, 400);
+    const body = await req.json();
+    const receiptId = typeof body.receipt_id === "string" ? body.receipt_id : null;
+    const draftDocumentPath = typeof body.document_path === "string" ? body.document_path : null;
 
-    const { data: receipt, error: receiptError } = await adminClient
-      .from("expense_receipts")
-      .select("*")
-      .eq("id", receipt_id)
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
+    let receipt: Record<string, unknown> | null = null;
 
-    if (receiptError || !receipt) return json({ error: receiptError?.message || "Note de frais introuvable" }, 404);
+    if (receiptId) {
+      const { data: storedReceipt, error: receiptError } = await adminClient
+        .from("expense_receipts")
+        .select("*")
+        .eq("id", receiptId)
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+
+      if (receiptError || !storedReceipt) return json({ error: receiptError?.message || "Note de frais introuvable" }, 404);
+      receipt = storedReceipt;
+    } else if (draftDocumentPath) {
+      if (!draftDocumentPath.startsWith(`${userData.user.id}/`)) return json({ error: "Document non autorisé" }, 403);
+      receipt = {
+        id: null,
+        user_id: userData.user.id,
+        title: body.document_name || "Note de frais",
+        vendor: null,
+        expense_date: null,
+        category: "Autre",
+        amount_ht: null,
+        amount_ttc: null,
+        vat_amount: null,
+        currency: "EUR",
+        annotation: null,
+        document_path: draftDocumentPath,
+        document_name: body.document_name || null,
+        document_mime_type: body.document_mime_type || "image/jpeg",
+      };
+    } else {
+      return json({ error: "receipt_id ou document_path requis" }, 400);
+    }
+
     if (!receipt.document_path) return json({ error: "Aucun document à analyser" }, 400);
 
     if (!openAiKey) {
-      await adminClient
-        .from("expense_receipts")
-        .update({
-          analysis_status: "a_connecter",
-          analysis_payload: { error: "OPENAI_API_KEY manquante" },
-        })
-        .eq("id", receipt_id);
+      if (receiptId) {
+        await adminClient
+          .from("expense_receipts")
+          .update({
+            analysis_status: "a_connecter",
+            analysis_payload: { error: "OPENAI_API_KEY manquante" },
+          })
+          .eq("id", receiptId);
+      }
       return json({ error: "Analyse IA non configurée côté serveur" }, 500);
     }
 
     if (!String(receipt.document_mime_type || "").startsWith("image/")) {
-      await adminClient
-        .from("expense_receipts")
-        .update({
-          analysis_status: "a_verifier",
-          analysis_payload: { warning: "Analyse automatique réservée aux images pour le moment." },
-        })
-        .eq("id", receipt_id);
+      if (receiptId) {
+        await adminClient
+          .from("expense_receipts")
+          .update({
+            analysis_status: "a_verifier",
+            analysis_payload: { warning: "Analyse automatique réservée aux images pour le moment." },
+          })
+          .eq("id", receiptId);
+      }
       return json({ error: "L'analyse automatique accepte une photo/image. Le PDF reste stocké et annotable." }, 400);
     }
 
@@ -102,7 +133,9 @@ serve(async (req) => {
       .createSignedUrl(receipt.document_path, 600);
     if (signedError || !signed?.signedUrl) return json({ error: signedError?.message || "URL signée impossible" }, 500);
 
-    await adminClient.from("expense_receipts").update({ analysis_status: "analyse_en_cours" }).eq("id", receipt_id);
+    if (receiptId) {
+      await adminClient.from("expense_receipts").update({ analysis_status: "analyse_en_cours" }).eq("id", receiptId);
+    }
 
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -130,10 +163,12 @@ serve(async (req) => {
 
     if (!response.ok) {
       const text = await response.text();
-      await adminClient
-        .from("expense_receipts")
-        .update({ analysis_status: "erreur", analysis_payload: { status: response.status, body: text.slice(0, 500) } })
-        .eq("id", receipt_id);
+      if (receiptId) {
+        await adminClient
+          .from("expense_receipts")
+          .update({ analysis_status: "erreur", analysis_payload: { status: response.status, body: text.slice(0, 500) } })
+          .eq("id", receiptId);
+      }
       return json({ error: "Erreur analyse IA" }, response.status);
     }
 
@@ -162,10 +197,12 @@ serve(async (req) => {
       status: "A verifier",
     };
 
-    const { error: updateError } = await adminClient.from("expense_receipts").update(patch).eq("id", receipt_id);
-    if (updateError) return json({ error: updateError.message }, 500);
+    if (receiptId) {
+      const { error: updateError } = await adminClient.from("expense_receipts").update(patch).eq("id", receiptId);
+      if (updateError) return json({ error: updateError.message }, 500);
+    }
 
-    return json({ ok: true, extracted });
+    return json({ ok: true, extracted, patch });
   } catch (error) {
     console.error("analyze-expense-receipt error:", error);
     return json({ error: error instanceof Error ? error.message : "Erreur inconnue" }, 500);
