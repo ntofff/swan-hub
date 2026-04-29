@@ -773,12 +773,12 @@ export default function PlanningPlugin() {
       </section>
 
       <Dialog open={resourcesOpen} onOpenChange={setResourcesOpen}>
-        <DialogContent className="max-w-4xl max-h-[86vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[760px] max-h-[86dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader className="pr-8">
             <DialogTitle>Profils & projets</DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+          <div className="grid gap-3 sm:grid-cols-2">
             <QuickCreate
               icon={<Users size={16} />}
               placeholder="Nouveau profil"
@@ -798,7 +798,7 @@ export default function PlanningPlugin() {
           </div>
 
           {(profiles.length > 0 || projects.length > 0) && (
-            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+            <div className="grid gap-4 lg:grid-cols-2">
               <ResourcePanel title="Profils" icon={<Users size={15} />}>
                 {profiles.map((profile) => (
                   <ProfileRow
@@ -830,7 +830,7 @@ export default function PlanningPlugin() {
       </Dialog>
 
       <Dialog open={periodOpen} onOpenChange={setPeriodOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md max-h-[86dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader className="pr-8">
             <DialogTitle>Période du planning</DialogTitle>
           </DialogHeader>
@@ -1098,18 +1098,34 @@ function QuickCreate({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="plugin-icon-wrapper" style={{ background: "hsl(199 89% 48% / 0.12)", color: "hsl(199 89% 48%)" }}>
+    <div className="grid items-center gap-2" style={{ gridTemplateColumns: "40px minmax(0, 1fr) 40px" }}>
+      <div
+        className="plugin-icon-wrapper"
+        style={{
+          width: 40,
+          height: 40,
+          minWidth: 40,
+          background: "hsl(199 89% 48% / 0.12)",
+          color: "hsl(199 89% 48%)",
+        }}
+      >
         {icon}
       </div>
       <input
         className="field-input"
+        style={{ minWidth: 0 }}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => event.key === "Enter" && onSubmit()}
         placeholder={placeholder}
       />
-      <button className="btn btn-icon-sm btn-secondary" onClick={onSubmit} disabled={disabled} aria-label={placeholder}>
+      <button
+        className="btn btn-icon-sm btn-secondary"
+        style={{ minWidth: 40, width: 40 }}
+        onClick={onSubmit}
+        disabled={disabled}
+        aria-label={placeholder}
+      >
         <Send size={16} />
       </button>
     </div>
@@ -1148,13 +1164,13 @@ function ProfileRow({
   });
 
   return (
-    <div className="grid gap-2 rounded-lg border border-border p-2" style={{ background: "var(--color-surface)" }}>
-      <div className="flex items-center gap-2">
+    <div className="grid min-w-0 gap-2 rounded-lg border border-border p-2" style={{ background: "var(--color-surface)" }}>
+      <div className="flex min-w-0 items-center gap-2">
         <span style={{ width: 10, height: 10, borderRadius: 99, background: `hsl(${draft.color})`, flexShrink: 0 }} />
-        <input className="field-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Nom du profil" />
+        <input className="field-input" style={{ minWidth: 0 }} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Nom du profil" />
       </div>
-      <input className="field-input" value={draft.role} onChange={(event) => setDraft({ ...draft, role: event.target.value })} placeholder="Rôle / métier" />
-      <div className="flex items-center justify-between gap-2">
+      <input className="field-input" style={{ minWidth: 0 }} value={draft.role} onChange={(event) => setDraft({ ...draft, role: event.target.value })} placeholder="Rôle / métier" />
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <ColorPicker colors={PROFILE_COLORS} value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
         <div className="flex gap-1">
           <button className="btn btn-icon-sm btn-secondary" onClick={() => onSave(draft)} disabled={saving} aria-label="Enregistrer le profil">
@@ -1189,13 +1205,13 @@ function ProjectRow({
   });
 
   return (
-    <div className="grid gap-2 rounded-lg border border-border p-2" style={{ background: "var(--color-surface)" }}>
-      <div className="flex items-center gap-2">
+    <div className="grid min-w-0 gap-2 rounded-lg border border-border p-2" style={{ background: "var(--color-surface)" }}>
+      <div className="flex min-w-0 items-center gap-2">
         <span style={{ width: 10, height: 10, borderRadius: 99, background: `hsl(${draft.color})`, flexShrink: 0 }} />
-        <input className="field-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Nom du projet" />
+        <input className="field-input" style={{ minWidth: 0 }} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Nom du projet" />
       </div>
-      <input className="field-input" value={draft.client} onChange={(event) => setDraft({ ...draft, client: event.target.value })} placeholder="Client / dossier" />
-      <div className="flex items-center justify-between gap-2">
+      <input className="field-input" style={{ minWidth: 0 }} value={draft.client} onChange={(event) => setDraft({ ...draft, client: event.target.value })} placeholder="Client / dossier" />
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <ColorPicker colors={PROJECT_COLORS} value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
         <div className="flex gap-1">
           <button className="btn btn-icon-sm btn-secondary" onClick={() => onSave(draft)} disabled={saving} aria-label="Enregistrer le projet">
@@ -1212,7 +1228,7 @@ function ProjectRow({
 
 function ColorPicker({ colors, value, onChange }: { colors: string[]; value: string; onChange: (color: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex min-w-0 flex-wrap gap-1">
       {colors.map((color) => (
         <button
           key={color}
